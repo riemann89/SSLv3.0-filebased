@@ -9,5 +9,3 @@
 #include "structures.h"
 
 short int Session_ID;
-
-uint8_t cipher_Suite[2];

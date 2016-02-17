@@ -15,6 +15,7 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
+    /*
     FILE* canaleSSL;
     char a='s';
     for (int i=0; i<10; i++) {
@@ -31,5 +32,6 @@ int main(int argc, const char *argv[]){
         
         OpenCommunicationClient();
     }
+     */
     
 }

@@ -16,7 +16,7 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    
+    /*
     //Leggi configurazione:
     FILE* canaleSSL;
     char a='c';
@@ -42,6 +42,11 @@ int main(int argc, const char *argv[]){
     
     //Hello Client
     //RecordProtocol(alert, 2);
+     */
+    
+    //CipherSuite test={0x01,0x10};
+    
+    
     
     return 0;
 }
