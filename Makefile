@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -std=c99 -Wall -Iinclude
+CFLAGS := -std=gnu99 -Wall -Iinclude
 OPENSSL := -L/usr/local/ssl/lib -I/usr/local/ssl/include -lssl -lcrypto
 
 all: server client
