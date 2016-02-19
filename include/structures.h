@@ -14,14 +14,13 @@ typedef struct{
     uint8_t ciphersuite[2];
 }CipherSuite;
 
-typedef struct{
+typedef struct {
     HandshakeType msg_type;
     uint32_t length; //ToDo uint24
-}Handshake;
+    uint8_t* content;
+}HandshakeLayer;
 
 typedef struct{
-    Handshake handshake_header;
-    
 	/*ToDo typedef struct{
 	  uint32_t gmt_unix_time;
       uint8_t random_bytes[28];

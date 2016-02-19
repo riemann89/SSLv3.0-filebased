@@ -1,4 +1,19 @@
-    /*
+TEST FUNZIONAMENTO:
+
+Packet Function
+
+/*
+RecordLayer recordlayer_clienthello;
+recordlayer_clienthello.type=HANDSHAKE;
+recordlayer_clienthello.version.major=3;
+recordlayer_clienthello.version.minor=0;
+recordlayer_clienthello.length=3;
+uint8_t message[]={12,34,56};
+recordlayer_clienthello.message=message;
+sendPacket(recordlayer_clienthello);
+*/
+
+/*
     //Leggi configurazione:
     FILE* canaleSSL;
     char a='c';
