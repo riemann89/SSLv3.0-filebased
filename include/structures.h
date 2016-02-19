@@ -35,12 +35,6 @@ typedef struct{
 }ClientServerHello;
 
 typedef struct{
-    HandshakeType msg_type;
-    uint32_t length; //ToDo uint24
-}Handshake;
-
-
-typedef struct{
 
 }HelloRequest;
 
@@ -54,13 +48,13 @@ typedef struct{
 
 typedef enum{
 	RSA_SIGN, DSS_SIGN, RSA_FIXED_DH,
-	DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL       _DH,FORTEZZA_MISSI=20
+	DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH,FORTEZZA_MISSI=20
 }CertificateType;
 
 typedef struct{
 	CertificateType certificateTypes; // lo interpreto come un solo tipo anche se il nome suggerisce un plurale
 	//DistinguishedName certificate_authorities<3..2^16-1>;  Probabilmente sarà più chiaro in seguito
-}CertificateRequest
+}CertificateRequest;
 
 typedef struct{
 	//volutamente bianco la struttura è proprio così
@@ -71,7 +65,7 @@ typedef struct{
 }CertificateVerify;
 
 typedef struct{
-}ClientKeyExchange
+}ClientKeyExchange;
 
 typedef struct{        //da rivedere non so come fare gli Hash #
 	uint8_t sha_hash[20];
