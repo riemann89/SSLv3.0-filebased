@@ -71,4 +71,90 @@ int CheckCommunication(int talker){
 	return 0;
 }
 
+void sendClient_Server_hello(RecordLayer record_layer, ClientServerHello client_server_hello){
+    FILE* SSLchannel;
+    
+    ContentType content_type;
+    ProtocolVersion protocol_version;
+    uint16_t length;
+
+
+
+    //Extracting Client Hello fields
+    
+    
+    //Extracting Record Layer fields
+    content_type=record_layer.type;
+    protocol_version=record_layer.version;
+    length=10; //ToDo computare la lunghezza del content sopra
+    
+    //Writing on the channell
+    //RecordLayer
+    SSLchannel=fopen("SSLchannel.txt", "wb"); //opening file in creating-writing mode
+    fprintf(SSLchannel,"%x\n",content_type); //content type
+    fprintf(SSLchannel,"%x\n",protocol_version.major);
+    fprintf(SSLchannel,"%x\n",protocol_version.minor);
+    fprintf(SSLchannel, "%x",length);
+    fclose(SSLchannel);
+    
+    //ClientHello
+    
+
+}
+/*
+ readClient_Server_hello(){
+    FILE* SSLchannel;
+    
+    return 1;
+}
+ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
