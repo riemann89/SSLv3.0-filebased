@@ -15,9 +15,12 @@ typedef struct{
 }CipherSuite;
 
 typedef struct{
-    //common structure <- posso tirarla fuori e metterla in comune per tutte le altre strutture.
-    HandshakeType type;
-    int length; //ToDo deve essere 3 Bytes
+    HandshakeType msg_type;
+    uint32_t length; //ToDo uint24
+}Handshake;
+
+typedef struct{
+    Handshake handshake_header;
     
     //content
     uint8_t version;
@@ -25,11 +28,6 @@ typedef struct{
     uint32_t sessionId;
     CipherSuite ciphersuite;
 }ClientServerHello;
-
-typedef struct{
-    HandshakeType msg_type;
-    uint32_t length; //ToDo uint24
-}Handshake;
 
 // RECORD LAYER STRUCTS//
 
@@ -44,7 +42,7 @@ typedef struct {
     ContentType type;
     ProtocolVersion version;
     uint16_t length;
-    Handshake message; //ToDo si potrebbe fare più generale, però noi abbiamo a che fare solo con pacchetti di tipo handshake
+    uint8_t* message;
 }RecordLayer;
 
 
