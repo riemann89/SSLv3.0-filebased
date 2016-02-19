@@ -22,12 +22,63 @@ typedef struct{
 typedef struct{
     Handshake handshake_header;
     
+	/*ToDo typedef struct{
+	  uint32_t gmt_unix_time;
+      uint8_t random_bytes[28];
+	 }Random;
+	*/
     //content
     uint8_t version;
     int random[4]; //-> ToDo RANDOM
     uint32_t sessionId;
     CipherSuite ciphersuite;
 }ClientServerHello;
+
+typedef struct{
+    HandshakeType msg_type;
+    uint32_t length; //ToDo uint24
+}Handshake;
+
+
+typedef struct{
+
+}HelloRequest;
+
+typedef struct{
+	//ASN.1Cert certificate_list<1..2^24-1>;      ..non ho ben capito da fare quando si vedono i certificati
+}Certificate;
+
+typedef struct{
+	//???? molto complicato
+}ServerKeyExchange;
+
+typedef enum{
+	RSA_SIGN, DSS_SIGN, RSA_FIXED_DH,
+	DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL       _DH,FORTEZZA_MISSI=20
+}CertificateType;
+
+typedef struct{
+	CertificateType certificateTypes; // lo interpreto come un solo tipo anche se il nome suggerisce un plurale
+	//DistinguishedName certificate_authorities<3..2^16-1>;  Probabilmente sarà più chiaro in seguito
+}CertificateRequest
+
+typedef struct{
+	//volutamente bianco la struttura è proprio così
+}ServerHelloDone;
+
+typedef struct{
+	
+}CertificateVerify;
+
+typedef struct{
+}ClientKeyExchange
+
+typedef struct{        //da rivedere non so come fare gli Hash #
+	uint8_t sha_hash[20];
+    uint8_t md5_hash[16];
+	
+}Finished;
+
 
 // RECORD LAYER STRUCTS//
 
