@@ -30,7 +30,7 @@ typedef struct{
     uint8_t version;
     int random[4]; //-> ToDo RANDOM
     uint32_t sessionId;
-    CipherSuite ciphersuite;
+    CipherSuite ciphersuite[30]; // 30 because is the maximum number of supported cipher suites. 
 }ClientServerHello;
 
 typedef struct{

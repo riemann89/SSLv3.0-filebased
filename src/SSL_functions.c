@@ -74,7 +74,7 @@ int CheckCommunication(int talker){
 /*
  function to send a packet over the channel
  */
-void sendPacket(RecordLayer record_layer){
+void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
     FILE* SSLchannel;
     
     SSLchannel=fopen("SSLchannel.txt", "wb"); //opening file in creating-writing mode
@@ -88,6 +88,28 @@ void sendPacket(RecordLayer record_layer){
     fclose(SSLchannel);
 }
 
+
+/*
+function to read cipher suite from a file
+*/
+bool acquisionCS(ClientServerHello *client_hello){
+    
+    FILE* ciphersuite_file;
+    
+    ciphersuite_file=fopen("cipher_suite.txt", "r");
+    if(ciphersuite_file == NULL) {
+        perror("File delle ciphersuites non trovato");
+        exit(1);
+    }
+    //fscanf(ciphersuite_file,"%x",((*client_hello).ciphersuite).ciphersuite);
+    fclose(ciphersuite_file);
+    
+    
+    
+    
+    
+    return true;
+}
 
 
 
