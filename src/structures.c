@@ -8,4 +8,4 @@
 
 #include "structures.h"
 
-short int Session_ID;
+

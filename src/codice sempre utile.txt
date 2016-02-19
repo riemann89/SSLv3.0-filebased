@@ -1,0 +1,29 @@
+    /*
+    //Leggi configurazione:
+    FILE* canaleSSL;
+    char a='c';
+    
+    for (int i=0; i<10; i++) {
+        while(CheckCommunication(1)!=0){
+            usleep(100);
+        };
+        
+        canaleSSL=fopen("canaleSSL.txt", "a+");
+        if(canaleSSL == NULL) {
+            perror("Errore in apertura del file");
+            exit(1);
+        }
+        fprintf(canaleSSL,"%c",a);
+        fclose(canaleSSL);
+        
+        OpenCommunicationServer();
+    }
+    OpenCommunicationClient();
+    //SCRIVO
+    
+    
+    //Hello Client
+    //RecordProtocol(alert, 2);
+     */
+    
+    //CipherSuite test={0x01,0x10};

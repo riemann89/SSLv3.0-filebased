@@ -1,12 +1,3 @@
-//
-//  main.c
-//  SSLv3.0
-//
-//  Created by Giuseppe Giffone on 16/02/16.
-//  Copyright © 2016 Giuseppe Giffone. All rights reserved.
-//
-
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -16,35 +7,46 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
+    
+    //ClientServerHello client_hello;
+    //RecordLayer record_client_hello;
+    //CipherSuite cipher_suite_client;
     /*
-    //Leggi configurazione:
-    FILE* canaleSSL;
-    char a='c';
+    client_hello.type=CLIENT_HELLO;
     
-    for (int i=0; i<10; i++) {
-        while(CheckCommunication(1)!=0){
-            usleep(100);
-        };
-        
-        canaleSSL=fopen("canaleSSL.txt", "a+");
-        if(canaleSSL == NULL) {
-            perror("Errore in apertura del file");
-            exit(1);
-        }
-        fprintf(canaleSSL,"%c",a);
-        fclose(canaleSSL);
-        
-        OpenCommunicationServer();
-    }
-    OpenCommunicationClient();
-    //SCRIVO
+    client_hello.version=3;
+    
+    client_hello.random[0]=0;
+    client_hello.random[1]=0;
+    client_hello.random[2]=0;
+    client_hello.random[3]=0;
+    
+    client_hello.sessionId=123;
+    
+    //leggo cipher suite;
+    uint cs1;
+    uint cs2;
+    
+    FILE* file_suite;
+    file_suite=fopen("cipher_suite_list_client1.txt", "r");
+    fscanf(file_suite,"%x %x",&cs1,&cs2);
+    fclose(file_suite);
+    printf("%04x\n",cs1);
+    printf("%#08x\n",cs2);
+    */
     
     
-    //Hello Client
-    //RecordProtocol(alert, 2);
-     */
     
-    //CipherSuite test={0x01,0x10};
+    
+    
+    
+
+    
+    
+    
+    
+    
+    
     
     
     
