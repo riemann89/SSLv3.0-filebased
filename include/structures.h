@@ -6,7 +6,8 @@
 /*****************************************STRUCTS***********************************************/
 
 // HANDSHAKE STRUCTS //
-
+#ifndef structure_h
+#define structure_h
 typedef enum{
     HELLO_REQUEST,CLIENT_HELLO, SERVER_HELLO, CERTIFICATE=11,SERVER_KEY_EXCHANGE, CERTIFICATE_REQUEST, SERVER_DONE,CERTIFICATE_VERIFY, CLIENT_KEY_EXCHANGE,FINISHED=20
 }HandshakeType;
@@ -21,14 +22,17 @@ typedef struct{
     /*ToDo typedef struct{
      uint32_t gmt_unix_time;
      uint8_t random_bytes[28];
-     }Random;
      */
-    //content
+}Random;
+
+//content
+typedef struct{
     uint8_t version;
-    int random[4]; //-> ToDo RANDOM
+    uint8_t random[32]; //-> ToDo RANDOM
     uint32_t sessionId;
     //Cipher_Suite_List ciphersuite[30]; // 30 because is the maximum number of supported cipher suites.
 }ClientServerHello;
+
 
 typedef struct{
     
@@ -61,6 +65,7 @@ typedef struct{
 }CertificateVerify;
 
 typedef struct{
+    
 }ClientKeyExchange;
 
 typedef struct{        //da rivedere non so come fare gli Hash #
@@ -87,7 +92,7 @@ typedef struct {
 }RecordLayer;
 
 
-
+#endif
 
 
 
