@@ -12,7 +12,7 @@ int CheckCommunication(int talker);
 void sendPacket(RecordLayer record_layer);
 
 //ClientHello
-bool acquisionCS(ClientServerHello *client_hello);
+//bool acquisionCS(ClientServerHello *client_hello);
 
 
 
