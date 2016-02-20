@@ -1,4 +1,6 @@
 #include "SSL_functions.h"
+#include "structures.h"
+#include "Utilities.h"
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -112,7 +114,20 @@ bool acquisionCS(ClientServerHello *client_hello){
 }
 
 
+//ClientServerHello read Function
 
+uint8_t  *ClientServerHelloToBytes(ClientServerHello c){
+	
+	uint8_t Bytes[100];
+	Bytes[0]=c.version;
+	uint8_t timeB[4];
+    intToBytes(c.random.gmt_unix_time, *timeB);
+	memcpy(Bytes[1] ,timeB , 4);
+	memcpy(Bytes[5],c.random.random_bytes,28);
+	
+	
+	return Bytes[];
+}
 
 
 

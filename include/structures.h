@@ -25,13 +25,15 @@ typedef struct{
 	  uint32_t gmt_unix_time;
       uint8_t random_bytes[28];
 	 }Random;
-	*/
+	
     //content
+	typedef struct{
     uint8_t version;
-    int random[4]; //-> ToDo RANDOM
+    uint8_t random[32]; //-> ToDo RANDOM
     uint32_t sessionId;
     CipherSuite ciphersuite[30]; // 30 because is the maximum number of supported cipher suites. 
 }ClientServerHello;
+
 
 typedef struct{
 
@@ -64,6 +66,7 @@ typedef struct{
 }CertificateVerify;
 
 typedef struct{
+	
 }ClientKeyExchange;
 
 typedef struct{        //da rivedere non so come fare gli Hash #
