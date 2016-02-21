@@ -14,7 +14,7 @@ int CheckCommunication(int talker);
 void sendPacket(RecordLayer record_layer);
 
 //ClientHello
-//bool acquisionCS(ClientServerHello *client_hello);
+uint8_t  *ClientServerHelloToBytes(ClientServerHello c);
 
 
 //ClientServerHello send Function

@@ -72,7 +72,8 @@ int CheckCommunication(int talker){
 }
 
 /*
- function to send a packet over the channel
+ -sendPacket-
+ sends a packet over the channel
  */
 void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
     FILE* SSLchannel;
@@ -89,24 +90,37 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
 }
 
 
-//ClientServerHello read Function [version,session,time,random, (ToDo ciphersuite)]
+/*
+ -ClientServerHelloToBytes-
+ writes client/server_hello parameters as an array of bytes that follows this pattern:[length,version,session,time,random,ciphersuite]
+*/
 
-uint8_t  *ClientServerHelloToBytes(ClientServerHello c){  //remember  to free  
+uint8_t  *ClientServerHelloToBytes(ClientServerHello c){  //remember  to free
+    
+    Cipher_Suite *cipher;
+    uint8_t timeB[4];
+    uint8_t session[4];
+    uint8_t cipher_codes[c.length-38];      //array of all cipher code
+    uint8_t *Bytes = malloc(sizeof(uint8_t)*c.length); //allocation for bytes data vector
+    
+    cipher=c.ciphersuite;
+    for (int i=0;i<(c.length-38);i++){      //temporary vector containing all cipher codes
+        cipher_codes[i]=(*(cipher+i)).code;
+    }
 
-	uint8_t *Bytes = malloc(sizeof(uint8_t)*100);
-	Bytes[0]=c.version;
-	uint8_t timeB[4];
-	uint8_t session[4];
-	//uint8_t *cipher;
-    intToBytes(c.random.gmt_unix_time, timeB);
-	intToBytes(c.sessionId, session);
-	memcpy(Bytes+1 ,session, 4);
-	memcpy(Bytes+5 ,timeB , 4);
-	memcpy(Bytes+9,c.random.random_bytes,28);
-	
-	return Bytes;
+    intToBytes(c.random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
+    intToBytes(c.sessionId, session);
+    
+    
+    Bytes[0]=c.length;                      //loading the returning vector
+    Bytes[1]=c.version;
+    memcpy(Bytes+2 ,session, 4);
+    memcpy(Bytes+6 ,timeB , 4);
+    memcpy(Bytes+10,c.random.random_bytes,28);
+    memcpy(Bytes+38, cipher_codes,c.length-38);
+    
+    return Bytes;
 }
-
 
 
 
