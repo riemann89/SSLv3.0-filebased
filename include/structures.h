@@ -18,30 +18,21 @@ typedef struct{
 typedef struct {
     HandshakeType msg_type;
     uint32_t length; //ToDo uint24
+    uint8_t* content;
 }Handshake;
 
-/* typedef struct{
-    Handshake handshake_header;
-} 
- 
-    uint8_t* content;
-}HandshakeLayer;
-
 typedef struct{
-    /*ToDo typedef struct{
      uint32_t gmt_unix_time;
      uint8_t random_bytes[28];
-     */
 }Random;
 
 //content
 typedef struct{
     uint8_t version;
-    uint8_t random[32]; //-> ToDo RANDOM
+    Random random;
     uint32_t sessionId;
     //Cipher_Suite_List ciphersuite[30]; // 30 because is the maximum number of supported cipher suites.
 }ClientServerHello;
-
 
 typedef struct{
     
