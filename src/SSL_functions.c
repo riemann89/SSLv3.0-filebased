@@ -89,8 +89,6 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
 }
 
 
-
-
 //ClientServerHello read Function [version,session,time,random, (ToDo ciphersuite)]
 
 uint8_t  *ClientServerHelloToBytes(ClientServerHello c){  //remember  to free  
