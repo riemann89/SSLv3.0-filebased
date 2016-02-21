@@ -12,8 +12,11 @@ typedef enum{
 }HandshakeType;
 
 typedef struct{
-    uint8_t ciphersuite[2];
-}CipherSuite;
+    uint8_t code;
+    char name[50];
+}Cipher_Suite;
+
+extern Cipher_Suite lista[31];
 
 typedef struct {
     HandshakeType msg_type;
@@ -22,16 +25,17 @@ typedef struct {
 }Handshake;
 
 typedef struct{
-     uint32_t gmt_unix_time;
-     uint8_t random_bytes[28];
+    uint32_t gmt_unix_time;
+    uint8_t *random_bytes;
 }Random;
 
 //content
 typedef struct{
+    uint8_t length; //uint8_t beacause the maximum length will < 256;
     uint8_t version;
     Random random;
     uint32_t sessionId;
-    //Cipher_Suite_List ciphersuite[30]; // 30 because is the maximum number of supported cipher suites.
+    Cipher_Suite *ciphersuite; // 30 because is the maximum number of supported cipher suites.
 }ClientServerHello;
 
 typedef struct{
