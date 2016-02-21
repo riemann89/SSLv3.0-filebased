@@ -1,6 +1,4 @@
 #include "SSL_functions.h"
-#include "structures.h"
-#include "Utilities.h"
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -93,19 +91,22 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
 
 
 
-//ClientServerHello read Function
+//ClientServerHello read Function [version,session,time,random, (ToDo ciphersuite)]
 
-uint8_t  *ClientServerHelloToBytes(ClientServerHello c){
-	
-	uint8_t Bytes[100];
+uint8_t  *ClientServerHelloToBytes(ClientServerHello c){  //remember  to free  
+
+	uint8_t *Bytes = malloc(sizeof(uint8_t)*100);
 	Bytes[0]=c.version;
 	uint8_t timeB[4];
-    intToBytes(c.random.gmt_unix_time, *timeB);
-	memcpy(Bytes[1] ,timeB , 4);
-	memcpy(Bytes[5],c.random.random_bytes,28);
+	uint8_t session[4];
+	//uint8_t *cipher;
+    intToBytes(c.random.gmt_unix_time, timeB);
+	intToBytes(c.sessionId, session);
+	memcpy(Bytes+1 ,session, 4);
+	memcpy(Bytes+5 ,timeB , 4);
+	memcpy(Bytes+9,c.random.random_bytes,28);
 	
-	
-	return Bytes[];
+	return Bytes;
 }
 
 

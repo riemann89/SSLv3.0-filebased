@@ -4,4 +4,4 @@
 #include <stdlib.h>
 
 void reverse(uint8_t originale[],int length);
-void  intToBytes(int i, uint8_t a[4]);
+void  intToBytes(int t, uint8_t *a);

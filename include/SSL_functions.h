@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "structures.h"
+#include "Utilities.h"
 
 //Connection function
 void OpenCommunicationClient();

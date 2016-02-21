@@ -12,8 +12,9 @@ client: SSL_utilities
 
 SSL_utilities:
 	mkdir -p build
-	$(CC) $(CFLAGS)  -c src/SSL_functions.c -o build/SSL_functions.o 
+	$(CC) $(CFLAGS)  -c src/SSL_functions.c build/structures.o -o build/SSL_functions.o 
 	$(CC) $(CFLAGS)  -c src/structures.c -o build/structures.o 
+	$(CC) $(CFLAGS)  -c src/Utilities.c -o build/Utilities.o
 
 clean:
 	rm -r build
