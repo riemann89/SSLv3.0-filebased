@@ -119,20 +119,20 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
         cipher_codes[i]=(*(cipher+i)).code;
     }
 
-    int_To_Bytes((*client_server_hello).random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
-    int_To_Bytes((*client_server_hello).sessionId, session);
+    int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
+    int_To_Bytes(client_server_hello->sessionId, session);
     
     
-    Bytes[0]=(*client_server_hello).length;
-    Bytes[1]=(*client_server_hello).version;
+    Bytes[0]=client_server_hello->length;
+    Bytes[1]=client_server_hello->version;
     memcpy(Bytes+2 ,session, 4);
     memcpy(Bytes+6 ,timeB , 4);
     memcpy(Bytes+10,client_server_hello->random.random_bytes,28);
-    memcpy(Bytes+38, cipher_codes,(*client_server_hello).length-38);
+    memcpy(Bytes+38, cipher_codes,client_server_hello->length-38);
     
     handshake->msg_type = CLIENT_HELLO;
     handshake->length = client_server_hello->length + 4;
-    handshake->content = Bytes;
+    handshake->content = Bytes;  //gli passo pure il byte lunghezza di client che non voglio nel record
 
     
     return handshake;
@@ -145,20 +145,28 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     uint8_t *Bytes;
     uint8_t length24[4];
-    RecordLayer *recordlayer;
-    
-    Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)
+    RecordLayer *recordlayer;             //useful pointers
+
+    //memory allocation remember to free
+    Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)  
     recordlayer = malloc(sizeof(uint8_t)*(handshake->length + 5));
 
-    int_To_Bytes(handshake->length,length24);
-    
-    Bytes[0]=(*handshake).msg_type;
+    //int of 4 bytes to int of 3 bytes and reversed
+    int_To_Bytes(handshake->length -1,length24); // -1 because i'm going to cancel the client length byte    
     memcpy(Bytes+1,length24+1,3);
-    memcpy(Bytes+4, (*handshake).content,(*handshake).content[0]+4);
+
+    Bytes[0]=handshake->msg_type;
+    int len=handshake->content[0]+4;//qua sfrutto content[0] cioè il byte di lunghezza di client
     
+    //tologo il byte di lunghezza del client
+    uint8_t temp[len];
+    memcpy(temp,handshake->content,len);
+    memcpy(Bytes+4, temp + 1,len-1); 
+    
+
     recordlayer->type=HANDSHAKE;
     recordlayer->version=std_version;
-    recordlayer->length=handshake->length+5;
+    recordlayer->length=handshake->length+5 - 1; // -1 because i've canceled the client length byte
     recordlayer->message=Bytes;
     
     return recordlayer;
