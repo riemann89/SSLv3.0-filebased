@@ -4,9 +4,16 @@
 #include <stdlib.h>
 
 /*****************************************STRUCTS***********************************************/
-// HANDSHAKE STRUCTS //
 #ifndef structure_h
 #define structure_h
+
+//UTILITIES STRUCTS
+typedef struct {
+    uint8_t digits[3];
+}uint24_t;
+
+// HANDSHAKE STRUCTS //
+
 typedef enum{
     HELLO_REQUEST,CLIENT_HELLO, SERVER_HELLO, CERTIFICATE=11,SERVER_KEY_EXCHANGE, CERTIFICATE_REQUEST, SERVER_DONE,CERTIFICATE_VERIFY, CLIENT_KEY_EXCHANGE,FINISHED=20
 }HandshakeType;
@@ -20,7 +27,7 @@ extern Cipher_Suite lista[31];
 
 typedef struct {
     HandshakeType msg_type;
-    uint32_t length; //ToDo uint24
+    uint24_t length;
     uint8_t* content;
 }Handshake;
 

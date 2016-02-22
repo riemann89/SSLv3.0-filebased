@@ -93,31 +93,52 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
 /*
  -ClientServerHelloToBytes-
  writes client/server_hello parameters as an array of bytes that follows this pattern:[length,version,session,time,random,ciphersuite]
+ ToDo: rendere più leggibile il codice inizializzando una variabile clientserverhello
 */
 
-uint8_t  *ClientServerHelloToBytes(ClientServerHello c){  //remember  to free
+uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello){  //remember  to free
     
     Cipher_Suite *cipher;
     uint8_t timeB[4];
     uint8_t session[4];
-    uint8_t cipher_codes[c.length-38];      //array of all cipher code
-    uint8_t *Bytes = malloc(sizeof(uint8_t)*c.length); //allocation for bytes data vector
+    uint8_t cipher_codes[(*client_server_hello).length-38];      //array of all cipher code
+    uint8_t *Bytes;
     
-    cipher=c.ciphersuite;
-    for (int i=0;i<(c.length-38);i++){      //temporary vector containing all cipher codes
+    Bytes = malloc(sizeof(uint8_t)*(*client_server_hello).length); //allocation for bytes data vector
+    
+    cipher=(*client_server_hello).ciphersuite;
+    for (int i=0;i<((*client_server_hello).length-38);i++){      //temporary vector containing all cipher codes
         cipher_codes[i]=(*(cipher+i)).code;
     }
 
-    intToBytes(c.random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
-    intToBytes(c.sessionId, session);
+    int_To_Bytes((*client_server_hello).random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
+    int_To_Bytes((*client_server_hello).sessionId, session);
     
     
-    Bytes[0]=c.length;                      //loading the returning vector
-    Bytes[1]=c.version;
+    Bytes[0]=(*client_server_hello).length;                      //loading the returning vector
+    Bytes[1]=(*client_server_hello).version;
     memcpy(Bytes+2 ,session, 4);
     memcpy(Bytes+6 ,timeB , 4);
-    memcpy(Bytes+10,c.random.random_bytes,28);
-    memcpy(Bytes+38, cipher_codes,c.length-38);
+    memcpy(Bytes+10,(*client_server_hello).random.random_bytes,28);
+    memcpy(Bytes+38, cipher_codes,(*client_server_hello).length-38);
+    
+    return Bytes;
+}
+
+/*
+ -HandshakeToBytes-
+*/
+//ToDo: To Be Tested
+uint8_t *HandshakeToBytes(Handshake *handshake){
+    uint8_t *Bytes;
+    
+    Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)
+
+    Bytes[0]=(*handshake).msg_type;
+    Bytes[1]=(*handshake).length.digits[0];
+    Bytes[2]=(*handshake).length.digits[1];
+    Bytes[3]=(*handshake).length.digits[2];
+    memcpy(Bytes+4, (*handshake).content,(*handshake).content[0]+4);
     
     return Bytes;
 }
