@@ -42,4 +42,5 @@ Cipher_Suite lista[31]={
     {0x1E,"SSL_FORTEZZA_KEA_WITH_RC4_128_SHA"}
 };
 
+ProtocolVersion std_version={0,3};
 

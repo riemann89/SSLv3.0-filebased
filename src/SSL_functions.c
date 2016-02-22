@@ -77,14 +77,16 @@ int CheckCommunication(int talker){
  */
 void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
     FILE* SSLchannel;
+    uint8_t length16[4];
+    int_To_Bytes(record_layer.length, length16);
     
     SSLchannel=fopen("SSLchannel.txt", "wb"); //opening file in creating-writing mode
-    fprintf(SSLchannel,"%x\n",record_layer.type); //content type
-    fprintf(SSLchannel,"%x\n",record_layer.version.major);
-    fprintf(SSLchannel,"%x\n",record_layer.version.minor);
-    fprintf(SSLchannel, "%x",record_layer.length);
-    for (int i=0; i< record_layer.length; i++) {
-        fprintf(SSLchannel, "%x ",record_layer.message[i]);
+    fprintf(SSLchannel,"%02x\n",record_layer.type); //content type
+    fprintf(SSLchannel,"%02x\n",record_layer.version.major);
+    fprintf(SSLchannel,"%02x\n",record_layer.version.minor);
+    fprintf(SSLchannel, "%02x %02x\n",length16[2],length16[3]);
+    for (int i=0; i<(record_layer.length-5); i++) {
+        fprintf(SSLchannel, "%02x ",record_layer.message[i]);
     }
     fclose(SSLchannel);
 }
@@ -92,21 +94,27 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
 
 /*
  -ClientServerHelloToBytes-
- writes client/server_hello parameters as an array of bytes that follows this pattern:[length,version,session,time,random,ciphersuite]
+ writes client/server_hello parameters as an array of bytes that follows this pattern:[version,session,time,random,ciphersuite]
  ToDo: rendere più leggibile il codice inizializzando una variabile clientserverhello
 */
+//remember  to free handshake.content
 
-uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello){  //remember  to free
+
+
+Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     
     Cipher_Suite *cipher;
+    Handshake *handshake;
+    
     uint8_t timeB[4];
     uint8_t session[4];
     uint8_t cipher_codes[(*client_server_hello).length-38];      //array of all cipher code
     uint8_t *Bytes;
     
     Bytes = malloc(sizeof(uint8_t)*(*client_server_hello).length); //allocation for bytes data vector
+    handshake=malloc(sizeof(uint8_t)*(client_server_hello->length+4));
     
-    cipher=(*client_server_hello).ciphersuite;
+    cipher=client_server_hello->ciphersuite;
     for (int i=0;i<((*client_server_hello).length-38);i++){      //temporary vector containing all cipher codes
         cipher_codes[i]=(*(cipher+i)).code;
     }
@@ -115,32 +123,45 @@ uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello){  //re
     int_To_Bytes((*client_server_hello).sessionId, session);
     
     
-    Bytes[0]=(*client_server_hello).length;                      //loading the returning vector
+    Bytes[0]=(*client_server_hello).length;
     Bytes[1]=(*client_server_hello).version;
     memcpy(Bytes+2 ,session, 4);
     memcpy(Bytes+6 ,timeB , 4);
-    memcpy(Bytes+10,(*client_server_hello).random.random_bytes,28);
+    memcpy(Bytes+10,client_server_hello->random.random_bytes,28);
     memcpy(Bytes+38, cipher_codes,(*client_server_hello).length-38);
     
-    return Bytes;
+    handshake->msg_type = CLIENT_HELLO;
+    handshake->length = client_server_hello->length + 4;
+    handshake->content = Bytes;
+
+    
+    return handshake;
 }
 
 /*
  -HandshakeToBytes-
 */
 //ToDo: To Be Tested
-uint8_t *HandshakeToBytes(Handshake *handshake){
+RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     uint8_t *Bytes;
+    uint8_t length24[4];
+    RecordLayer *recordlayer;
     
     Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)
+    recordlayer = malloc(sizeof(uint8_t)*(handshake->length + 5));
 
+    int_To_Bytes(handshake->length,length24);
+    
     Bytes[0]=(*handshake).msg_type;
-    Bytes[1]=(*handshake).length.digits[0];
-    Bytes[2]=(*handshake).length.digits[1];
-    Bytes[3]=(*handshake).length.digits[2];
+    memcpy(Bytes+1,length24+1,3);
     memcpy(Bytes+4, (*handshake).content,(*handshake).content[0]+4);
     
-    return Bytes;
+    recordlayer->type=HANDSHAKE;
+    recordlayer->version=std_version;
+    recordlayer->length=handshake->length+5;
+    recordlayer->message=Bytes;
+    
+    return recordlayer;
 }
 
 

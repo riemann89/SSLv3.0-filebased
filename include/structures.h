@@ -7,11 +7,6 @@
 #ifndef structure_h
 #define structure_h
 
-//UTILITIES STRUCTS
-typedef struct {
-    uint8_t digits[3];
-}uint24_t;
-
 // HANDSHAKE STRUCTS //
 
 typedef enum{
@@ -23,17 +18,15 @@ typedef struct{
     char name[50];
 }Cipher_Suite;
 
-extern Cipher_Suite lista[31];
-
 typedef struct {
     HandshakeType msg_type;
-    uint24_t length;
+    uint32_t length;
     uint8_t* content;
 }Handshake;
 
 typedef struct{
     uint32_t gmt_unix_time;
-    uint8_t *random_bytes;
+    uint8_t random_bytes[28];
 }Random;
 
 //content
@@ -102,6 +95,9 @@ typedef struct {
     uint8_t* message;
 }RecordLayer;
 
+//Extern variables
+extern Cipher_Suite lista[31];
+extern ProtocolVersion std_version;
 
 #endif
 
