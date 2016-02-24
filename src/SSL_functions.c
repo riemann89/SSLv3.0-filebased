@@ -92,8 +92,11 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
 }
 
 
+/*ToHandshake Functions that pass the content  of possible  kind of handshake's messages  */
+
+
 /*
- -ClientServerHelloToBytes-
+ -ClientServerHelloToHandshake-
  writes client/server_hello parameters as an array of bytes that follows this pattern:[version,session,time,random,ciphersuite]
  ToDo: rendere più leggibile il codice inizializzando una variabile clientserverhello
 */
@@ -138,8 +141,31 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     return handshake;
 }
 
+//ServerHelloDoneToHandshake  create an Handshake pointer to a handshake with content  the serverHello done message 
+//non funziona fa segmentation fault dagli un occhiata
+Handshake* ServerDoneToHandshake(){
+	
+	Handshake *handshake;  //returning pointer
+	
+	    //Handshake
+
+   handshake=malloc(sizeof(uint8_t)*(5));
+   uint8_t arr[1];
+   arr[0]=1;
+  
+   handshake->msg_type=SERVER_DONE;
+   handshake->length=5;
+   handshake->content=arr;
+	
+	return handshake;
+}
+
+
+
+
+
 /*
- -HandshakeToBytes-
+ -HandshakeToRecordLayer   
 */
 //ToDo: To Be Tested
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
@@ -158,7 +184,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     Bytes[0]=handshake->msg_type;
     int len=handshake->content[0]+4;//qua sfrutto content[0] cioè il byte di lunghezza di client
     
-    //tologo il byte di lunghezza del client
+    //tolgo il byte di lunghezza del client
     uint8_t temp[len];
     memcpy(temp,handshake->content,len);
     memcpy(Bytes+4, temp + 1,len-1); 

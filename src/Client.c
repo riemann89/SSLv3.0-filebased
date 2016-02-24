@@ -8,40 +8,33 @@
 
 int main(int argc, const char *argv[]){
 
-    Random ran;
-    ran.gmt_unix_time=35;
-    uint8_t array[28]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28};
-	
-	/*uint8_t *randarray;
-	randarray=&ran.random_bytes;
-	*/
-	for(int i =0;i<28;i++)  ran.random_bytes[i] =array[i]; 
-      //QUI NON RUNNA PERCHE' ABBIAMO CAMBIATO IL PUNTATORE DEL RANDOM ToDo
-    ClientServerHello cli;
-    ClientServerHello* p_cli;
-    p_cli=&cli;
-    cli.random=ran;
-    cli.sessionId=55;
-    cli.version=3;
-    cli.ciphersuite=lista;
-    cli.length=69;
+
     
     //Handshake
     Handshake *handshake;
-    //
-    
-    handshake=ClientServerHelloToHandshake(p_cli);
+	Handshake hand;
+	handshake=&hand;
+
+  
+   uint8_t arr[1];
+   arr[0]=1;
+  
+   handshake=ServerDoneToHandshake();
+  
+ /* handshake->msg_type=SERVER_DONE;
+   handshake->length=5;
+   handshake->content=arr;
+   */
+   
+   //=ServerHelloDoneToHandshake();  
+	printf("serverhellodone done");
+	
+	
     RecordLayer *recordlayer;
     recordlayer=HandshakeToRecordLayer(handshake);
     
     sendPacket(*recordlayer);
     
-    /*
-    for(int i=0;i<(handshake->length);i++){
-        printf("%02x",*(recordlayer->message+i));
-    }
-    printf("\n");
-    */
-    
+
     return 0;
 }
