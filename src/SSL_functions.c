@@ -4,71 +4,55 @@
 
 //CHANNEL FUNCTIONS
 
-//Allows the Client communication
-void OpenCommunicationClient(){
-    int	reading_flag=1;
-    FILE* token;
-    
-    token=fopen("token.txt", "w");
-    if(token == NULL) {
-        perror("Errore in apertura del file");
-        exit(1);
-    }
-    fprintf(token,"%d",reading_flag);
-    fflush(token);
-    fclose(token);
-}
-
-//Allows the Server communication
-void OpenCommunicationServer(){
-    int	reading_flag=0;
-    FILE* token;
-    
-    token=fopen("token.txt", "w");
-    if(token == NULL) {
-        perror("Errore in apertura del file");
-        exit(1);
-    }
-    
-    fprintf(token,"%d",reading_flag);
-    fflush(token);
-    fclose(token);
-    
-}
-
-/*Check if Server/Client can communicate. TODO make to more readable
- Input "0" indicates ClientChecker, "1" indicates ServerChecker
- return "1" if talker can communicate, "0" otherwise.
+/*
+ It allows the communication to the indicated talker: (0 - client, 1 - server, as defined in Talker enum)
  */
-int CheckCommunication(int talker){
-    FILE* token;
-    int reading_flag = 0;
+void OpenCommunication(Talker talker){
+    //VARIABLE DECLARATION//
     
-    switch (talker){
-        case 0:
-            token=fopen("token.txt", "r");
-            if(token == NULL) {
-                perror("Failed to open token.txt - CheckCommunication(client) operation");
-                exit(1);
-            }
-            fscanf(token,"%d",&reading_flag);
-            fclose(token);
-            if (reading_flag == 1)
-                return 1;
-            break;
-            
-        case 1:
-            token=fopen("token.txt", "r");
-            if(token == NULL) {
-                perror("Failed to open token.txt - CheckCommunication(server) operation");
-                exit(1);
-            }
-            fscanf(token,"%d",&reading_flag);
-            fclose(token);
-            if (reading_flag == 0)
-                return 1;
+    FILE* token;
+    
+    //CHECKING INPUT//
+    
+    if (talker!=client && talker!=server) {
+        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");
+        exit(1);
     }
-    return 0;
+    
+    //ALLOWING SELECTED TALKER//
+    
+    token=fopen("token.txt", "w");
+    if(token == NULL) {
+        perror("Errore in apertura del file");
+        exit(1);
+    }
+    fprintf(token,"%d",talker);
+    fclose(token);
+}
+
+/*
+ It checks who between server/client can communicate. It returns the authorized user that can communicate over the channel.
+ */
+Talker CheckCommunication(){
+    //VARIABLE DECLARATION//
+    
+    FILE* token;
+    Talker authorized_talker;
+    
+    token=fopen("token.txt", "r");
+    if(token == NULL) {
+        perror("Failed to open token.txt - CheckCommunication(client) operation");
+        exit(1);
+    }
+    fscanf(token,"%d",&authorized_talker);
+    fclose(token);
+    
+    if (authorized_talker!=client && authorized_talker!=server) {
+        perror("Error in token.txt - nor client,nor server authorized");
+        exit(1);
+    }
+    
+    return authorized_talker;
 }
 
 /*
@@ -244,7 +228,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     }
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-
+    
     //int of 4 bytes to int of 3 bytes and reversed
     int_To_Bytes(handshake->length -1,length24); // -1 because I'm going to cancel the client length byte
     len=handshake->content[0]+4;//here the fact that content[0] contains highest layer lenght is exploited
@@ -266,6 +250,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     
     return recordlayer;
 }
+
 
 
 

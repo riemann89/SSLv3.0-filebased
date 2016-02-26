@@ -7,9 +7,8 @@
 #include "Utilities.h"
 
 //Connection
-void OpenCommunicationClient();
-void OpenCommunicationServer();
-int CheckCommunication(int talker);
+void OpenCommunication(Talker talker);
+Talker CheckCommunication();
 int sendPacket(RecordLayer *record_layer);
 
 //Packet Encapsulation
