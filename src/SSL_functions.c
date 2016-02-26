@@ -99,7 +99,7 @@ void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
  -ClientServerHelloToHandshake-
  writes client/server_hello parameters as an array of bytes that follows this pattern:[version,session,time,random,ciphersuite]
  ToDo: rendere più leggibile il codice inizializzando una variabile clientserverhello
-*/
+ */
 //remember  to free handshake.content
 
 
@@ -121,7 +121,7 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     for (int i=0;i<((*client_server_hello).length-38);i++){      //temporary vector containing all cipher codes
         cipher_codes[i]=(*(cipher+i)).code;
     }
-
+    
     int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
     int_To_Bytes(client_server_hello->sessionId, session);
     
@@ -136,28 +136,30 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     handshake->msg_type = CLIENT_HELLO;
     handshake->length = client_server_hello->length + 4;
     handshake->content = Bytes;  //gli passo pure il byte lunghezza di client che non voglio nel record
-
+    
     
     return handshake;
 }
 
-//ServerHelloDoneToHandshake  create an Handshake pointer to a handshake with content  the serverHello done message 
+//ServerHelloDoneToHandshake  create an Handshake pointer to a handshake with content  the serverHello done message
 //non funziona fa segmentation fault dagli un occhiata
 Handshake* ServerDoneToHandshake(){
-	
-	Handshake *handshake;  //returning pointer
-	
-	    //Handshake
-
-   handshake=malloc(sizeof(uint8_t)*(5));
-   uint8_t arr[1];
-   arr[0]=1;
-  
-   handshake->msg_type=SERVER_DONE;
-   handshake->length=5;
-   handshake->content=arr;
-	
-	return handshake;
+    
+    Handshake *handshake;  //returning pointer
+    uint8_t* Bytes;
+    
+    //Handshake
+    
+    handshake=malloc(sizeof(uint8_t)*(5));
+    Bytes=malloc(sizeof(uint8_t)*1);
+    
+    //handshakeToRecordLayer
+    
+    handshake->msg_type=SERVER_DONE;
+    handshake->length=5;
+    handshake->content=Bytes;
+    
+    return handshake;
 }
 
 
@@ -165,31 +167,31 @@ Handshake* ServerDoneToHandshake(){
 
 
 /*
- -HandshakeToRecordLayer   
-*/
+ -HandshakeToRecordLayer
+ */
 //ToDo: To Be Tested
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     uint8_t *Bytes;
     uint8_t length24[4];
     RecordLayer *recordlayer;             //useful pointers
-
+    
     //memory allocation remember to free
-    Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)  
+    Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)
     recordlayer = malloc(sizeof(uint8_t)*(handshake->length + 5));
-
+    
     //int of 4 bytes to int of 3 bytes and reversed
-    int_To_Bytes(handshake->length -1,length24); // -1 because i'm going to cancel the client length byte    
+    int_To_Bytes(handshake->length -1,length24); // -1 because i'm going to cancel the client length byte
     memcpy(Bytes+1,length24+1,3);
-
+    
     Bytes[0]=handshake->msg_type;
     int len=handshake->content[0]+4;//qua sfrutto content[0] cioè il byte di lunghezza di client
     
     //tolgo il byte di lunghezza del client
     uint8_t temp[len];
     memcpy(temp,handshake->content,len);
-    memcpy(Bytes+4, temp + 1,len-1); 
+    memcpy(Bytes+4, temp + 1,len-1);
     
-
+    
     recordlayer->type=HANDSHAKE;
     recordlayer->version=std_version;
     recordlayer->length=handshake->length+5 - 1; // -1 because i've canceled the client length byte

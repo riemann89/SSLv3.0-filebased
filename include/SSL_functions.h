@@ -17,8 +17,8 @@ void sendPacket(RecordLayer record_layer);
 //uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello);
 Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello);
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
+Handshake* ServerDoneToHandshake();
 
-//ClientServerHello send Function
 
 
 

@@ -27,7 +27,7 @@ int main(int argc, const char *argv[]){
    */
    
    //=ServerHelloDoneToHandshake();  
-	printf("serverhellodone done");
+	printf("serverhellodone done\n");
 	
 	
     RecordLayer *recordlayer;
