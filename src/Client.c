@@ -33,7 +33,7 @@ int main(int argc, const char *argv[]){
     RecordLayer *recordlayer;
     recordlayer=HandshakeToRecordLayer(handshake);
     
-    sendPacket(*recordlayer);
+    sendPacket(recordlayer);
     
 
     return 0;

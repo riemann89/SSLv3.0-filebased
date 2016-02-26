@@ -1,4 +1,3 @@
-//PROTOTIPI DELLE FUNZIONI
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -7,17 +6,16 @@
 #include "structures.h"
 #include "Utilities.h"
 
-//Connection function
+//Connection
 void OpenCommunicationClient();
 void OpenCommunicationServer();
 int CheckCommunication(int talker);
-void sendPacket(RecordLayer record_layer);
+int sendPacket(RecordLayer *record_layer);
 
-//ClientHello
-//uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello);
-Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello);
+//Packet Encapsulation
+Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
-Handshake* ServerDoneToHandshake();
+Handshake *ServerDoneToHandshake();
 
 
 

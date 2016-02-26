@@ -4,7 +4,7 @@
 
 //CHANNEL FUNCTIONS
 
-//Allows the Client communication #T
+//Allows the Client communication
 void OpenCommunicationClient(){
     int	reading_flag=1;
     FILE* token;
@@ -19,7 +19,7 @@ void OpenCommunicationClient(){
     fclose(token);
 }
 
-//Allows the Server communication #T
+//Allows the Server communication
 void OpenCommunicationServer(){
     int	reading_flag=0;
     FILE* token;
@@ -36,7 +36,7 @@ void OpenCommunicationServer(){
     
 }
 
-/*Check if Server/Client can communicate. #T
+/*Check if Server/Client can communicate. TODO make to more readable
  Input "0" indicates ClientChecker, "1" indicates ServerChecker
  return "1" if talker can communicate, "0" otherwise.
  */
@@ -48,7 +48,7 @@ int CheckCommunication(int talker){
         case 0:
             token=fopen("token.txt", "r");
             if(token == NULL) {
-                perror("Errore in apertura del file");
+                perror("Failed to open token.txt - CheckCommunication(client) operation");
                 exit(1);
             }
             fscanf(token,"%d",&reading_flag);
@@ -60,7 +60,7 @@ int CheckCommunication(int talker){
         case 1:
             token=fopen("token.txt", "r");
             if(token == NULL) {
-                perror("Errore in apertura del file");
+                perror("Failed to open token.txt - CheckCommunication(server) operation");
                 exit(1);
             }
             fscanf(token,"%d",&reading_flag);
@@ -72,60 +72,88 @@ int CheckCommunication(int talker){
 }
 
 /*
- -sendPacket-
- sends a packet over the channel
+ It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.
  */
-void sendPacket(RecordLayer record_layer){// PASSARE IL PUNTATORE
+int sendPacket(RecordLayer *record_layer){
+    
+    //Variables Declarations//
     FILE* SSLchannel;
     uint8_t length16[4];
-    int_To_Bytes(record_layer.length, length16);
+    int_To_Bytes(record_layer->length, length16);
     
-    SSLchannel=fopen("SSLchannel.txt", "wb"); //opening file in creating-writing mode
-    fprintf(SSLchannel,"%02x\n",record_layer.type); //content type
-    fprintf(SSLchannel,"%02x\n",record_layer.version.major);
-    fprintf(SSLchannel,"%02x\n",record_layer.version.minor);
-    fprintf(SSLchannel, "%02x %02x\n",length16[2],length16[3]);
-    for (int i=0; i<(record_layer.length-5); i++) {
-        fprintf(SSLchannel, "%02x ",record_layer.message[i]);
+    //Channel Operations//
+    //channel opening in creating-writing mode
+    SSLchannel=fopen("SSLchannel.txt", "wb");
+    if (SSLchannel == NULL) {
+        perror("Failed to open SSLchannel.txt - sendPacket operation");
+        exit(1);
     }
+    
+    //record_layer fields writing phase
+    fprintf(SSLchannel,"%02x\n",record_layer->type);
+    fprintf(SSLchannel,"%02x\n",record_layer->version.major);
+    fprintf(SSLchannel,"%02x\n",record_layer->version.minor);
+    fprintf(SSLchannel, "%02x %02x\n",length16[2],length16[3]);
+    for (int i=0; i<(record_layer->length-5); i++) {
+        fprintf(SSLchannel, "%02x ",record_layer->message[i]);
+    }
+    
+    //channel closure
     fclose(SSLchannel);
+    return 1;
 }
 
-
-/*ToHandshake Functions that pass the content  of possible  kind of handshake's messages  */
-
-
 /*
- -ClientServerHelloToHandshake-
- writes client/server_hello parameters as an array of bytes that follows this pattern:[version,session,time,random,ciphersuite]
- ToDo: rendere più leggibile il codice inizializzando una variabile clientserverhello
+ It encapsulates client/server_hello packet into an handshake packet. More precisely it takes as input the corresponding pointer to Client/Server_Hello packet and gives as output a pointer to an Handshake packet.
+ 
+ REMEMBER TO free:
+ -Bytes
+ -handshake
  */
-//remember  to free handshake.content
 
-
-
-Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
+Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
+    
+    //VARIABLE DECLARATION//
     
     Cipher_Suite *cipher;
     Handshake *handshake;
-    
+    //current time bytes representation
     uint8_t timeB[4];
+    //session bytes representation
     uint8_t session[4];
-    uint8_t cipher_codes[(*client_server_hello).length-38];      //array of all cipher code
+    //array of all cipher codes
+    uint8_t cipher_codes[client_server_hello->length-38];//ToDo: rivedere il 38 (si può generalizzare)??
+    //Bytes data vector pointer
     uint8_t *Bytes;
     
-    Bytes = malloc(sizeof(uint8_t)*(*client_server_hello).length); //allocation for bytes data vector
-    handshake=malloc(sizeof(uint8_t)*(client_server_hello->length+4));
+    //MEMORY ALLOCATION//
     
-    cipher=client_server_hello->ciphersuite;
-    for (int i=0;i<((*client_server_hello).length-38);i++){      //temporary vector containing all cipher codes
-        cipher_codes[i]=(*(cipher+i)).code;
+    //bytes data vector
+    Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
+        exit(1);
+    }
+    //handshake
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
+        exit(1);
     }
     
-    int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);//uint32 to byte[4] transformation
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    
+    //temporary vector containing all cipher codes - it is requested to perform following memcopy
+    cipher=client_server_hello->ciphersuite;
+    for (int i=0;i<(client_server_hello->length-38);i++){
+        cipher_codes[i]=(cipher+i)->code;
+    }
+    
+    //unix_time and session values to bytes transformation
+    int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);
     int_To_Bytes(client_server_hello->sessionId, session);
     
-    
+    //storing client/server_hello field into bytes data vector
     Bytes[0]=client_server_hello->length;
     Bytes[1]=client_server_hello->version;
     memcpy(Bytes+2 ,session, 4);
@@ -133,28 +161,47 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     memcpy(Bytes+10,client_server_hello->random.random_bytes,28);
     memcpy(Bytes+38, cipher_codes,client_server_hello->length-38);
     
+    //HANDSHAKE CONSTRUCTION//
+    
+    //handshake fields initialization
     handshake->msg_type = CLIENT_HELLO;
     handshake->length = client_server_hello->length + 4;
-    handshake->content = Bytes;  //gli passo pure il byte lunghezza di client che non voglio nel record
-    
-    
+    handshake->content = Bytes;
     return handshake;
 }
 
-//ServerHelloDoneToHandshake  create an Handshake pointer to a handshake with content  the serverHello done message
-//non funziona fa segmentation fault dagli un occhiata
-Handshake* ServerDoneToHandshake(){
+/*
+ It encapsulates server_done packet into an handshake packet.
+ REMEMBER TO free:
+ -Bytes
+ -handshake
+ */
+Handshake *ServerDoneToHandshake(){
     
-    Handshake *handshake;  //returning pointer
+    //VARIABLE DECLARATION//
+    
+    Handshake *handshake;
     uint8_t* Bytes;
     
-    //Handshake
+    //MEMORY ALLOCATION//
     
-    handshake=malloc(sizeof(uint8_t)*(5));
-    Bytes=malloc(sizeof(uint8_t)*1);
+    //bytes data vector
+    Bytes=(uint8_t*)calloc(1,sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - ServerDoneToHandshake operation");
+        exit(1);
+    }
     
-    //handshakeToRecordLayer
+    //handshake
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
+        exit(1);
+    }
     
+    //HANDSHAKE CONSTRUCTION//
+    
+    //handshake fields initialization
     handshake->msg_type=SERVER_DONE;
     handshake->length=5;
     handshake->content=Bytes;
@@ -163,38 +210,58 @@ Handshake* ServerDoneToHandshake(){
 }
 
 
-
-
-
 /*
- -HandshakeToRecordLayer
+ It encapsulate an handshake packet into a record_layer packet.
+ REMEMBER TO free:
+ -Bytes
+ -recordlayer
  */
-//ToDo: To Be Tested
+
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
+    
+    //VARIABLE DECLARATION//
+    
     uint8_t *Bytes;
     uint8_t length24[4];
-    RecordLayer *recordlayer;             //useful pointers
+    RecordLayer *recordlayer;
+    int len;
     
-    //memory allocation remember to free
-    Bytes = malloc(sizeof(uint8_t)*(*handshake).content[0]+4); //since type (1 Byte), lenght (3 byte)
-    recordlayer = malloc(sizeof(uint8_t)*(handshake->length + 5));
+    //MEMORY ALLOCATION//
     
+    //bytes data vector
+    Bytes =(uint8_t*)calloc(handshake->content[0]+4,sizeof(uint8_t)); //since type (1 Byte), lenght (3 byte) and first element of content
+    //contain the lenght of corresponding vector
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
+        exit(1);
+    }
+    
+    //record layer
+    recordlayer = (RecordLayer*)calloc(handshake->length + 5,sizeof(RecordLayer));
+    if (recordlayer == NULL) {
+        perror("Failed to create recordlayer pointer - HandshakeToRecordLayer operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+
     //int of 4 bytes to int of 3 bytes and reversed
-    int_To_Bytes(handshake->length -1,length24); // -1 because i'm going to cancel the client length byte
-    memcpy(Bytes+1,length24+1,3);
-    
-    Bytes[0]=handshake->msg_type;
-    int len=handshake->content[0]+4;//qua sfrutto content[0] cioè il byte di lunghezza di client
-    
-    //tolgo il byte di lunghezza del client
+    int_To_Bytes(handshake->length -1,length24); // -1 because I'm going to cancel the client length byte
+    len=handshake->content[0]+4;//here the fact that content[0] contains highest layer lenght is exploited
     uint8_t temp[len];
+    
+    //storing handshake fields into bytes data vector
+    Bytes[0]=handshake->msg_type;
+    memcpy(Bytes+1,length24+1,3);
     memcpy(temp,handshake->content,len);
     memcpy(Bytes+4, temp + 1,len-1);
     
+    //RECORDLAYER CONSTRUCTION//
     
+    //recordlayer fields initialization
     recordlayer->type=HANDSHAKE;
     recordlayer->version=std_version;
-    recordlayer->length=handshake->length+5 - 1; // -1 because i've canceled the client length byte
+    recordlayer->length=handshake->length+5 - 1; // -1 because I've canceled the client length byte
     recordlayer->message=Bytes;
     
     return recordlayer;
