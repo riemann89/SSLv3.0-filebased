@@ -7,6 +7,10 @@
 #ifndef structure_h
 #define structure_h
 
+//OTHER STRUCTS
+typedef enum{client, server}
+Talker;
+
 // HANDSHAKE STRUCTS //
 
 typedef enum{
