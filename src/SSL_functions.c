@@ -26,7 +26,7 @@ void OpenCommunication(Talker talker){
         perror("Errore in apertura del file");
         exit(1);
     }
-    fprintf(token,"%d",talker);
+    fprintf(token,"%u",talker);
     fclose(token);
 }
 
@@ -44,7 +44,7 @@ Talker CheckCommunication(){
         perror("Failed to open token.txt - CheckCommunication(client) operation");
         exit(1);
     }
-    fscanf(token,"%d",&authorized_talker);
+    fscanf(token,"%u",&(authorized_talker));
     fclose(token);
     
     if (authorized_talker!=client && authorized_talker!=server) {
@@ -54,6 +54,7 @@ Talker CheckCommunication(){
     
     return authorized_talker;
 }
+
 
 /*
  It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.

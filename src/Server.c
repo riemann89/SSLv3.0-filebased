@@ -34,4 +34,22 @@ int main(int argc, const char *argv[]){
     }
      */
     
+FILE* canaleSSL;
+char a='s';
+
+		int i=0;
+    while(i<5){
+		if(CheckCommunication()==server){
+			OpenCommunication(client);
+			i++;
+			canaleSSL=fopen("canaleSSL.txt", "a+");
+         fprintf(canaleSSL,"%c",a);
+        fclose(canaleSSL);
+			
+		}
+		
+	}
+	
+	
+	
 }
