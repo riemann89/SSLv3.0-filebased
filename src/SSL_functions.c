@@ -19,7 +19,7 @@ void OpenCommunication(Talker talker){
         exit(1);
     }
     
-    //ALLOWING SELECTED TALKER//
+    //AUTHORIZING SELECTED TALKER//
     
     token=fopen("token.txt", "w");
     if(token == NULL) {
@@ -34,7 +34,7 @@ void OpenCommunication(Talker talker){
  It checks who between server/client can communicate. It returns the authorized user that can communicate over the channel.
  */
 Talker CheckCommunication(){
-    //VARIABLE DECLARATION//
+    //VARIABLES DECLARATION//
     
     FILE* token;
     Talker authorized_talker;

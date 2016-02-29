@@ -8,7 +8,9 @@
 
 int main(int argc, const char *argv[]){
     
-    bool a=CheckCommunication();
-    printf("%d\n",a);
+    OpenCommunication(client);
+    
+    
+    
     return 0;
 }
