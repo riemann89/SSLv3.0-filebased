@@ -13,8 +13,14 @@ int sendPacket(RecordLayer *record_layer);
 
 //Packet Encapsulation
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
+
+//ClientHello
+//uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello);
+Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello);
+Handshake* ServerDoneToHandshake();
+
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
-Handshake *ServerDoneToHandshake();
+
 
 
 
