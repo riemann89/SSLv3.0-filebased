@@ -88,6 +88,67 @@ int sendPacket(RecordLayer *record_layer){
     return 1;
 }
 
+//funzione di prova per scrivere byte sul file
+
+
+int sendPacketByte(RecordLayer *record_layer){
+    
+    //Variables Declarations//
+    FILE* SSLchannel;
+    uint8_t length16[4];
+    int_To_Bytes(record_layer->length, length16);
+    
+	
+    //Channel Operations//
+    //channel opening in creating-writing mode
+    SSLchannel=fopen("SSLchannelbyte.txt", "wb");
+    if (SSLchannel == NULL) {
+        perror("Failed to open SSLchannel.txt - sendPacket operation");
+        exit(1);
+    }
+    
+    //record_layer fields writing phase
+	ContentType *type;
+	type=&record_layer->type;
+	ProtocolVersion *version;
+    uint8_t *length;
+	length=&length16[2];
+	
+	
+	
+	
+	uint8_t *mess;
+	 mess=record_layer->message;
+	 uint8_t *Mversion;
+	 uint8_t *mversion;
+	 Mversion=&record_layer->version.major;
+	 mversion=&record_layer->version.minor;
+	 
+	
+    fwrite(type,sizeof(uint8_t),sizeof(uint8_t),SSLchannel);
+	
+	
+    fwrite(Mversion,sizeof(uint8_t),1,SSLchannel);
+    fwrite(mversion,sizeof(uint8_t),1,SSLchannel);
+    fwrite(length,sizeof(uint8_t),2,SSLchannel);
+	
+	
+
+	 
+	 
+	 
+	 
+    for (int i=0; i<(record_layer->length-5); i++) {
+        fwrite((mess+i),sizeof(uint8_t),1,SSLchannel);
+    }
+    
+    //channel closure
+    fclose(SSLchannel);
+    return 1;
+}
+
+
+
 /*
  It encapsulates client/server_hello packet into an handshake packet. More precisely it takes as input the corresponding pointer to Client/Server_Hello packet and gives as output a pointer to an Handshake packet.
  

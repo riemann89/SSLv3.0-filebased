@@ -35,7 +35,7 @@ typedef struct{
 
 //content
 typedef struct{
-    uint8_t length; //uint8_t beacause the maximum length will < 256;
+    uint8_t length; //uint8_t beacause the maximum length will < 256;    38 + #ciphersuite*4
     uint8_t version;
     Random random;
     uint32_t sessionId;

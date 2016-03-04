@@ -34,11 +34,10 @@ int main(int argc, const char *argv[]){
     }
      */
     
-FILE* canaleSSL;
-char a='s';
+	FILE* canaleSSL;
 
-		int i=0;
-    while(i<5){
+	
+	/*while(i<5){
 		if(CheckCommunication()==server){
 			OpenCommunication(client);
 			i++;
@@ -49,7 +48,24 @@ char a='s';
 		}
 		
 	}
+	*/
+	
+	char str[100];
+	canaleSSL=fopen("SSLchannel.txt", "r");
 	
 	
+	fgets(str,100,canaleSSL);
+	fgets(str,100,canaleSSL);
+	fgets(str,100,canaleSSL);
+	fgets(str,100,canaleSSL);
+	fgets(str,100,canaleSSL);
 	
+	uint  provabyte;
+	
+	fscanf(canaleSSL,"%x",&provabyte);
+	
+	
+	printf("%x",provabyte);
+	
+	return 0;
 }
