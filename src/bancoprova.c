@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-#include<time.h>
+#include <time.h>
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
@@ -102,6 +102,22 @@ int main(int argc, const char *argv[]){
 		
 		printf("%02x ",clientread->ciphersuite[i].code);
 	}
+	
+	//costruisco un file dove mettere in ordine di priorità i cipher da accettare, metto al primo posto quella con la maggior priorità e le altre a scalare.. non sono obbligato a metterle tutte e due
+	
+
+	uint8_t  list[32];  //lunghezza massima  di liste supportate, list[0] = n° di cipher supportate "lunghezza vera della lista"
+	uint8_t len = 100;
+	
+	for(int i = 0; i<len; i++){		
+		list[i] =  (uint8_t) (i +1);
+	}
+	
+	list[30]=0;
+	list[10]=0;
+
+setPriorities(len,list);
+	
 	
 	return 0;
 }

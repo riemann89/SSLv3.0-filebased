@@ -368,6 +368,21 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 }
 
 
+// funzione per settare le priorità
+
+ void setPriorities(uint8_t number,uint8_t *priority){   //numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
+	//creo il file
+	FILE* PriorityList;
+	PriorityList = fopen("PriorityList.txt", "wb");
+   //carico le chiphers
+     for(int i = 0; i<number; i++){
+		 
+		fwrite((priority +i),sizeof(uint8_t),1,PriorityList);
+	    printf("%02x",*(priority+i));
+	}
+	
+fclose(PriorityList);
+}
 
 
 

@@ -25,7 +25,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 
 
 ClientServerHello *readchannel();
-
+void setPriorities(uint8_t number,uint8_t *priority);
 
 
 
