@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "structures.h"
 #include "Utilities.h"
 
@@ -21,6 +22,9 @@ Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello);
 Handshake* ServerDoneToHandshake();
 
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
+
+
+ClientServerHello *readchannel();
 
 
 

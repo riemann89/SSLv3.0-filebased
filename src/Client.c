@@ -10,9 +10,6 @@ int main(int argc, const char *argv[]){
     
 	//semaforo provo  a comunicare
 
-
-
-
 //crea un clienthello e lo manda sul canale
 	OpenCommunication(client);
 

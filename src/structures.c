@@ -44,3 +44,11 @@ Cipher_Suite lista[31]={
 
 ProtocolVersion std_version={0,3};
 
+Cipher_Suite get_cipher_suite(uint8_t id){
+	for(int i=0;i<31;i++)
+		if(lista[i].code == id)
+			return lista[i];
+	printf("\nError id not valid\n");
+	exit(1);
+}
+

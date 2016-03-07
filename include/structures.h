@@ -103,6 +103,7 @@ typedef struct {
 extern Cipher_Suite lista[31];
 extern ProtocolVersion std_version;
 
+Cipher_Suite get_cipher_suite(uint8_t id);
 #endif
 
 

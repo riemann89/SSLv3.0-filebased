@@ -110,13 +110,10 @@ int sendPacketByte(RecordLayer *record_layer){
     //record_layer fields writing phase
 	ContentType *type;
 	type=&record_layer->type;
-	ProtocolVersion *version;
     uint8_t *length;
 	length=&length16[2];
 	
-	
-	
-	
+
 	uint8_t *mess;
 	 mess=record_layer->message;
 	 uint8_t *Mversion;
@@ -124,20 +121,13 @@ int sendPacketByte(RecordLayer *record_layer){
 	 Mversion=&record_layer->version.major;
 	 mversion=&record_layer->version.minor;
 	 
-	
     fwrite(type,sizeof(uint8_t),sizeof(uint8_t),SSLchannel);
 	
 	
     fwrite(Mversion,sizeof(uint8_t),1,SSLchannel);
     fwrite(mversion,sizeof(uint8_t),1,SSLchannel);
     fwrite(length,sizeof(uint8_t),2,SSLchannel);
-	
-	
 
-	 
-	 
-	 
-	 
     for (int i=0; i<(record_layer->length-5); i++) {
         fwrite((mess+i),sizeof(uint8_t),1,SSLchannel);
     }
@@ -147,6 +137,70 @@ int sendPacketByte(RecordLayer *record_layer){
     return 1;
 }
 
+
+/* funzione per leggere il file*/
+
+//Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel
+ClientServerHello *readchannel(){                
+	 
+
+	
+	uint8_t *buffer;
+	FILE* SSLchannel;
+	SSLchannel=fopen("SSLchannelbyte.txt", "r");
+	
+	ClientServerHello *returning_hello;
+	returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
+	
+	
+	
+	buffer = (uint8_t *)malloc((150)*sizeof(uint8_t));    // Enough memory for file + \0
+    fread(buffer, 100, 1, SSLchannel);
+	
+	//returning_hello=(uint8_t*)calloc(100,sizeof(uint8_t));  non so bene come allocare dà errori
+	uint8_t  version=(uint8_t)*(buffer+9);
+	uint8_t  length= (uint8_t)*(buffer +8) -4 + 1;  //tolgo i byte in più del handshake  (version + length) e aggiungo il byte di lunghezza
+	
+	uint8_t session[4];
+	for(int i =0;i<4;i++){
+	session[i]= *(buffer + 10 + i);
+	}
+	reverse(session,4);   // trasformo i 4 byte in un intero da 4 byte
+
+	uint32_t  SessionId=(uint32_t)(session[0] + session[1] *256 + session[2]*256*256 + session[3]*256*256);
+	
+	
+	Random ran;
+	
+	ran.gmt_unix_time=time(0);  //metto il tempo nuovo in secondi.. dovrei trovare quella in millis
+	for (int i =0; i<28;i++){
+	ran.random_bytes[i]=(uint8_t)*(buffer + 18 +i);
+	}
+	
+	//uint8_t  ciphers[length - 38]; //length of  ciphers
+	Cipher_Suite *ciphers = malloc((50)*sizeof(Cipher_Suite));
+	
+	
+	for (int i =0; i<length -38;i++){
+	ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
+	}
+	//uint8_t *ciphers_ptr;
+	
+	//ciphers_ptr=&ciphers;
+	
+
+	
+	returning_hello->version=version;
+	returning_hello->length=length;
+	returning_hello->sessionId=SessionId;
+	returning_hello->random=ran;
+	returning_hello->ciphersuite=ciphers;
+	printf("%02x\n \n",ciphers[0].code);
+    //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
+	
+	
+	return returning_hello;
+}
 
 
 /*
@@ -299,8 +353,8 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //storing handshake fields into bytes data vector
     Bytes[0]=handshake->msg_type;
     memcpy(Bytes+1,length24+1,3);
-    memcpy(temp,handshake->content,len);
-    memcpy(Bytes+4, temp + 1,len-1);
+    memcpy(temp,handshake->content,len); // copio content in temp
+    memcpy(Bytes+4, temp + 1,len-1); //metto temp in bytes saltando il byte di lunghezza che nel protocollo originale non c'è ma mi faceva comodo
     
     //RECORDLAYER CONSTRUCTION//
     
