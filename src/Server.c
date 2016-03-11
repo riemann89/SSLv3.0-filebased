@@ -15,9 +15,8 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    /*
-    FILE* canaleSSL;
-    char a='s';
+    
+   /* char a='s';
     for (int i=0; i<10; i++) {
         while(CheckCommunication(0)!=0){
             usleep(100);
@@ -34,7 +33,6 @@ int main(int argc, const char *argv[]){
     }
      */
     
-	FILE* canaleSSL;
 
 	
 	/*while(i<5){
@@ -50,22 +48,68 @@ int main(int argc, const char *argv[]){
 	}
 	*/
 	
-	char str[100];
-	canaleSSL=fopen("SSLchannel.txt", "r");
+	
+		uint8_t  list[32];  //lunghezza massima  di liste supportate, list[0] = n° di cipher supportate "lunghezza vera della lista"
+	uint8_t len = 10;
+	
+	for(int i = 0; i<len; i++){		   //carico le ciphre supportate dal server in ordine decrescente di priorità  (scelte a cazzo tanto per non avere lite banali di un solo elemento o di tutte le possibili chiphers)
+		list[i] =  (uint8_t) (i +10);
+	}
+	
+	list[30]=0;
+
+setPriorities(len,list);    //setto la lista caricata
+	
+	// comincio la comunicazione
+	  int  timestep=0;
+	
+	while(timestep<2){
+	
+			if(CheckCommunication()==server){    //controllo se posso parlare o meno
+		
+ 			if(timestep==0){
+
+				ClientServerHello *clienthello; 
+			    clienthello=readchannel(); //leggo quello che è stato scritto dal client
+				
+				
+				Cipher_Suite *choosen;  //lista da sostituire a quella del clienthello per completare il serverhello
+				Cipher_Suite clientsuite;
+				choosen=&clientsuite;
+				clientsuite= get_cipher_suite(chooseChipher(clienthello));  //scelgo la miglior cifratura condivisa da server e client
+				clienthello->ciphersuite=choosen;  //sostituisco alla lista con tutti le chiphers supportate da client la lista composta dalla sola cifratura scelta da server
+				clienthello->length=39; //avrò una sola cipher
+				
+				//spedisco il tutto sul canale in attesa di client  
+				Handshake hand;
+				RecordLayer record;
+				Handshake  *serverhand;    
+				RecordLayer *serverRecord;
+				serverhand=&hand;
+				serverRecord=&record;
+				
+				serverhand=ClientServerHelloToHandshake(clienthello);
+				serverRecord =HandshakeToRecordLayer(serverhand);
+                int intero=0;
+                intero=sendPacketByte(serverRecord);   //pacchetto inviato! 
+	
+		
+		}
+		
+		else if(timestep==1){
+			
+			
+			printf("\n ServerDone ");
+			
+		}
+		OpenCommunication(client); //apro la comunicazione a client
+		timestep++;
+
+		}
+	}
 	
 	
-	fgets(str,100,canaleSSL);
-	fgets(str,100,canaleSSL);
-	fgets(str,100,canaleSSL);
-	fgets(str,100,canaleSSL);
-	fgets(str,100,canaleSSL);
 	
-	uint  provabyte;
-	
-	fscanf(canaleSSL,"%x",&provabyte);
-	
-	
-	printf("%x",provabyte);
 	
 	return 0;
 }

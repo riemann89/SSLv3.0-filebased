@@ -79,7 +79,7 @@ int main(int argc, const char *argv[]){
 		printf("%02x ",*(ciphers_ptr +i));
 	}
 	
-	*/
+	
 	ClientServerHello *clientread;
 	clientread=readchannel();
 		
@@ -102,21 +102,95 @@ int main(int argc, const char *argv[]){
 		
 		printf("%02x ",clientread->ciphersuite[i].code);
 	}
-	
+	*/
 	//costruisco un file dove mettere in ordine di priorità i cipher da accettare, metto al primo posto quella con la maggior priorità e le altre a scalare.. non sono obbligato a metterle tutte e due
 	
 
 	uint8_t  list[32];  //lunghezza massima  di liste supportate, list[0] = n° di cipher supportate "lunghezza vera della lista"
-	uint8_t len = 100;
+	uint8_t len = 10;
 	
 	for(int i = 0; i<len; i++){		
-		list[i] =  (uint8_t) (i +1);
+		list[i] =  (uint8_t) (i +10);
 	}
 	
 	list[30]=0;
-	list[10]=0;
 
-setPriorities(len,list);
+setPriorities(len,list);   
+
+Random ran;
+    int i;
+    ran.gmt_unix_time=35;
+ 
+		for(i=0;i<28;i++){
+    ran.random_bytes[i]=(uint8_t) i;
+	}
+	
+	Cipher_Suite lista2[8]={
+   /* {0x00,"SSL_NULL_WITH_NULL_NULL"},
+    {0x01,"SSL_RSA_WITH_NULL_MD5"},
+    {0x02,"SSL_RSA_WITH_NULL_SHA"},
+    {0x03,"SSL_RSA_EXPORT_WITH_RC4_40_MD5"},
+    {0x04,"SSL_RSA_WITH_RC4_128_MD5"},
+    {0x05,"SSL_RSA_WITH_RC4_128_SHA"},
+    {0x06,"SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5"},
+    {0x07,"SSL_RSA_WITH_IDEA_CBC_SHA"},
+    {0x08,"SSL_RSA_EXPORT_WITH_DES40_CBC_SHA"},
+    {0x09,"SSL_RSA_WITH_DES_CBC_SHA"},
+    {0x0A,"SSL_RSA_WITH_3DES_EDE_CBC_SHA"},
+    {0x0B,"SSL_DH_DSS_EXPORT_WITH_DES40_CBC_SHA"},
+    {0x0C,"SSL_DH_DSS_WITH_DES_CBC_SHA"},
+    {0x0D,"SSL_DH_DSS_WITH_3DES_EDE_CBC_SHA"},
+    {0x0E,"SSL_DH_RSA_EXPORT_WITH_DES40_CBC_SHA"},
+    {0x0F,"SSL_DH_RSA_WITH_DES_CBC_SHA"},
+  */  {0x10,"SSL_DH_RSA_WITH_3DES_EDE_CBC_SHA"}, 
+    {0x11,"SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA"},
+    {0x12,"SSL_DHE_DSS_WITH_DES_CBC_SHA"},
+    /*{0x13,"SSL_DHE_DSS_WITH_3DES_EDE_CBC_SHA"},
+    {0x14,"SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA"},
+    {0x15,"SSL_DHE_RSA_WITH_DES_CBC_SHA"},
+    {0x16,"SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA"},
+   */ {0x17,"SSL_DH_anon_EXPORT_WITH_RC4_40_MD5"},
+    {0x18,"SSL_DH_anon_WITH_RC4_128_MD5"},
+    {0x19,"SSL_DH_anon_EXPORT_WITH_DES40_CBC_SHA"},
+    {0x1A,"SSL_DH_anon_WITH_DES_CBC_SHA"},
+  /*  {0x1B,"SSL_DH_anon_WITH_3DES_EDE_CBC_SHA"},
+    {0x1C,"SSL_FORTEZZA_KEA_WITH_NULL_SHA"},
+    {0x1D,"SSL_FORTEZZA_KEA_WITH_FORTEZZA_CBC_SHA"},
+   */ {0x1E,"SSL_FORTEZZA_KEA_WITH_RC4_128_SHA"}
+};
+
+
+    ClientServerHello cli;
+    cli.random=ran;
+    cli.sessionId=55;
+    cli.version=3;
+    cli.ciphersuite=lista2;
+    cli.length=69;
+	
+		
+		
+		
+		ClientServerHello *client;
+		client=&cli;
+		
+		Cipher_Suite scelta;
+		scelta=get_cipher_suite( chooseChipher(client));
+		Cipher_Suite *cipherlist;
+		cipherlist=&scelta;
+		
+		printf("\n%02x", scelta.code);
+		
+		
+		client->length=39; //38 + just one byte for the chosen cipher
+		client->ciphersuite=cipherlist;
+		int intero;
+		//mando tutto in un  recordlayer
+		Handshake *hand;
+		hand =ClientServerHelloToHandshake(client);
+		RecordLayer *rec;
+		rec= HandshakeToRecordLayer(hand);
+		
+		intero=sendPacketByte(rec);
 	
 	
 	return 0;

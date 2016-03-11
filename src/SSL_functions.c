@@ -149,7 +149,7 @@ ClientServerHello *readchannel(){
 	FILE* SSLchannel;
 	SSLchannel=fopen("SSLchannelbyte.txt", "r");
 	
-	ClientServerHello *returning_hello;
+	ClientServerHello *returning_hello; //returning variable
 	returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
 	
 	
@@ -159,7 +159,7 @@ ClientServerHello *readchannel(){
 	
 	//returning_hello=(uint8_t*)calloc(100,sizeof(uint8_t));  non so bene come allocare dà errori
 	uint8_t  version=(uint8_t)*(buffer+9);
-	uint8_t  length= (uint8_t)*(buffer +8) -4 + 1;  //tolgo i byte in più del handshake  (version + length) e aggiungo il byte di lunghezza
+	uint8_t  length= (uint8_t)*(buffer +8) -4 + 1;  //tolgo i byte in più dell' handshake  (version + length) e aggiungo il byte di lunghezza
 	
 	uint8_t session[4];
 	for(int i =0;i<4;i++){
@@ -181,7 +181,9 @@ ClientServerHello *readchannel(){
 	Cipher_Suite *ciphers = malloc((50)*sizeof(Cipher_Suite));
 	
 	
+	
 	for (int i =0; i<length -38;i++){
+		
 	ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
 	}
 	//uint8_t *ciphers_ptr;
@@ -195,13 +197,21 @@ ClientServerHello *readchannel(){
 	returning_hello->sessionId=SessionId;
 	returning_hello->random=ran;
 	returning_hello->ciphersuite=ciphers;
-	printf("%02x\n \n",ciphers[0].code);
+	//printf("%02x\n \n",ciphers[0].code);  //comodo come controllo
     //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
 	
 	
 	return returning_hello;
 }
 
+
+//make a ServerHello with only the best chpher  that both client and server does support as content
+/*
+ClientServerHello *makeServerHello(){
+	
+	
+}
+*/
 
 /*
  It encapsulates client/server_hello packet into an handshake packet. More precisely it takes as input the corresponding pointer to Client/Server_Hello packet and gives as output a pointer to an Handshake packet.
@@ -368,23 +378,58 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 }
 
 
-// funzione per settare le priorità
+// funzione per settare le priorità  salvate nel file PriorityList  [length,chiphers];
 
  void setPriorities(uint8_t number,uint8_t *priority){   //numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
 	//creo il file
 	FILE* PriorityList;
 	PriorityList = fopen("PriorityList.txt", "wb");
+	//inserisco lunghezza
+	uint8_t *length;
+	length=&number;
+	fwrite(length,sizeof(uint8_t),1,PriorityList);
    //carico le chiphers
      for(int i = 0; i<number; i++){
 		 
 		fwrite((priority +i),sizeof(uint8_t),1,PriorityList);
-	    printf("%02x",*(priority+i));
+	  //  printf("%02x",*(priority+i));
 	}
 	
 fclose(PriorityList);
 }
 
+//funzione per  scegliere la priorità
 
+uint8_t chooseChipher(ClientServerHello *client_supported_list){
+	
+	FILE* PriorityList;
+	PriorityList = fopen("PriorityList.txt", "r");
+	uint8_t *buffer ;
+	buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));   
+    fread(buffer, 32, 1, PriorityList);
+	
+	uint8_t choosen;  //the returning variable
+	
+	for(int i=1; i<(int)buffer[0]+1; i++){
+		for(int j=0;j<client_supported_list->length -38 ;j++){
+			
+			
+			if(buffer[i]==client_supported_list->ciphersuite[j].code){
+				choosen=buffer[i];
+				return choosen;
+			}
+			
+		}
+		
+	}
+
+                printf("\nError, uncompatibles chiphers");
+				exit(1);
+
+	
+	
+	
+}
 
 
 

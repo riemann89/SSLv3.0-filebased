@@ -42,19 +42,24 @@ int main(int argc, const char *argv[]){
 		
 		Handshake *hand;
 		hand= ClientServerHelloToHandshake(client);
+    FILE* canaleSSL;
 		
 		
 		 RecordLayer *recordlayer;
          recordlayer=HandshakeToRecordLayer(hand);
     
 		i=sendPacketByte(recordlayer);
-		i=sendPacket(recordlayer);
-		timestep=timestep+3;
+		i=sendPacket(recordlayer);  //obsoleta ma la lascio se vogliamo tornare sui nostri passi non fa male a nessuno
+		
+		
 		//ora ho mandato il clienthello  passo il turno al server in attesa di risposta
 		}
 		
 		else if(timestep==1){
-			printf("scelto l'algoritmo");
+			
+			ClientServerHello *serverhello;
+			serverhello=readchannel();
+			printf("\n scelto l'algoritmo: %02x", serverhello->ciphersuite[0].code );
 			
 		}
 		OpenCommunication(server);
