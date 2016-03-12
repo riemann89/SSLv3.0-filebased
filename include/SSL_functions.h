@@ -16,7 +16,6 @@ void sendPacketByte(RecordLayer *record_layer);
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
 
 //ClientHello
-//uint8_t* ClientServerHelloToBytes(ClientServerHello* client_server_hello);
 Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello);
 Handshake* ServerDoneToHandshake();
 
@@ -27,5 +26,3 @@ ClientServerHello *readchannel();
 void setPriorities(uint8_t number,uint8_t *priority);
 ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
-
-

@@ -21,10 +21,9 @@ int main(int argc, const char *argv[]){
 		
  			if(timestep==0){
 		  Random ran;
-    int i;
     ran.gmt_unix_time=35;
  
-		for(i=0;i<28;i++){
+		for(int i=0;i<28;i++){
     ran.random_bytes[i]=(uint8_t) i;
 	}
     ClientServerHello cli;
@@ -48,9 +47,7 @@ int main(int argc, const char *argv[]){
 		 RecordLayer *recordlayer;
          recordlayer=HandshakeToRecordLayer(hand);
     
-		i=sendPacketByte(recordlayer);
-		i=sendPacket(recordlayer);  //obsoleta ma la lascio se vogliamo tornare sui nostri passi non fa male a nessuno
-		
+		sendPacketByte(recordlayer);
 		
 		//ora ho mandato il clienthello  passo il turno al server in attesa di risposta
 		}

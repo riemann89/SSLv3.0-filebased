@@ -90,8 +90,7 @@ setPriorities(len,list);    //setto la lista caricata
 				
 				serverhand=ClientServerHelloToHandshake(clienthello);
 				serverRecord =HandshakeToRecordLayer(serverhand);
-                int intero=0;
-                intero=sendPacketByte(serverRecord);   //pacchetto inviato! 
+                sendPacketByte(serverRecord);   //pacchetto inviato!
 	
 		
 		}
