@@ -2,7 +2,6 @@ TEST FUNZIONAMENTO:
 
 Packet Function
 
-/*
 RecordLayer recordlayer_clienthello;
 recordlayer_clienthello.type=HANDSHAKE;
 recordlayer_clienthello.version.major=3;
@@ -11,7 +10,7 @@ recordlayer_clienthello.length=3;
 uint8_t message[]={12,34,56};
 recordlayer_clienthello.message=message;
 sendPacket(recordlayer_clienthello);
-*/
+
 
 /*
     //Leggi configurazione:
@@ -128,3 +127,34 @@ printf("%#08x\n",cs2);
     recordlayer=HandshakeToRecordLayer(handshake);
     
     sendPacket(*recordlayer);
+
+int sendPacket(RecordLayer *record_layer){
+
+//Variables Declarations//
+FILE* SSLchannel;
+uint8_t length16[4];
+int_To_Bytes(record_layer->length, length16);
+
+//Channel Operations//
+//channel opening in creating-writing mode
+SSLchannel=fopen("SSLchannel.txt", "wb");
+if (SSLchannel == NULL) {
+perror("Failed to open SSLchannel.txt - sendPacket operation");
+exit(1);
+}
+
+//record_layer fields writing phase
+fprintf(SSLchannel,"%02x\n",record_layer->type);
+fprintf(SSLchannel,"%02x\n",record_layer->version.major);
+fprintf(SSLchannel,"%02x\n",record_layer->version.minor);
+fprintf(SSLchannel, "%02x %02x\n",length16[2],length16[3]);
+for (int i=0; i<(record_layer->length-5); i++) {
+fprintf(SSLchannel, "%02x ",record_layer->message[i]);
+}
+
+//channel closure
+fclose(SSLchannel);
+return 1;
+}
+
+

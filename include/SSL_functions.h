@@ -10,8 +10,7 @@
 //Connection
 void OpenCommunication(Talker talker);
 Talker CheckCommunication();
-int sendPacket(RecordLayer *record_layer);
-int sendPacketByte(RecordLayer *record_layer);
+void sendPacketByte(RecordLayer *record_layer);
 
 //Packet Encapsulation
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);

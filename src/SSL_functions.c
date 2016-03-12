@@ -59,46 +59,16 @@ Talker CheckCommunication(){
 /*
  It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.
  */
-int sendPacket(RecordLayer *record_layer){
+void sendPacketByte(RecordLayer *record_layer){
     
     //Variables Declarations//
     FILE* SSLchannel;
-    uint8_t length16[4];
+    uint8_t length16[4],*message,*length,*Mversion,*mversion;
+    ContentType *type;
+    
+    //int to bytes representation of the lenght
     int_To_Bytes(record_layer->length, length16);
     
-    //Channel Operations//
-    //channel opening in creating-writing mode
-    SSLchannel=fopen("SSLchannel.txt", "wb");
-    if (SSLchannel == NULL) {
-        perror("Failed to open SSLchannel.txt - sendPacket operation");
-        exit(1);
-    }
-    
-    //record_layer fields writing phase
-    fprintf(SSLchannel,"%02x\n",record_layer->type);
-    fprintf(SSLchannel,"%02x\n",record_layer->version.major);
-    fprintf(SSLchannel,"%02x\n",record_layer->version.minor);
-    fprintf(SSLchannel, "%02x %02x\n",length16[2],length16[3]);
-    for (int i=0; i<(record_layer->length-5); i++) {
-        fprintf(SSLchannel, "%02x ",record_layer->message[i]);
-    }
-    
-    //channel closure
-    fclose(SSLchannel);
-    return 1;
-}
-
-//funzione di prova per scrivere byte sul file
-
-
-int sendPacketByte(RecordLayer *record_layer){
-    
-    //Variables Declarations//
-    FILE* SSLchannel;
-    uint8_t length16[4];
-    int_To_Bytes(record_layer->length, length16);
-    
-	
     //Channel Operations//
     //channel opening in creating-writing mode
     SSLchannel=fopen("SSLchannelbyte.txt", "wb");
@@ -107,111 +77,101 @@ int sendPacketByte(RecordLayer *record_layer){
         exit(1);
     }
     
+    //extracting fields from record_layer
+    type=&record_layer->type;
+    length=&length16[2];
+    message=record_layer->message;
+    Mversion=&record_layer->version.major;
+    mversion=&record_layer->version.minor;
+    
     //record_layer fields writing phase
-	ContentType *type;
-	type=&record_layer->type;
-    uint8_t *length;
-	length=&length16[2];
-	
-
-	uint8_t *mess;
-	 mess=record_layer->message;
-	 uint8_t *Mversion;
-	 uint8_t *mversion;
-	 Mversion=&record_layer->version.major;
-	 mversion=&record_layer->version.minor;
-	 
     fwrite(type,sizeof(uint8_t),sizeof(uint8_t),SSLchannel);
-	
-	
     fwrite(Mversion,sizeof(uint8_t),1,SSLchannel);
     fwrite(mversion,sizeof(uint8_t),1,SSLchannel);
     fwrite(length,sizeof(uint8_t),2,SSLchannel);
-
     for (int i=0; i<(record_layer->length-5); i++) {
-        fwrite((mess+i),sizeof(uint8_t),1,SSLchannel);
+        fwrite((message+i),sizeof(uint8_t),1,SSLchannel);
     }
     
     //channel closure
     fclose(SSLchannel);
-    return 1;
 }
 
 
 /* funzione per leggere il file*/
 
 //Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel
-ClientServerHello *readchannel(){                
-	 
-
-	
-	uint8_t *buffer;
-	FILE* SSLchannel;
-	SSLchannel=fopen("SSLchannelbyte.txt", "r");
-	
-	ClientServerHello *returning_hello; //returning variable
-	returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
-	
-	
-	
-	buffer = (uint8_t *)malloc((150)*sizeof(uint8_t));    // Enough memory for file + \0
+ClientServerHello *readchannel(){
+    
+    
+    
+    uint8_t *buffer;
+    FILE* SSLchannel;
+    SSLchannel=fopen("SSLchannelbyte.txt", "r");
+    
+    ClientServerHello *returning_hello; //returning variable
+    returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
+    
+    
+    
+    buffer = (uint8_t *)malloc((150)*sizeof(uint8_t));    // Enough memory for file + \0
     fread(buffer, 100, 1, SSLchannel);
-	
-	//returning_hello=(uint8_t*)calloc(100,sizeof(uint8_t));  non so bene come allocare dà errori
-	uint8_t  version=(uint8_t)*(buffer+9);
-	uint8_t  length= (uint8_t)*(buffer +8) -4 + 1;  //tolgo i byte in più dell' handshake  (version + length) e aggiungo il byte di lunghezza
-	
-	uint8_t session[4];
-	for(int i =0;i<4;i++){
-	session[i]= *(buffer + 10 + i);
-	}
-	reverse(session,4);   // trasformo i 4 byte in un intero da 4 byte
-
-	uint32_t  SessionId=(uint32_t)(session[0] + session[1] *256 + session[2]*256*256 + session[3]*256*256);
-	
-	
-	Random ran;
-	
-	ran.gmt_unix_time=time(0);  //metto il tempo nuovo in secondi.. dovrei trovare quella in millis
-	for (int i =0; i<28;i++){
-	ran.random_bytes[i]=(uint8_t)*(buffer + 18 +i);
-	}
-	
-	//uint8_t  ciphers[length - 38]; //length of  ciphers
-	Cipher_Suite *ciphers = malloc((50)*sizeof(Cipher_Suite));
-	
-	
-	
-	for (int i =0; i<length -38;i++){
-		
-	ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
-	}
-	//uint8_t *ciphers_ptr;
-	
-	//ciphers_ptr=&ciphers;
-	
-
-	
-	returning_hello->version=version;
-	returning_hello->length=length;
-	returning_hello->sessionId=SessionId;
-	returning_hello->random=ran;
-	returning_hello->ciphersuite=ciphers;
-	//printf("%02x\n \n",ciphers[0].code);  //comodo come controllo
+    
+    //returning_hello=(uint8_t*)calloc(100,sizeof(uint8_t));  non so bene come allocare dà errori
+    uint8_t  version=(uint8_t)*(buffer+9);
+    uint8_t  length= (uint8_t)*(buffer +8) -4 + 1;  //tolgo i byte in più dell' handshake  (version + length) e aggiungo il byte di lunghezza
+    
+    uint8_t session[4];
+    for(int i =0;i<4;i++){
+        session[i]= *(buffer + 10 + i);
+    }
+    reverse(session,4);   // trasformo i 4 byte in un intero da 4 byte
+    
+    uint32_t  SessionId=(uint32_t)(session[0] + session[1] *256 + session[2]*256*256 + session[3]*256*256);
+    
+    
+    Random ran;
+    
+    ran.gmt_unix_time=time(0);  //metto il tempo nuovo in secondi.. dovrei trovare quella in millis
+    for (int i =0; i<28;i++){
+        ran.random_bytes[i]=(uint8_t)*(buffer + 18 +i);
+    }
+    
+    //uint8_t  ciphers[length - 38]; //length of  ciphers
+    Cipher_Suite *ciphers = malloc((50)*sizeof(Cipher_Suite));
+    
+    
+    
+    for (int i =0; i<length -38;i++){
+        
+        ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
+    }
+    //uint8_t *ciphers_ptr;
+    
+    //ciphers_ptr=&ciphers;
+    
+    
+    
+    returning_hello->version=version;
+    returning_hello->length=length;
+    returning_hello->sessionId=SessionId;
+    returning_hello->random=ran;
+    returning_hello->ciphersuite=ciphers;
+    //printf("%02x\n \n",ciphers[0].code);  //comodo come controllo
     //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
-	
-	
-	return returning_hello;
+    
+    
+    return returning_hello;
 }
 
 
 //make a ServerHello with only the best chpher  that both client and server does support as content
 /*
-ClientServerHello *makeServerHello(){
+ ClientServerHello *makeServerHello(){
 	
 	
-}
-*/
+ }
+ */
 
 /*
  It encapsulates client/server_hello packet into an handshake packet. More precisely it takes as input the corresponding pointer to Client/Server_Hello packet and gives as output a pointer to an Handshake packet.
@@ -380,96 +340,53 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 
 // funzione per settare le priorità  salvate nel file PriorityList  [length,chiphers];
 
- void setPriorities(uint8_t number,uint8_t *priority){   //numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
-	//creo il file
-	FILE* PriorityList;
-	PriorityList = fopen("PriorityList.txt", "wb");
-	//inserisco lunghezza
-	uint8_t *length;
-	length=&number;
-	fwrite(length,sizeof(uint8_t),1,PriorityList);
-   //carico le chiphers
-     for(int i = 0; i<number; i++){
-		 
-		fwrite((priority +i),sizeof(uint8_t),1,PriorityList);
-	  //  printf("%02x",*(priority+i));
-	}
-	
-fclose(PriorityList);
+void setPriorities(uint8_t number,uint8_t *priority){   //numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
+    //creo il file
+    FILE* PriorityList;
+    PriorityList = fopen("PriorityList.txt", "wb");
+    //inserisco lunghezza
+    uint8_t *length;
+    length=&number;
+    fwrite(length,sizeof(uint8_t),1,PriorityList);
+    //carico le chiphers
+    for(int i = 0; i<number; i++){
+        
+        fwrite((priority +i),sizeof(uint8_t),1,PriorityList);
+        //  printf("%02x",*(priority+i));
+    }
+    
+    fclose(PriorityList);
 }
 
 //funzione per  scegliere la priorità
 
 uint8_t chooseChipher(ClientServerHello *client_supported_list){
-	
-	FILE* PriorityList;
-	PriorityList = fopen("PriorityList.txt", "r");
-	uint8_t *buffer ;
-	buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));   
+    
+    FILE* PriorityList;
+    PriorityList = fopen("PriorityList.txt", "r");
+    uint8_t *buffer ;
+    buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
     fread(buffer, 32, 1, PriorityList);
-	
-	uint8_t choosen;  //the returning variable
-	
-	for(int i=1; i<(int)buffer[0]+1; i++){
-		for(int j=0;j<client_supported_list->length -38 ;j++){
-			
-			
-			if(buffer[i]==client_supported_list->ciphersuite[j].code){
-				choosen=buffer[i];
-				return choosen;
-			}
-			
-		}
-		
-	}
-
-                printf("\nError, uncompatibles chiphers");
+    
+    uint8_t choosen;  //the returning variable
+    
+    for(int i=1; i<(int)buffer[0]+1; i++){
+        for(int j=0;j<client_supported_list->length -38 ;j++){
+            
+            
+            if(buffer[i]==client_supported_list->ciphersuite[j].code){
+                choosen=buffer[i];
+                return choosen;
+            }
+            
+        }
+        
+    }
+    
+    printf("\nError, uncompatibles chiphers");
 				exit(1);
-
-	
-	
-	
+    
+    
+    
+    
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
