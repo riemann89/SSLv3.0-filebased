@@ -8,7 +8,7 @@
 
 #include "structures.h"
 
-Cipher_Suite lista[31]={
+CipherSuite lista[31]={
     {0x00,"SSL_NULL_WITH_NULL_NULL"},
     {0x01,"SSL_RSA_WITH_NULL_MD5"},
     {0x02,"SSL_RSA_WITH_NULL_SHA"},
@@ -44,7 +44,7 @@ Cipher_Suite lista[31]={
 
 ProtocolVersion std_version={0,3};
 
-Cipher_Suite get_cipher_suite(uint8_t id){
+CipherSuite get_cipher_suite(uint8_t id){
 	for(int i=0;i<31;i++){
 		if(lista[i].code == id)
 			return lista[i];
@@ -60,7 +60,7 @@ Cipher_Suite get_cipher_suite(uint8_t id){
 
 
 
-Cipher_Suite lista2[8]={
+CipherSuite lista2[8]={
    /* {0x00,"SSL_NULL_WITH_NULL_NULL"},
     {0x01,"SSL_RSA_WITH_NULL_MD5"},
     {0x02,"SSL_RSA_WITH_NULL_SHA"},

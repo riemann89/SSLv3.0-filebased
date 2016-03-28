@@ -49,7 +49,7 @@ int main(int argc, const char *argv[]){
 	*/
 	
 	
-		uint8_t  list[32];  //lunghezza massima  di liste supportate, list[0] = n° di cipher supportate "lunghezza vera della lista"
+    uint8_t  list[32];  //lunghezza massima  di liste supportate, list[0] = n° di cipher supportate "lunghezza vera della lista"
 	uint8_t len = 10;
 	
 	for(int i = 0; i<len; i++){		   //carico le ciphre supportate dal server in ordine decrescente di priorità  (scelte a cazzo tanto per non avere lite banali di un solo elemento o di tutte le possibili chiphers)
@@ -73,8 +73,8 @@ setPriorities(len,list);    //setto la lista caricata
 			    clienthello=readchannel(); //leggo quello che è stato scritto dal client
 				
 				
-				Cipher_Suite *choosen;  //lista da sostituire a quella del clienthello per completare il serverhello
-				Cipher_Suite clientsuite;
+				CipherSuite *choosen;  //lista da sostituire a quella del clienthello per completare il serverhello
+				CipherSuite clientsuite;
 				choosen=&clientsuite;
 				clientsuite= get_cipher_suite(chooseChipher(clienthello));  //scelgo la miglior cifratura condivisa da server e client
 				clienthello->ciphersuite=choosen;  //sostituisco alla lista con tutti le chiphers supportate da client la lista composta dalla sola cifratura scelta da server

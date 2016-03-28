@@ -8,80 +8,76 @@
 
 int main(int argc, const char *argv[]){
     
-	//semaforo provo  a comunicare
-
-//crea un clienthello e lo manda sul canale
-	OpenCommunication(client);
-
-   int  timestep=0;
-	
-	while(timestep<2){
-	
-			if(CheckCommunication()==client){    //controllo se posso parlare o meno
-		
- 			if(timestep==0){
-		  Random ran;
-    ran.gmt_unix_time=35;
- 
-		for(int i=0;i<28;i++){
-    ran.random_bytes[i]=(uint8_t) i;
-	}
-    ClientServerHello cli;
-    cli.random=ran;
-    cli.sessionId=55;
-    cli.version=3;
-    cli.ciphersuite=lista;
-    cli.length=69;
-	
-		
-		
-		
-		ClientServerHello *client;
-		client=&cli;
-		
-		Handshake *hand;
-		hand= ClientServerHelloToHandshake(client);
-    FILE* canaleSSL;
-		
-		
-		 RecordLayer *recordlayer;
-         recordlayer=HandshakeToRecordLayer(hand);
+    //VARIABLE DECLARATION
+    Talker client;
+    int  timestep=0;
+    Random ran;
+    ClientServerHello client_hello,*client_hello_p;
+    Handshake *handshake;
+    RecordLayer *recordlayer;
     
-		sendPacketByte(recordlayer);
-		
-		//ora ho mandato il clienthello  passo il turno al server in attesa di risposta
-		}
-		
-		else if(timestep==1){
-			
-			ClientServerHello *serverhello;
-			serverhello=readchannel();
-			printf("\n scelto l'algoritmo: %02x", serverhello->ciphersuite[0].code );
-			
-		}
-		OpenCommunication(server);
-		timestep++;
+    //CLIENT STEPS
+    
+    OpenCommunication(client);
+    
+    while(timestep<2){
+        
+        if(CheckCommunication()==client){
+            
+            if(timestep==0){
 
-		}
-	}
-	
-	
+                ran.gmt_unix_time=35; // ???????????????
+                
+                for(int i=0;i<28;i++){
+                    ran.random_bytes[i]=(uint8_t) i;
+                }
+                client_hello.random=ran;
+                client_hello.sessionId=55;
+                client_hello.version=3;
+                client_hello.ciphersuite=lista;
+                client_hello.length=69;
+                
+                client_hello_p=&client_hello; //
+                
+                handshake = ClientServerHelloToHandshake(client_hello_p);
+                
+                recordlayer=HandshakeToRecordLayer(handshake);
+                
+                sendPacketByte(recordlayer);
+                
+                //ora ho mandato il clienthello  passo il turno al server in attesa di risposta
+            }
+            
+            else if(timestep==1){
+                
+                ClientServerHello *serverhello;
+                serverhello=readchannel();
+                printf("\n scelto l'algoritmo: %02x", serverhello->ciphersuite[0].code );
+                
+            }
+            OpenCommunication(server);
+            timestep++;
+            
+        }
+    }
+    
+    
     /*while(i<5){
-		if(CheckCommunication()==client){
-			OpenCommunication(server);
-			i++;
+     if(CheckCommunication()==client){
+     OpenCommunication(server);
+     i++;
 	    canaleSSL=fopen("canaleSSL.txt", "a+");
-		fprintf(canaleSSL,"%c",a);
-        fclose(canaleSSL);
-		
-		}
-	
-		 * */
-		
-	
-	
-	
+     fprintf(canaleSSL,"%c",a);
+     fclose(canaleSSL);
+     
+     }
+     
+     * */
+    
+    
+    
+    
     
     return 0;
-
+    
 }

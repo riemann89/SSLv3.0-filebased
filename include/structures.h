@@ -8,8 +8,8 @@
 #define structure_h
 
 //OTHER STRUCTS
-typedef enum{client, server}
-Talker;
+typedef enum{client, server
+}Talker;
 
 // HANDSHAKE STRUCTS //
 
@@ -20,7 +20,7 @@ typedef enum{
 typedef struct{
     uint8_t code;
     char name[50];
-}Cipher_Suite;
+}CipherSuite;
 
 typedef struct {
     HandshakeType msg_type;

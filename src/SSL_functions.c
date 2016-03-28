@@ -8,6 +8,7 @@
  It allows the communication to the indicated talker: (0 - client, 1 - server, as defined in Talker enum)
  */
 void OpenCommunication(Talker talker){
+    
     //VARIABLE DECLARATION//
     
     FILE* token;
