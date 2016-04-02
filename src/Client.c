@@ -9,6 +9,7 @@
 int main(int argc, const char *argv[]){
     
     //VARIABLE DECLARATION
+    
     Talker client;
     int  timestep=0;
     Random ran;

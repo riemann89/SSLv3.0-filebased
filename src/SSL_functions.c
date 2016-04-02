@@ -1,4 +1,6 @@
 #include "SSL_functions.h"
+#include "openssl/x509.h"
+#include "openssl/pem.h"
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -139,7 +141,7 @@ ClientServerHello *readchannel(){
     }
     
     //uint8_t  ciphers[length - 38]; //length of  ciphers
-    Cipher_Suite *ciphers = malloc((50)*sizeof(Cipher_Suite));
+    CipherSuite *ciphers = malloc((50)*sizeof(CipherSuite));
     
     
     
@@ -186,7 +188,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     
     //VARIABLE DECLARATION//
     
-    Cipher_Suite *cipher;
+    CipherSuite *cipher;
     Handshake *handshake;
     //current time bytes representation
     uint8_t timeB[4];
@@ -386,8 +388,88 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
     
     printf("\nError, uncompatibles chiphers");
 				exit(1);
-    
-    
-    
-    
 }
+
+/*
+function to generate a certificate for RSA key exchange
+ REMEMBER TO free:
+ -
+ -
+ */
+
+void generateRSAcert(){
+    
+    //VARIABLES DECLARATION
+    
+    EVP_PKEY *skey;
+    RSA *rsa;
+    X509 * x509;
+    X509_NAME * name;
+    FILE * skey_file, *cert_file;
+    
+    //RSA ELEMENTS GENERATION
+    
+    skey = EVP_PKEY_new(); //memory allocation for a secret key algorithm-independent
+    rsa = RSA_generate_key(
+                           2048,   /* number of bits for the key - 2048 is a sensible value */
+                           RSA_F4, /* exponent - RSA_F4 is defined as 0x10001L */
+                           NULL,   /* callback - can be NULL if we aren't displaying progress */
+                           NULL    /* callback argument - not needed in this case */
+                           );
+    
+    //CHECK IF rsa is NULL, in this case, close the program.
+    
+    EVP_PKEY_assign_RSA(skey, rsa); //assign the skey to the public key
+    
+    //CERTIFICATE GENERATION
+    
+    x509 = X509_new();                                              //memory allocation for the certificate
+    ASN1_INTEGER_set(X509_get_serialNumber(x509), 1);               //serial number certificate setting
+    X509_gmtime_adj(X509_get_notBefore(x509), 0);                   //time duration - begin ( 0 stands for current time)
+    X509_gmtime_adj(X509_get_notAfter(x509), 31536000L);            //              - end (31536000L stands for number of seconds in 365 days)
+    X509_set_pubkey(x509, skey);                                    //set the public key previously generated
+    name = X509_get_subject_name(x509);                             //name of the issuer RIVEDERE
+    X509_NAME_add_entry_by_txt(name, "C",  MBSTRING_ASC,
+                               (unsigned char *)"IT", -1, -1, 0);   //country
+    X509_NAME_add_entry_by_txt(name, "O",  MBSTRING_ASC,
+                               (unsigned char *)"Unitn", -1, -1, 0);//company name
+    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
+                               (unsigned char *)"Server", -1, -1, 0);//common name of the host being authenticated.
+    X509_set_issuer_name(x509, name);                                //issuer name equal to the name of the subject, since it is autosigned
+    X509_sign(x509, skey, EVP_sha1());                               //sign of the secret key RIV: SE USARE SHA1 o un altro algoritmo
+    
+    
+    //CERTIFICATE PRIVATE KEY STORING
+    
+    skey_file = fopen("key.pem", "wb");
+    PEM_write_PrivateKey(
+                         skey_file,          /* write the key to the file we've opened */
+                         skey,               /* our key from earlier */
+                         NULL,               /* default cipher for encrypting the key on disk */
+                         NULL,               /* passphrase required for decrypting the key on disk */
+                         0,                  /* length of the passphrase string */
+                         NULL,               /* callback for requesting a password */
+                         NULL                /* data to pass to the callback */
+                         );
+    fclose(skey_file);
+    
+    //CERTIFICATE STORING
+    cert_file = fopen("cert.pem", "wb"); //AGGIUNGERE UN CONTROLLO SULL'APERTURA DEL FILE
+    PEM_write_X509(
+                   cert_file,   /* write the certificate to the file we've opened */
+                   x509         /* our certificate */
+                   );
+    fclose(cert_file);
+}
+
+
+
+
+
+
+
+
+
+
+
+

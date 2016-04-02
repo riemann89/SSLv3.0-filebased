@@ -39,7 +39,7 @@ typedef struct{
     uint8_t version;
     Random random;
     uint32_t sessionId;
-    Cipher_Suite *ciphersuite; 
+    CipherSuite *ciphersuite; 
 }ClientServerHello;
 
 typedef struct{
@@ -100,10 +100,10 @@ typedef struct {
 }RecordLayer;
 
 //Extern variables
-extern Cipher_Suite lista[31];
+extern CipherSuite lista[31];
 extern ProtocolVersion std_version;
 
-Cipher_Suite get_cipher_suite(uint8_t id);
+CipherSuite get_cipher_suite(uint8_t id);
 #endif
 
 
