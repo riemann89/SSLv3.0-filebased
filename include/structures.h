@@ -48,6 +48,7 @@ typedef struct{
 
 typedef struct{
     //ASN.1Cert certificate_list<1..2^24-1>;      ..non ho ben capito da fare quando si vedono i certificati
+    FILE *certificate_file;
 }Certificate;
 
 typedef struct{

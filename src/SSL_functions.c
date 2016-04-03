@@ -258,13 +258,9 @@ Handshake *ServerDoneToHandshake(){
     
     //MEMORY ALLOCATION//
     
-    //bytes data vector
-    Bytes=(uint8_t*)calloc(1,sizeof(uint8_t));
-    if (Bytes == NULL) {
-        perror("Failed to create Bytes pointer - ServerDoneToHandshake operation");
-        exit(1);
-    }
-    
+    //bytes is initialized to NULL since server dona have no data contained
+    Bytes=NULL;
+
     //handshake
     handshake=(Handshake*)calloc(1,sizeof(handshake));
     if (handshake == NULL) {
@@ -281,6 +277,66 @@ Handshake *ServerDoneToHandshake(){
     
     return handshake;
 }
+
+Handshake *CertificateToHandshake(Certificate* certificate){
+    
+    //VARIABLE DECLARATION//
+    
+    CipherSuite *cipher;
+    Handshake *handshake;
+    //current time bytes representation
+    uint8_t timeB[4];
+    //session bytes representation
+    uint8_t session[4];
+    //array of all cipher codes
+    uint8_t cipher_codes[client_server_hello->length-38];//ToDo: rivedere il 38 (si può generalizzare)??
+    //Bytes data vector pointer
+    uint8_t *Bytes;
+    
+    //MEMORY ALLOCATION//
+    
+    //bytes data vector
+    Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
+        exit(1);
+    }
+    //handshake
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    
+    //temporary vector containing all cipher codes - it is requested to perform following memcopy
+    cipher=client_server_hello->ciphersuite;
+    for (int i=0;i<(client_server_hello->length-38);i++){
+        cipher_codes[i]=(cipher+i)->code;
+    }
+    
+    //unix_time and session values to bytes transformation
+    int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);
+    int_To_Bytes(client_server_hello->sessionId, session);
+    
+    //storing client/server_hello field into bytes data vector
+    Bytes[0]=client_server_hello->length;
+    Bytes[1]=client_server_hello->version;
+    memcpy(Bytes+2 ,session, 4);
+    memcpy(Bytes+6 ,timeB , 4);
+    memcpy(Bytes+10,client_server_hello->random.random_bytes,28);
+    memcpy(Bytes+38, cipher_codes,client_server_hello->length-38);
+    
+    //HANDSHAKE CONSTRUCTION//
+    
+    //handshake fields initialization
+    handshake->msg_type = CERTIFICATE;
+    handshake->length = client_server_hello->length + 4;
+    handshake->content = Bytes;
+    return handshake;
+}
+
 
 
 /*
@@ -303,7 +359,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     
     //bytes data vector
     Bytes =(uint8_t*)calloc(handshake->content[0]+4,sizeof(uint8_t)); //since type (1 Byte), lenght (3 byte) and first element of content
-    //contain the lenght of corresponding vector
+                                                                    //contain the lenght of corresponding vector
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
         exit(1);
