@@ -1,6 +1,8 @@
 #include "SSL_functions.h"
 #include "openssl/x509.h"
 #include "openssl/pem.h"
+#include <openssl/bio.h>
+#include <openssl/err.h>
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -258,9 +260,10 @@ Handshake *ServerDoneToHandshake(){
     
     //MEMORY ALLOCATION//
     
-    //bytes is initialized to NULL since server dona have no data contained
-    Bytes=NULL;
-
+    //bytes is allocated and initialized with 0 since server done have no data contained
+    
+    Bytes =(uint8_t*)calloc(1,sizeof(uint8_t));
+    
     //handshake
     handshake=(Handshake*)calloc(1,sizeof(handshake));
     if (handshake == NULL) {
@@ -278,6 +281,7 @@ Handshake *ServerDoneToHandshake(){
     return handshake;
 }
 
+/*
 Handshake *CertificateToHandshake(Certificate* certificate){
     
     //VARIABLE DECLARATION//
@@ -337,7 +341,7 @@ Handshake *CertificateToHandshake(Certificate* certificate){
     return handshake;
 }
 
-
+*/
 
 /*
  It encapsulate an handshake packet into a record_layer packet.
@@ -359,7 +363,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     
     //bytes data vector
     Bytes =(uint8_t*)calloc(handshake->content[0]+4,sizeof(uint8_t)); //since type (1 Byte), lenght (3 byte) and first element of content
-                                                                    //contain the lenght of corresponding vector
+    //contain the lenght of corresponding vector
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
         exit(1);
@@ -447,7 +451,7 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
 }
 
 /*
-function to generate a certificate for RSA key exchange
+ function to generate a certificate for RSA key exchange
  REMEMBER TO free:
  -
  -
@@ -465,7 +469,7 @@ void generateRSAcert(){
     
     //RSA ELEMENTS GENERATION
     
-    skey = EVP_PKEY_new(); //memory allocation for a secret key algorithm-independent
+    skey = EVP_PKEY_new();         /*memory allocation for a secret key algorithm-independent*/
     rsa = RSA_generate_key(
                            2048,   /* number of bits for the key - 2048 is a sensible value */
                            RSA_F4, /* exponent - RSA_F4 is defined as 0x10001L */
@@ -510,6 +514,7 @@ void generateRSAcert(){
     fclose(skey_file);
     
     //CERTIFICATE STORING
+    
     cert_file = fopen("cert.pem", "wb"); //AGGIUNGERE UN CONTROLLO SULL'APERTURA DEL FILE
     PEM_write_X509(
                    cert_file,   /* write the certificate to the file we've opened */
@@ -518,8 +523,66 @@ void generateRSAcert(){
     fclose(cert_file);
 }
 
+/*
+ *readCertificate 
+ *takes as input the name of the certificate with the estension (e.g. CertificateEx.pem)
+ *
+ */
 
-
+X509 *readCertificate(char *cert_filestr){
+    
+    /* VARIABLE DECLARATION */
+    
+    BIO              *certbio = NULL;   /*riv*/
+    BIO               *outbio = NULL;   /*riv*/
+    X509                *cert = NULL;   /*riv*/
+    long ret;                           /*riv*/
+    
+    /* ---------------------------------------------------------- *
+     * These function calls initialize openssl for correct work.  *
+     * ---------------------------------------------------------- */
+    OpenSSL_add_all_algorithms();
+    ERR_load_BIO_strings();
+    ERR_load_crypto_strings();
+    
+    /* ---------------------------------------------------------- *
+     * Create the Input/Output BIO's.                             *
+     * ---------------------------------------------------------- */
+    certbio = BIO_new(BIO_s_file());
+    outbio  = BIO_new_fp(stdout, BIO_NOCLOSE);
+    
+    /* ---------------------------------------------------------- *
+     * Load the certificate from file (PEM).                      *
+     * ---------------------------------------------------------- */
+    ret = BIO_read_filename(certbio, cert_filestr);
+    if (! (cert = PEM_read_bio_X509(certbio, NULL, 0, NULL))) {
+        BIO_printf(outbio, "Error loading cert into memory\n");
+        exit(-1);
+    }
+    //potrei lasciare lo switch per vedere se leggo il certificato corretto
+    /* ---------------------------------------------------------- *
+     * Print the public key information and the key in PEM format *
+     * ---------------------------------------------------------- */
+    /* display the key type and size here */
+    /*if (pkey) {
+        switch (pkey->type) {
+            case EVP_PKEY_RSA:
+                BIO_printf(outbio, "%d bit RSA Key\n\n", EVP_PKEY_bits(pkey));
+                break;
+            case EVP_PKEY_DSA:
+                BIO_printf(outbio, "%d bit DSA Key\n\n", EVP_PKEY_bits(pkey));
+                break;
+            default:
+                BIO_printf(outbio, "%d bit non-RSA/DSA Key\n\n", EVP_PKEY_bits(pkey));
+                break;
+        }
+    }
+    */
+    //X509_free(cert);
+    BIO_free_all(certbio);
+    BIO_free_all(outbio);
+    return cert;
+}
 
 
 

@@ -2,6 +2,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "openssl/x509.h"
+#include "openssl/pem.h"
+#include <openssl/bio.h>
+#include <openssl/err.h>
 
 /*****************************************STRUCTS***********************************************/
 #ifndef structure_h
@@ -47,8 +51,8 @@ typedef struct{
 }HelloRequest;
 
 typedef struct{
-    //ASN.1Cert certificate_list<1..2^24-1>;      ..non ho ben capito da fare quando si vedono i certificati
-    FILE *certificate_file;
+    //ASN.1Cert certificate_list<1..2^24-1>; (RIV)
+    X509 *cert;
 }Certificate;
 
 typedef struct{
@@ -80,7 +84,6 @@ typedef struct{
 typedef struct{        //da rivedere non so come fare gli Hash #
     uint8_t sha_hash[20];
     uint8_t md5_hash[16];
-    
 }Finished;
 
 
