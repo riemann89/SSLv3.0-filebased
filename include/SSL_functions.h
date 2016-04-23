@@ -26,7 +26,9 @@ ClientServerHello *readchannel();
 void setPriorities(uint8_t number,uint8_t *priority);
 ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
+/*
 
 //CERTIFICATE
 void generateRSAcert();
 X509 *readCertificate(char *cert_filestr);
+*/

@@ -65,20 +65,26 @@ setPriorities(len,list);    //setto la lista caricata
 	
 	while(timestep<2){
 	
-			if(CheckCommunication()==server){    //controllo se posso parlare o meno
-		
+			if(CheckCommunication()==server){    											//controllo se posso parlare o meno
+
  			if(timestep==0){
 
 				ClientServerHello *clienthello; 
-			    clienthello=readchannel(); //leggo quello che è stato scritto dal client
+			    clienthello=readchannel(); 														//leggo quello che è stato scritto dal client
 				
+				printf("\n printsessionid \n");
+			
+					printf("%lu ", clienthello->sessionId);
 				
-				CipherSuite *choosen;  //lista da sostituire a quella del clienthello per completare il serverhello
+	
+	printf("\n");
+				
+				CipherSuite *choosen; 																 //lista da sostituire a quella del clienthello per completare il serverhello
 				CipherSuite clientsuite;
 				choosen=&clientsuite;
-				clientsuite= get_cipher_suite(chooseChipher(clienthello));  //scelgo la miglior cifratura condivisa da server e client
-				clienthello->ciphersuite=choosen;  //sostituisco alla lista con tutti le chiphers supportate da client la lista composta dalla sola cifratura scelta da server
-				clienthello->length=39; //avrò una sola cipher
+				clientsuite= get_cipher_suite(chooseChipher(clienthello)); 	 //scelgo la miglior cifratura condivisa da server e client
+				clienthello->ciphersuite=choosen;  											 //sostituisco alla lista con tutti le chiphers supportate da client la lista composta dalla sola cifratura scelta da server
+				clienthello->length=39;                											     //avrò una sola cipher
 				
 				//spedisco il tutto sul canale in attesa di client  
 				Handshake hand;

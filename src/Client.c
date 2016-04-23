@@ -18,9 +18,10 @@ int main(int argc, const char *argv[]){
     RecordLayer *recordlayer;
     
     //CLIENT STEPS
-    
+    client=0;    //initialise client
+	
     OpenCommunication(client);
-    
+	
     while(timestep<2){
         
         if(CheckCommunication()==client){
@@ -39,11 +40,11 @@ int main(int argc, const char *argv[]){
                 client_hello.length=69;
                 
                 client_hello_p=&client_hello; //
-                
+ 
                 handshake = ClientServerHelloToHandshake(client_hello_p);
-                
+				
                 recordlayer=HandshakeToRecordLayer(handshake);
-                
+				
                 sendPacketByte(recordlayer);
                 
                 //ora ho mandato il clienthello  passo il turno al server in attesa di risposta

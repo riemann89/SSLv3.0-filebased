@@ -125,7 +125,7 @@ Random ran;
     ran.random_bytes[i]=(uint8_t) i;
 	}
 	
-	Cipher_Suite lista2[8]={
+	CipherSuite lista2[8]={
    /* {0x00,"SSL_NULL_WITH_NULL_NULL"},
     {0x01,"SSL_RSA_WITH_NULL_MD5"},
     {0x02,"SSL_RSA_WITH_NULL_SHA"},
@@ -173,9 +173,9 @@ Random ran;
 		ClientServerHello *client;
 		client=&cli;
 		
-		Cipher_Suite scelta;
+		CipherSuite scelta;
 		scelta=get_cipher_suite( chooseChipher(client));
-		Cipher_Suite *cipherlist;
+		CipherSuite *cipherlist;
 		cipherlist=&scelta;
 		
 		printf("\n%02x", scelta.code);
@@ -183,14 +183,13 @@ Random ran;
 		
 		client->length=39; //38 + just one byte for the chosen cipher
 		client->ciphersuite=cipherlist;
-		int intero;
 		//mando tutto in un  recordlayer
 		Handshake *hand;
 		hand =ClientServerHelloToHandshake(client);
 		RecordLayer *rec;
 		rec= HandshakeToRecordLayer(hand);
 		
-		intero=sendPacketByte(rec);
+		sendPacketByte(rec);
 	
 	
 	return 0;
