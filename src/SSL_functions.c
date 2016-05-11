@@ -20,7 +20,7 @@ void OpenCommunication(Talker talker){
     //CHECKING INPUT//
     
     if (talker!=client && talker!=server) {
-        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");
+        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");    //problema a incolonnare non si può spezzare la stringa
         exit(1);
     }
     
@@ -182,22 +182,23 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     //VARIABLE DECLARATION//
     
     CipherSuite *cipher;
-    Handshake *handshake;  //returning variable
+    Handshake *handshake; 																		 	//returning variable
 	
-    uint8_t timeB[4]; 			//current time bytes representation
-    uint8_t session[4];			 //session bytes representation
-    uint8_t cipher_codes[client_server_hello->length-38];    // 38= Random(32)+session(4) + version(1) + length(1)  //array of all ciphers supported
-    uint8_t *Bytes;				 //Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
+    uint8_t timeB[4]; 																							//current time bytes representation
+    uint8_t session[4];			 																				//session bytes representation
+    uint8_t cipher_codes[client_server_hello->length-38];    							// 38= Random(32)+session(4) + version(1) + length(1)  //array of all ciphers supported
+    uint8_t *Bytes;																								//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
     
     //MEMORY ALLOCATION//
     
-    Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t)); //bytes data vector, as said Bytes is an array which represents client_server_hello
+    Bytes =(uint8_t*)calloc(client_server_hello->length
+	,sizeof(uint8_t));																								 //bytes data vector, as said Bytes is an array which represents client_server_hello
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
     
-    handshake=(Handshake*)calloc(1,sizeof(handshake));							//handshake memory allocation
+    handshake=(Handshake*)calloc(1,sizeof(handshake));								//handshake memory allocation
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -205,23 +206,23 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
      
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     
-    cipher=client_server_hello->ciphersuite;   				 //temporary vector containing all cipher codes - it is requested to perform following memcopy
+    cipher=client_server_hello->ciphersuite;   													 //temporary vector containing all cipher codes - it is requested to perform following memcopy
     for (int i=0;i<(client_server_hello->length-38);i++){  
         cipher_codes[i]=(cipher+i)->code;
     }
     
     int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);   	    //unix_time 
-    int_To_Bytes(client_server_hello->sessionId, session);  							// session values to bytes transformation
+    int_To_Bytes(client_server_hello->sessionId, session);  								// session values to bytes transformation
     
     Bytes[0]=client_server_hello->version;   														//serializing client/server_hello field into bytes data vector
     memcpy(Bytes+1 ,session, 4);
     memcpy(Bytes+5 ,timeB , 4);
     memcpy(Bytes+9,client_server_hello->random.random_bytes,28);
-    memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);       //38= version(1)+length(1)+session(4)+random(32)
+    memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);       		//38= version(1)+length(1)+session(4)+random(32)
     
     //HANDSHAKE CONSTRUCTION//
     
-    handshake->msg_type = CLIENT_HELLO;   										//handshake fields initialization
+    handshake->msg_type = CLIENT_HELLO;   												//handshake fields initialization
     handshake->length = client_server_hello->length + 3;
     handshake->content = Bytes;
 	
@@ -243,11 +244,9 @@ Handshake *ServerDoneToHandshake(){
     
     //MEMORY ALLOCATION//
     
-    //bytes is allocated and initialized with 0 since server done have no data contained
+    Bytes =(uint8_t*)calloc(1,sizeof(uint8_t));														 //bytes is allocated and initialized with 0 since server done have no data contained
     
-    Bytes =(uint8_t*)calloc(1,sizeof(uint8_t));
     
-    //handshake
     handshake=(Handshake*)calloc(1,sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
@@ -255,9 +254,8 @@ Handshake *ServerDoneToHandshake(){
     }
     
     //HANDSHAKE CONSTRUCTION//
-    
-    //handshake fields initialization
-    handshake->msg_type=SERVER_DONE;
+
+    handshake->msg_type=SERVER_DONE;														   //handshake fields initialization
     handshake->length=5;
     handshake->content=NULL;
     
@@ -339,20 +337,19 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
   
     uint8_t *Bytes;
     uint8_t length24[4];
-    RecordLayer *recordlayer;  //returning variable
+    RecordLayer *recordlayer;  																										//returning variable
     int len;
 
     //MEMORY ALLOCATION//
     
-    //bytes data vector
-    Bytes =(uint8_t*)calloc(handshake->length,sizeof(uint8_t)); 			
-    if (Bytes == NULL) { 			//contain the lenght of corresponding vector
+    Bytes =(uint8_t*)calloc(handshake->length,sizeof(uint8_t)); 			    								//bytes data vector allocation
+    if (Bytes == NULL) { 																													//contain the lenght of corresponding vector
         perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
         exit(1);
     }
-    
-    
-    recordlayer = (RecordLayer*)calloc(handshake->length + 5,sizeof(RecordLayer));   //record layer allocation memory i need 5 extra-bytes  
+        
+    recordlayer = (RecordLayer*)calloc(handshake->length +
+ 5,sizeof(RecordLayer));  		 																										//record layer allocation memory i need 5 extra-bytes  
     if (recordlayer == NULL) {
         perror("Failed to create recordlayer pointer - HandshakeToRecordLayer operation");
         exit(1);
@@ -360,50 +357,36 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     
-																									
-    int_To_Bytes(handshake->length ,length24); 			    //int of 4 bytes to int of 3 bytes and reversed
-
-
+    int_To_Bytes(handshake->length ,length24); 			  				  												//int of 4 bytes to int of 3 bytes and reversed
     len=handshake->length;							
     uint8_t temp[len];
+    Bytes[0]=handshake->msg_type;																									//serializing handshake and store it into Bytes		
+    memcpy(Bytes+1 ,length24+1,3);                										 											// length24 + 1 cause i need only the last 3 bytes
+    memcpy(Bytes+ 4 ,handshake->content,len-4); 																			// +4 since 4=type(1)+length(3)		
     
+	//RECORDLAYER CONSTRUCTION//
     
-    Bytes[0]=handshake->msg_type;					//serializing handshake and store it into Bytes		
-    memcpy(Bytes+1 ,length24+1,3);                 // length24 + 1 cause i need only the last 3 bytes
-    memcpy(Bytes+ 4 ,handshake->content,len-4); 	//4=type(1)+length(3)		
-/*
-uint8_t a;
-	   for (int i=0;i<(handshake->length);i++){  
-		   a=Bytes[i]; 
-        printf(" %02X", a);
-    }
-	*/
-	    printf("\n ");
-    //RECORDLAYER CONSTRUCTION//
-    
-    
-    recordlayer->type=HANDSHAKE;									//recordlayer fields initialization
+    recordlayer->type=HANDSHAKE;																									//recordlayer fields initialization
     recordlayer->version=std_version;
     recordlayer->length=handshake->length+5;
     recordlayer->message=Bytes;
 
-	
     return recordlayer;
 }
 
 
 // funzione per settare le priorità  salvate nel file PriorityList  [length,chiphers];
 
-void setPriorities(uint8_t number,uint8_t *priority){   //numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
-    //creo il file
-    FILE* PriorityList;
-    PriorityList = fopen("PriorityList.txt", "wb");   //file where will be stored the chipers supported by server in decrescent order of priority
+void setPriorities(uint8_t number,uint8_t *priority){   																//numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
+    
+    FILE* PriorityList; 																														//creo il file
+    PriorityList = fopen("PriorityList.txt", "wb");   																			//file where will be stored the chipers supported by server in decrescent order of priority
   
-    uint8_t *length;    //inserisco lunghezza
+    uint8_t *length;   																													 	//inserisco lunghezza
     length=&number;
     fwrite(length,sizeof(uint8_t),1,PriorityList);
     
-    for(int i = 0; i<number; i++){   //carico le chiphers
+    for(int i = 0; i<number; i++){   																									//carico le chiphers
         
         fwrite((priority +i),sizeof(uint8_t),1,PriorityList);
     }
@@ -416,26 +399,26 @@ void setPriorities(uint8_t number,uint8_t *priority){   //numero ciphers support
 uint8_t chooseChipher(ClientServerHello *client_supported_list){
     
     FILE* PriorityList;
-    PriorityList = fopen("PriorityList.txt", "r");   //read the  priority list written by setPryorities on this file
+    PriorityList = fopen("PriorityList.txt", "r");  	 																		//read the  priority list written by setPryorities on this file
     uint8_t *buffer ;
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
-    fread(buffer, 32, 1, PriorityList);    //temporary priorities are stored here easier to manage
+    fread(buffer, 32, 1, PriorityList);    																						//temporary priorities are stored here easier to manage
     
-    uint8_t choosen;  //the returning variable, the choice
+    uint8_t choosen;  																													//the returning variable, the choice
     
-    for(int i=1; i<(int)buffer[0]+1; i++){          // check decrescently if a certain chipher is avaiable on client_supported_list
+    for(int i=1; i<(int)buffer[0]+1; i++){          																				// check decrescently if a certain chipher is avaiable on client_supported_list
         for(int j=0;j<client_supported_list->length -38 ;j++){  
             
-            if(buffer[i]==client_supported_list->ciphersuite[j].code){  //check if the suite is avaiable
+            if(buffer[i]==client_supported_list->ciphersuite[j].code){  										//check if the suite is avaiable
                 choosen=buffer[i];
-                return choosen;   //find the best possible chipher according to my list, return that one as a byte
+                return choosen;   																										//find the best possible chipher according to my list, return that one as a byte
             }
             
         }
         
     }
     
-    printf("\nError, uncompatibles chiphers");   //no compatible chipher, print error
+    printf("\nError, uncompatibles chiphers");   																		//no compatible chipher, print error
 				exit(1);
 }
 
