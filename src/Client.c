@@ -6,8 +6,8 @@
 #include <unistd.h>
 #include "SSL_functions.h"
 
+
 int main(int argc, const char *argv[]){
-    
     //VARIABLE DECLARATION
     
     Talker client;
@@ -16,6 +16,11 @@ int main(int argc, const char *argv[]){
     ClientServerHello client_hello,*client_hello_p;
     Handshake *handshake;
     RecordLayer *recordlayer;
+    
+    printf("ciao");
+    X509* test;
+    test = loadCertificate("server.crt");
+    
     
     //CLIENT STEPS
     client=0;    //initialise client
@@ -75,7 +80,6 @@ int main(int argc, const char *argv[]){
      }
      
      * */
-    
     
     
     

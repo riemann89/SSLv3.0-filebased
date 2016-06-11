@@ -1,8 +1,6 @@
 #include "SSL_functions.h"
 #include "openssl/x509.h"
 #include "openssl/pem.h"
-#include <openssl/bio.h>
-#include <openssl/err.h>
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -32,8 +30,10 @@ void OpenCommunication(Talker talker){
 /*
  It checks who between server/client can communicate. It returns the authorized user that can communicate over the channel.
  */
+
 Talker CheckCommunication(){
-    //VARIABLES DECLARATION , File opening//
+    
+    //VARIABLES DECLARATION
     FILE* token;
     Talker authorized_talker;																													//returning variable
     token=fopen("token.txt", "r");    																										//on token.txt is saved the current authorized talker 
@@ -49,6 +49,34 @@ Talker CheckCommunication(){
         exit(1);
     }
     return authorized_talker;
+}
+/*
+ This function load a certificate from a file and return an array of bites where are contained certificate information in DER format
+ */
+
+Certificate* loadCertificate(char * cert_name){
+    
+    Certificate *certificate;
+    certificate = calloc(1,sizeof(certificate));
+    X509* certificate_x509 = NULL;
+    uint8_t *buf;
+    
+    int len;
+    
+    buf = NULL;
+    FILE* f = fopen(cert_name, "r");
+    
+    if (f != NULL){
+        certificate_x509 = PEM_read_X509(f, NULL, 0, NULL);
+        len = i2d_X509(certificate_x509, &buf);
+        if (len < 0){
+            perror("in loadCertificate: Certificate Not Valid\n");
+            exit(1);
+        }
+    }
+    certificate->X509_der = buf;
+    certificate->len = len;
+    return certificate;
 }
 
 
@@ -86,70 +114,8 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
-/* funzione per leggere il file*/
-//Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
-ClientServerHello *readchannel(){
+// this function converts a ClientServerHello into a Handshake
 
-    
-    uint8_t *buffer;
-    FILE* SSLchannel;
-    SSLchannel=fopen("SSLchannelbyte.txt", "r");
-    
-    ClientServerHello *returning_hello;	 //returning variable
-    returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
-    
-    
-    
-    buffer = (uint8_t *)malloc((150)*sizeof(uint8_t));    // Enough memory for file + \0
-    fread(buffer, 100, 1, SSLchannel);
-    
-
-    uint8_t  version=(uint8_t)*(buffer+9);
-	
-	
-    uint8_t  length= (uint8_t)*(buffer +8) -4 ;  //tolgo i byte in più dell' handshake  (version + length)   è un po' sporca...sfrutto il fatto che la lunghezza sta in realtà in un byte... 
-
-    uint8_t session[4];
-	
-    for(int i =0;i<4;i++){
-        session[i]= *(buffer + 10 + i);
-    }
-    reverse(session,4);   // reversing dei bytes della session
-    
-    uint32_t  SessionId=(uint32_t)(session[0] + session[1] *256 + session[2]*256*256 + session[3]*256*256);
-    Random ran;
-    ran.gmt_unix_time=time(0);  //metto il tempo nuovo in secondi.. dovrei trovare quella in millis
-	
-	
-    for (int i =0; i<28;i++){
-		
-        ran.random_bytes[i]=(uint8_t)*(buffer +(18+i));
-    }
-    
-    //uint8_t  ciphers[length - 38]; //length of  ciphers
-    CipherSuite *ciphers = malloc((50)*sizeof(CipherSuite));
-    
-    
-    
- for (int i =0; i<length-32;i++){
-        printf("%d",i+18);
-        ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
-    }
-    //uint8_t *ciphers_ptr;
-    
-    //ciphers_ptr=&ciphers;
-    
-    printf("carico ritorno");
-    returning_hello->version=version;
-    returning_hello->length=length;
-    returning_hello->sessionId=SessionId;
-    returning_hello->random=ran;
-    returning_hello->ciphersuite=ciphers;
-    //printf("%02x\n \n",ciphers[0].code);  //comodo come controllo
-    //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
-    return returning_hello;
-}
-// this function converts a ClientServerHello into a Handshake 
 Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     //VARIABLE DECLARATION//
     CipherSuite *cipher;
@@ -213,74 +179,40 @@ Handshake *ServerDoneToHandshake(){
     return handshake;
 }
 
-/*
 Handshake *CertificateToHandshake(Certificate* certificate){
-    
     //VARIABLE DECLARATION//
-    
-    CipherSuite *cipher;
-    Handshake *handshake;
-    //current time bytes representation
-    uint8_t timeB[4];
-    //session bytes representation
-    uint8_t session[4];
-    //array of all cipher codes
-    uint8_t cipher_codes[client_server_hello->length-38];//ToDo: rivedere il 38 (si può generalizzare)??
-    //Bytes data vector pointer
-    uint8_t *Bytes;
-    
+    Handshake *handshake; 																		 	//returning variable
+		 																				//session bytes representation
+    uint8_t *Bytes;																								//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
     //MEMORY ALLOCATION//
-    
-    //bytes data vector
-    Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t));
+    Bytes =(uint8_t*)calloc(certificate->len
+                            ,sizeof(uint8_t));																								 //bytes data vector, as said Bytes is an array which represents client_server_hello
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    //handshake
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    handshake=(Handshake*)calloc(1,sizeof(handshake));								//handshake memory allocation
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    
-    //temporary vector containing all cipher codes - it is requested to perform following memcopy
-    cipher=client_server_hello->ciphersuite;
-    for (int i=0;i<(client_server_hello->length-38);i++){
-        cipher_codes[i]=(cipher+i)->code;
-    }
-    
-    //unix_time and session values to bytes transformation
-    int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);
-    int_To_Bytes(client_server_hello->sessionId, session);
-    
-    //storing client/server_hello field into bytes data vector
-    Bytes[0]=client_server_hello->length;
-    Bytes[1]=client_server_hello->version;
-    memcpy(Bytes+2 ,session, 4);
-    memcpy(Bytes+6 ,timeB , 4);
-    memcpy(Bytes+10,client_server_hello->random.random_bytes,28);
-    memcpy(Bytes+38, cipher_codes,client_server_hello->length-38);
+    memcpy(Bytes, certificate->X509_der, certificate->len);       		//38= version(1)+length(1)+session(4)+random(32)
     
     //HANDSHAKE CONSTRUCTION//
-    
-    //handshake fields initialization
-    handshake->msg_type = CERTIFICATE;
-    handshake->length = client_server_hello->length + 4;
+    handshake->msg_type = CERTIFICATE;   												//handshake fields initialization
+    handshake->length = certificate->len + 4;
     handshake->content = Bytes;
     return handshake;
 }
 
-*/
-
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange server_key_exchange);
 /*
  It encapsulate an handshake packet into a record_layer packet.
  REMEMBER TO free:
  -Bytes
  -recordlayer
- */
+*/
 
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //VARIABLE DECLARATION//
@@ -315,9 +247,73 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     return recordlayer;
 }
 
+/* funzione per leggere il file*/
+//Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
+ClientServerHello *readchannel(){
+    
+    
+    uint8_t *buffer;
+    FILE* SSLchannel;
+    SSLchannel=fopen("SSLchannelbyte.txt", "r");
+    
+    ClientServerHello *returning_hello;	 //returning variable
+    returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
+    
+    
+    
+    buffer = (uint8_t *)malloc((150)*sizeof(uint8_t));    // Enough memory for file + \0
+    fread(buffer, 100, 1, SSLchannel);
+    
+    
+    uint8_t  version=(uint8_t)*(buffer+9);
+    
+    
+    uint8_t  length= (uint8_t)*(buffer +8) -4 ;  //tolgo i byte in più dell' handshake  (version + length)   è un po' sporca...sfrutto il fatto che la lunghezza sta in realtà in un byte...
+    
+    uint8_t session[4];
+    
+    for(int i =0;i<4;i++){
+        session[i]= *(buffer + 10 + i);
+    }
+    reverse(session,4);   // reversing dei bytes della session
+    
+    uint32_t  SessionId=(uint32_t)(session[0] + session[1] *256 + session[2]*256*256 + session[3]*256*256);
+    Random ran;
+    ran.gmt_unix_time=time(0);  //metto il tempo nuovo in secondi.. dovrei trovare quella in millis
+    
+    
+    for (int i =0; i<28;i++){
+        
+        ran.random_bytes[i]=(uint8_t)*(buffer +(18+i));
+    }
+    
+    //uint8_t  ciphers[length - 38]; //length of  ciphers
+    CipherSuite *ciphers = malloc((50)*sizeof(CipherSuite));
+    
+    
+    
+    for (int i =0; i<length-32;i++){
+        printf("%d",i+18);
+        ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
+    }
+    //uint8_t *ciphers_ptr;
+    
+    //ciphers_ptr=&ciphers;
+    
+    printf("carico ritorno");
+    returning_hello->version=version;
+    returning_hello->length=length;
+    returning_hello->sessionId=SessionId;
+    returning_hello->random=ran;
+    returning_hello->ciphersuite=ciphers;
+    //printf("%02x\n \n",ciphers[0].code);  //comodo come controllo
+    //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
+    return returning_hello;
+}
 
 
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
+
 void setPriorities(uint8_t number,uint8_t *priority){   																//numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
     FILE* PriorityList; 																														//creo il file
     PriorityList = fopen("PriorityList.txt", "wb");   																			//file where will be stored the chipers supported by server in decrescent order of priority
@@ -351,15 +347,22 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
 }
 
 /*
- function to generate a certificate for RSA key exchange
- REMEMBER TO free:
- -
- -
+ 
  */
 
 
 
 
+int writeCertificate(X509* certificate){
+    /* Per leggere il der
+    X509 *res= NULL;
+    d2i_X509(&res, &buf, *len);
+     */
+    FILE* file_cert;
+    
+    file_cert=fopen("cert_out.crt", "w+");
+    return PEM_write_X509(file_cert, certificate);
+}
 
 
 

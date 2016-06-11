@@ -52,11 +52,12 @@ typedef struct{
 
 typedef struct{
     //ASN.1Cert certificate_list<1..2^24-1>; (RIV)
-    X509 *cert;
+    uint8_t *X509_der;
+    int len;
 }Certificate;
 
 typedef struct{
-    //???? molto complicato
+    //Non sappiamo se implementarlo
 }ServerKeyExchange;
 
 typedef enum{
