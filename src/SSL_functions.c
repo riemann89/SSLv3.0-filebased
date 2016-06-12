@@ -206,7 +206,8 @@ Handshake *CertificateToHandshake(Certificate* certificate){
     return handshake;
 }
 
-Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange server_key_exchange);
+// Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange server_key_exchange){};
+
 /*
  It encapsulate an handshake packet into a record_layer packet.
  REMEMBER TO free:
