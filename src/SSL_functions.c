@@ -30,7 +30,6 @@ void OpenCommunication(Talker talker){
 /*
  It checks who between server/client can communicate. It returns the authorized user that can communicate over the channel.
  */
-
 Talker CheckCommunication(){
     
     //VARIABLES DECLARATION
@@ -50,10 +49,10 @@ Talker CheckCommunication(){
     }
     return authorized_talker;
 }
+
 /*
  This function load a certificate from a file and return an array of bites where are contained certificate information in DER format
  */
-
 Certificate* loadCertificate(char * cert_name){
     
     Certificate *certificate;
@@ -114,8 +113,9 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
-// this function converts a ClientServerHello into a Handshake
-
+/*
+ This function converts a ClientServerHello into a Handshake
+*/
 Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     //VARIABLE DECLARATION//
     CipherSuite *cipher;
