@@ -113,6 +113,8 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
+
+//FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES
 /*
  This function converts a ClientServerHello into a Handshake
 */
@@ -155,34 +157,10 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     return handshake;
 }
 
-/*
- It encapsulates server_done packet into an handshake packet.
- REMEMBER TO free:
- -Bytes
- -handshake
- */ 
-Handshake *ServerDoneToHandshake(){
-    //VARIABLE DECLARATION//
-    Handshake *handshake;
-    uint8_t* Bytes;
-    //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(1,sizeof(uint8_t));														 //bytes is allocated and initialized with 0 since server done have no data contained
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
-    if (handshake == NULL) {
-        perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
-        exit(1);
-    }
-    //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type=SERVER_DONE;														   //handshake fields initialization
-    handshake->length=5;
-    handshake->content=NULL;
-    return handshake;
-}
-
 Handshake *CertificateToHandshake(Certificate* certificate){
     //VARIABLE DECLARATION//
     Handshake *handshake; 																		 	//returning variable
-		 																				//session bytes representation
+    //session bytes representation
     uint8_t *Bytes;																								//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
     //MEMORY ALLOCATION//
     Bytes =(uint8_t*)calloc(certificate->len
@@ -206,7 +184,39 @@ Handshake *CertificateToHandshake(Certificate* certificate){
     return handshake;
 }
 
-// Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange server_key_exchange){};
+Handshake *ServerClientKeyExchangeToHandshake(ServerKeyExchange server_key_exchange){
+    return 1
+}; //TODO
+
+Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request){}; //TODO
+
+Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify){};//TODO va sistemata anche la struttura certificate verify...
+
+//NON è CHIARO SE BISOGNA ANCHE INSERIRE IL CHANGE_CIPHER_SPEC message, visto che fa non fa parte dell'handshake protocol
+
+Handshake *FinishedToHandshake(Finished finished){}//TODO va sistemato anche la struttura
+
+
+
+
+Handshake *ServerDoneToHandshake(){
+    //VARIABLE DECLARATION//
+    Handshake *handshake;
+    uint8_t* Bytes;
+    //MEMORY ALLOCATION//
+    Bytes =(uint8_t*)calloc(1,sizeof(uint8_t));														 //bytes is allocated and initialized with 0 since server done have no data contained
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
+        exit(1);
+    }
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type=SERVER_DONE;														   //handshake fields initialization
+    handshake->length=5;
+    handshake->content=NULL;
+    return handshake;
+}
+
 
 /*
  It encapsulate an handshake packet into a record_layer packet.

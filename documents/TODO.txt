@@ -1,0 +1,13 @@
+TODO:
+
+QUeste funzioni sono sta definite: resta da scrivere il corpo e sistmare le relative strutture che utilizzano.
+- ClientKeyExchange (GIU) : devo estrarre e crittare e inviarla.
+- ServerClientKeyExchangeToHandshake
+- CertificateRequestToHandshake
+- CertificateVerifyToHandshake
+- FinishedToHandshake
+
+- generare altri certificati.
+- generalizzare la lettura sul canale (ERMES)
+- fixare la questione readHandshake (ERMES)
+- derToX509

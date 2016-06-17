@@ -13,14 +13,16 @@ void OpenCommunication(Talker talker);
 Talker CheckCommunication();
 void sendPacketByte(RecordLayer *record_layer);
 
-//Packet Encapsulation
-Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
-
-//ClientHello
+//Handshake Protocol
 Handshake* ClientServerHelloToHandshake(ClientServerHello* client_server_hello);
-Handshake* ServerDoneToHandshake();
 Handshake *CertificateToHandshake(Certificate* certificate);
+Handshake *ServerClientKeyExchangeToHandshake(ServerKeyExchange server_key_exchange);
+Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request);
+Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify);
+Handshake* ServerDoneToHandshake();
+Handshake *FinishedToHandshake(Finished finished);
 
+//Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 
 

@@ -78,9 +78,15 @@ typedef struct{
     
 }CertificateVerify;
 
+typedef struct {
+    char *name_algorithm;
+    uint8_t parameters;
+}KeyExchangeParameters;
+
 typedef struct{
-    
-}ClientKeyExchange;
+    unsigned char *signature;
+    KeyExchangeParameters *parameters;//l'idea è di avere un array dove il primo elemento è il nome dell'algoritmo e poi è seguito dai valori numerici dei parametri.
+}ServerClientKeyExchange;
 
 typedef struct{        //da rivedere non so come fare gli Hash #
     uint8_t sha_hash[20];

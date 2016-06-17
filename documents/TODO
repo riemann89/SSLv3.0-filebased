@@ -1,6 +1,0 @@
-TODO
-- generare altri certificati.
-- generalizzare la lettura sul canale (E)
-- fixare la questione readHandshake (E)
-- derToX509
-- ClientKeyExchange (G) : devo estrarre e crittare e inviarla.
