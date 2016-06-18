@@ -1,13 +1,20 @@
 TODO:
 
-QUeste funzioni sono sta definite: resta da scrivere il corpo e sistmare le relative strutture che utilizzano.
-- ClientKeyExchange (GIU) : devo estrarre e crittare e inviarla.
-- ServerClientKeyExchangeToHandshake
-- CertificateRequestToHandshake
-- CertificateVerifyToHandshake
-- FinishedToHandshake
+Le seguenti funzioni sono sta definite: resta da scrivere il corpo e sistemare le relative strutture che utilizzano:
+- ServerClientKeyExchangeToHandshake (GIU) 
+- CertificateRequestToHandshake (GIU)
+- CertificateVerifyToHandshake (ERMES) 
+- FinishedToHandshake (ERMES)
 
-- generare altri certificati.
+- generare altri certificati. (GIU)
 - generalizzare la lettura sul canale (ERMES)
 - fixare la questione readHandshake (ERMES)
-- derToX509
+- derToX509 (GIU)
+
+- Non è chiaro se fare il change_cipher_spec (????)
+
+- Client main code (DA ASSEGNARE)
+- Server main code (DA ASSEGNARE)
+
+- Verifica delle Free sui codici delle funzioni(DA ASSEGNARE)
+- Sistemare i commenti (DA ASSEGNARE)
