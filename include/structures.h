@@ -56,10 +56,6 @@ typedef struct{
     int len;
 }Certificate;
 
-typedef struct{
-    //Non sappiamo se implementarlo
-}ServerKeyExchange;
-
 typedef enum{
     RSA_SIGN, DSS_SIGN, RSA_FIXED_DH,
     DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH,FORTEZZA_MISSI=20
@@ -78,15 +74,10 @@ typedef struct{
     
 }CertificateVerify;
 
-typedef struct {
-    char *name_algorithm;
-    uint8_t parameters;
-}KeyExchangeParameters;
-
 typedef struct{
-    unsigned char *signature;
-    KeyExchangeParameters *parameters;//l'idea è di avere un array dove il primo elemento è il nome dell'algoritmo e poi è seguito dai valori numerici dei parametri.
-}ServerClientKeyExchange;
+    uint8_t *parameters;
+    uint8_t *signature;
+}ServerKeyExchange;
 
 typedef struct{        //da rivedere non so come fare gli Hash #
     uint8_t sha_hash[20];
@@ -109,6 +100,24 @@ typedef struct {
     uint16_t length;
     uint8_t* message;
 }RecordLayer;
+
+//Structs for ServerKeyExchange
+typedef enum{RSA_, DIFFIE_HELLMAN, FORTEZZA}KeyExchangeAlgorithm;
+
+typedef struct {
+    uint8_t rsa_modulus[2^16-1];
+    uint8_t rsa_exponent[2^16-1];
+}ServerRSAParams;
+
+typedef struct {
+    uint8_t dh_p[2^16-1];
+    uint8_t dh_g[2^16-1];
+    uint8_t dh_Ys[2^16-1];
+}ServerDHParams;
+
+typedef struct{
+    uint8_t r_s[128];
+}ServerFortezzaParams;
 
 //Extern variables
 extern CipherSuite lista[31];

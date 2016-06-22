@@ -113,7 +113,6 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
-
 //FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES
 /*
  This function converts a ClientServerHello into a Handshake
@@ -185,19 +184,26 @@ Handshake *CertificateToHandshake(Certificate* certificate){
 }
 
 Handshake *ServerClientKeyExchangeToHandshake(ServerKeyExchange server_key_exchange){
-    return 1
+    Handshake *a;
+    return a;
 }; //TODO
 
-Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request){}; //TODO
+Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request){
+    Handshake *a;
+    return a;
+}; //TODO
 
-Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify){};//TODO va sistemata anche la struttura certificate verify...
+Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify){
+    Handshake *a;
+    return a;
+};//TODO va sistemata anche la struttura certificate verify...
 
 //NON è CHIARO SE BISOGNA ANCHE INSERIRE IL CHANGE_CIPHER_SPEC message, visto che fa non fa parte dell'handshake protocol
 
-Handshake *FinishedToHandshake(Finished finished){}//TODO va sistemato anche la struttura
-
-
-
+Handshake *FinishedToHandshake(Finished finished){
+    Handshake *a;
+    return a;
+}//TODO va sistemato anche la struttura
 
 Handshake *ServerDoneToHandshake(){
     //VARIABLE DECLARATION//
@@ -246,8 +252,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     int_To_Bytes(handshake->length ,length24); 			  				  												//int of 4 bytes to int of 3 bytes and reversed
     len=handshake->length;							
-    uint8_t temp[len];
-    Bytes[0]=handshake->msg_type;																									//serializing handshake and store it into Bytes		
+    Bytes[0]=handshake->msg_type;																									//serializing handshake and store it into Bytes
     memcpy(Bytes+1 ,length24+1,3);                										 											// length24 + 1 cause i need only the last 3 bytes
     memcpy(Bytes+ 4 ,handshake->content,len-4); 																			// +4 since 4=type(1)+length(3)		
 	//RECORDLAYER CONSTRUCTION//
@@ -322,7 +327,6 @@ ClientServerHello *readchannel(){
     return returning_hello;
 }
 
-
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
 
 void setPriorities(uint8_t number,uint8_t *priority){   																//numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
@@ -360,8 +364,6 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
 /*
  
  */
-
-
 
 
 int writeCertificate(X509* certificate){

@@ -158,3 +158,8 @@ return 1;
 }
 
 
+
+//RSA funzionamento base:
+
+
+
