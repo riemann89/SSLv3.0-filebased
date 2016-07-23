@@ -27,10 +27,10 @@ uint32_t Bytes_To_Int(int len, uint8_t  *t_Bytes){								// convert a stream of
 		return 1;
 	}
 	
-	int res =1;
+	int res = 0;
 	for (int i =0; i < len; i++)
 	{
-		res =  res + t_Bytes[i]*256;
+		res =  res*256 + t_Bytes[i];
 	}
 	return res;
 }

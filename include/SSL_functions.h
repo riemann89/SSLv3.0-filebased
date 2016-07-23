@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <structures.h>
+#include "structures.h"
 #include "Utilities.h"
 #include <openssl/x509.h>
 #include <openssl/pem.h>

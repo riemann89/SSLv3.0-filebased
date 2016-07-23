@@ -1,6 +1,6 @@
 CC := gcc
 CFLAGS := -std=gnu99 -Wall -Iinclude
-OPENSSL := -I/usr/local/ssl/include -L/usr/local/ssl/lib -lssl -lcrypto -ldl
+OPENSSL := -I/usr/local/ssl/include -L/usr/local/ssl/lib -lssl -lcrypto  
 
 all: server client banco
 	
