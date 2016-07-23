@@ -26,10 +26,11 @@ Handshake *RecordToHandshake(RecordLayer record);  //TODO  2
 
 //Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  
-RecordLayer *readchannel2();  //TODO    1
+RecordLayer *readchannel2();  //TODO    1 mettere readchannel()
 
 
-ClientServerHello *readchannel();  											//TODO   3 ne ho gia una direttamnete dal canale.. si tratta di specializzarla una volta creati record e poi handshake partendo dal canale
+ClientServerHello *readchannel();  											//TODO  4  da sostituire con HandshakeToHello( Handshake handshake);
+ClientServerHello HandshakeToHello( Handshake handshake);  // TODO 3
 void setPriorities(uint8_t number,uint8_t *priority);
 ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
