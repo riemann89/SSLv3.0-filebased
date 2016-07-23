@@ -28,7 +28,7 @@ typedef struct{
 
 typedef struct {
     HandshakeType msg_type;
-    uint32_t length;
+    uint32_t length;   //on file it will be  only 3 bytes (uint24)  so remember to convert
     uint8_t* content;
 }Handshake;
 

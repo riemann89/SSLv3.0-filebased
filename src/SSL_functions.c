@@ -1,6 +1,6 @@
-#include "SSL_functions.h"
-#include "openssl/x509.h"
-#include "openssl/pem.h"
+#include <SSL_functions.h>
+#include <openssl/x509.h>
+#include <openssl/pem.h>
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -299,6 +299,44 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 
 /* funzione per leggere il file*/
 //Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
+
+RecordLayer  *readchannel2(){
+	
+	uint8_t *buffer;
+    FILE* SSLchannel;
+    SSLchannel=fopen("SSLchannelbyte.txt", "r");
+	if(SSLchannel==NULL)
+	{
+		printf("Error unable to read the SSLchannel");
+		return NULL;
+	}
+	
+	RecordLayer *returning_record;																											 // The returning variable
+	returning_record = (RecordLayer*)calloc(1,sizeof(returning_record));									// memory allocation
+	
+	int packetSize;																																				// read file size
+	fseek(SSLchannel,0 , SEEK_END);
+	packetSize= ftell(SSLchannel);
+	fseek(SSLchannel,SEEK_SET, 0);
+	
+	buffer = (uint8_t*)malloc((packetSize )*sizeof(uint8_t)); 															//	alloc enough memory to handle SSLchannel file																		
+	fread(buffer,packetSize,1,SSLchannel);																							// load file into buffer
+	
+	
+	ContentType type;
+	type = buffer[0];
+	returning_record->type = type;																											// assign type
+	ProtocolVersion version;
+	version.minor = buffer[1];
+	version.major = buffer[2];	
+	returning_record->version= version;																								// assign version
+	uint32_t length;
+	length = Bytes_To_Int(2, buffer[3]);																									// convert into uint_16
+	returning_record->length =0;																					// assign length to record
+	returning_record->message= buffer + 5;																						//assign pointer to message	
+}
+
+
 ClientServerHello *readchannel(){
     
     
@@ -318,7 +356,7 @@ ClientServerHello *readchannel(){
     uint8_t  version=(uint8_t)*(buffer+9);
     
     
-    uint8_t  length= (uint8_t)*(buffer +8) -4 ;  //tolgo i byte in più dell' handshake  (version + length)   è un po' sporca...sfrutto il fatto che la lunghezza sta in realtà in un byte...
+    uint8_t  length= (uint8_t)*(buffer +8) -4 ;  //tolgo i byte in più dell' handshake  (version + length)   è un po' sporca...sfrutto il fatto che la lunghezza sta in realtà in un byte... TODO
     
     uint8_t session[4];
     
@@ -360,6 +398,7 @@ ClientServerHello *readchannel(){
     //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
     return returning_hello;
 }
+
 
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
 
