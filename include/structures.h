@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "openssl/x509.h"
-#include "openssl/pem.h"
+#include <openssl/x509.h>
+#include <openssl/pem.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
 
@@ -74,11 +74,6 @@ typedef struct{
     
 }CertificateVerify;
 
-typedef struct{
-    uint8_t *parameters;
-    uint8_t *signature;
-}ServerKeyExchange;
-
 typedef struct{        //da rivedere non so come fare gli Hash #
     uint8_t sha_hash[20];
     uint8_t md5_hash[16];
@@ -104,20 +99,29 @@ typedef struct {
 //Structs for ServerKeyExchange
 typedef enum{RSA_, DIFFIE_HELLMAN, FORTEZZA}KeyExchangeAlgorithm;
 
-typedef struct {
-    uint8_t rsa_modulus[2^16-1];
-    uint8_t rsa_exponent[2^16-1];
-}ServerRSAParams;
+typedef enum{SHA1_, MD5}SignatureAlgorithm;
 
 typedef struct {
-    uint8_t dh_p[2^16-1];
-    uint8_t dh_g[2^16-1];
-    uint8_t dh_Ys[2^16-1];
-}ServerDHParams;
+    KeyExchangeAlgorithm algorithm_type;
+    int size; //TODO rivedere cosa indica precisamente
+    uint8_t *parameters;
+}KeyExchangeParameters;
+
+typedef struct {//TODO
+    SignatureAlgorithm algorithm_type;
+    int size;
+    uint8_t *signature;
+}KeyExchangeSignatures;
 
 typedef struct{
-    uint8_t r_s[128];
-}ServerFortezzaParams;
+    KeyExchangeParameters *parameters;
+    KeyExchangeSignatures *signature;
+}ClientKeyExchange;
+
+typedef struct{
+    KeyExchangeParameters *parameters;
+    KeyExchangeSignatures *signature;
+}ServerKeyExchange;
 
 //Extern variables
 extern CipherSuite lista[31];

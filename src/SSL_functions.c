@@ -78,7 +78,6 @@ Certificate* loadCertificate(char * cert_name){
     return certificate;
 }
 
-
 /*
  It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.
  */
@@ -183,10 +182,45 @@ Handshake *CertificateToHandshake(Certificate* certificate){
     return handshake;
 }
 
-Handshake *ServerClientKeyExchangeToHandshake(ServerKeyExchange server_key_exchange){
-    Handshake *a;
-    return a;
-}; //TODO
+//TODO TEST
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange client_key_exchange){
+    Handshake *handshake;
+    uint8_t *Bytes;
+    int key_exchange_algorithm;
+    int parameters_size;
+    int signature_algorithm;
+    int signature_size;
+    int key_exchange_size;
+    
+    key_exchange_algorithm = client_key_exchange.parameters->algorithm_type;
+    parameters_size = client_key_exchange.parameters->size;
+    signature_algorithm = client_key_exchange.signature->algorithm_type;
+    signature_size = client_key_exchange.signature->size;
+    key_exchange_size = parameters_size + signature_size;
+    
+    Bytes = (uint8_t*)calloc(parameters_size + signature_size, sizeof(uint8_t));//TODO
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
+        exit(1);
+    }
+    
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ClientKeyToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    memcpy(Bytes,client_key_exchange.parameters->parameters, parameters_size);
+    memcpy(Bytes+parameters_size, client_key_exchange.signature->signature, signature_size);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = CLIENT_HELLO;
+    handshake->length = 4 + key_exchange_size ;
+    handshake->content = Bytes;
+    
+    return handshake;
+};
 
 Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request){
     Handshake *a;
