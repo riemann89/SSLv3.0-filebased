@@ -112,12 +112,81 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
-/********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
+/***************************************FREE FUNCTIONS**********************************************/
 
-/*
- This function converts a ClientServerHello into a Handshake
-*/
-Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
+void FreeRecordLayer(RecordLayer *recordLayer){
+    free(recordLayer->message);
+    free(recordLayer);
+}
+
+void FreeHelloRequest(HelloRequest *hello_request){
+    free(hello_request);
+}
+
+void FreeHandshake(Handshake *handshake){
+    free(handshake->content);
+    free(handshake);
+}
+
+void FreeClientServerHello(ClientServerHello *client_server_hello){
+    free(client_server_hello->ciphersuite);
+    free(client_server_hello);
+}
+
+void FreeCertificate(Certificate *certificate){
+    free(certificate->X509_der);
+    free(certificate);
+}
+
+void FreeCertificateRequest(CertificateRequest *certificate_request){
+    free(certificate_request->certificate_authorities);
+    free(certificate_request);
+}
+
+void FreeServerDone(ServerDone *server_done){
+    free(server_done);
+}
+
+void FreeCertificateVerify(CertificateVerify *certificate_verify){
+    free(certificate_verify->signature);
+    free(certificate_verify);
+}
+
+void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
+    free(client_key_exchange->key_exchange);
+    free(client_key_exchange);
+}
+
+void FreeCertificateFinished(Finished *finished){
+    free(finished->signature);
+    free(finished);
+}
+
+
+
+//NON è CHIARO SE BISOGNA ANCHE INSERIRE IL CHANGE_CIPHER_SPEC message, visto che fa non fa parte dell'handshake protocol
+/********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
+/* This function converts a ClientServerHello into a Handshake */
+Handshake *HelloRequestToHandshake(){
+    //VARIABLE DECLARATION//
+    Handshake *handshake;
+    uint8_t* Bytes;
+    
+    //MEMORY ALLOCATION//
+    Bytes = NULL;
+    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
+        exit(1);
+    }
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = HELLO_REQUEST;//handshake fields initialization
+    handshake->length = 5;
+    handshake->content = Bytes;
+    return handshake;
+}
+
+Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //VARIABLE DECLARATION//
     CipherSuite *cipher;
     Handshake *handshake; 																		 	//returning variable
@@ -156,19 +225,18 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello* client_server_hello){
     return handshake;
 }
 
-Handshake *CertificateToHandshake(Certificate* certificate){
+Handshake *CertificateToHandshake(Certificate *certificate){
     //VARIABLE DECLARATION//
     Handshake *handshake; 																		 	//returning variable
     //session bytes representation
     uint8_t *Bytes;																								//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(certificate->len
-                            ,sizeof(uint8_t));																								 //bytes data vector, as said Bytes is an array which represents client_server_hello
+    Bytes =(uint8_t*)calloc(certificate->len, sizeof(uint8_t));																								 //bytes data vector, as said Bytes is an array which represents client_server_hello
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    handshake=(Handshake*)calloc(1,sizeof(handshake));								//handshake memory allocation
+    handshake=(Handshake*)calloc(1, sizeof(handshake));								//handshake memory allocation
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -183,7 +251,7 @@ Handshake *CertificateToHandshake(Certificate* certificate){
     return handshake;
 }
 
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange client_key_exchange){
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
     int key_exchange_algorithm;
@@ -192,10 +260,10 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange client_key_exchange){
     int signature_size;
     int key_exchange_size;
     
-    key_exchange_algorithm = client_key_exchange.parameters->algorithm_type;
-    parameters_size = client_key_exchange.parameters->size;
-    signature_algorithm = client_key_exchange.signature->algorithm_type;
-    signature_size = client_key_exchange.signature->size;
+    key_exchange_algorithm = server_key_exchange->parameters->algorithm_type;
+    parameters_size = server_key_exchange->parameters->size;
+    signature_algorithm = server_key_exchange->signature->algorithm_type;
+    signature_size = server_key_exchange->signature->size;
     key_exchange_size = parameters_size + signature_size;
     
     Bytes = (uint8_t*)calloc(parameters_size + signature_size, sizeof(uint8_t));//TODO
@@ -211,115 +279,170 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange client_key_exchange){
     }
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes,client_key_exchange.parameters->parameters, parameters_size);
-    memcpy(Bytes+parameters_size, client_key_exchange.signature->signature, signature_size);
+    memcpy(Bytes,server_key_exchange->parameters->parameters, parameters_size);
+    memcpy(Bytes+parameters_size, server_key_exchange->signature->signature, signature_size);
     
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = CLIENT_KEY_EXCHANGE;
-    handshake->length = 4 + key_exchange_size ;
+    handshake->msg_type = SERVER_KEY_EXCHANGE;
+    handshake->length = 4 + key_exchange_size;
     handshake->content = Bytes;
     
     return handshake;
-};//TODO TEST
+}
 
-Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request){
-    Handshake *a;
-    return a;
-}; //TODO
-
-Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify){
+Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request){
+    //VARIABLE DECLARATION//
     Handshake *handshake;
     uint8_t *Bytes;
     int bytes_size;
     
-    switch (certificate_verify.algorithm_type) {
-        case SHA1_:
-            bytes_size = 20;
-            break;
-        case MD5:
-            bytes_size = 16;
-        default:
-            break;
-    }
+    bytes_size = certificate_request->list_length * certificate_request->name_lenght + 1;
     
-    Bytes = (uint8_t*)calloc(bytes_size, sizeof(uint8_t));
+    //MEMORY ALLOCATION//
+    Bytes =(uint8_t*)calloc(bytes_size, sizeof(uint8_t));
+    
     if (Bytes == NULL) {
-        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
+        perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
-        perror("Failed to create handshake pointer - FinishedToHandshake operation");
+        perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes, certificate_verify.signature, bytes_size);
+    Bytes[0] = certificate_request->certificate_type;
+    memcpy(Bytes + 1, certificate_request->certificate_authorities, bytes_size);
     
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = CERTIFICATE_VERIFY;
+    handshake->msg_type = CERTIFICATE_REQUEST;   											//handshake fields initialization
     handshake->length = 4 + bytes_size;
     handshake->content = Bytes;
-    
     return handshake;
-};//TODO va sistemata anche la struttura certificate verify...
-
-//NON è CHIARO SE BISOGNA ANCHE INSERIRE IL CHANGE_CIPHER_SPEC message, visto che fa non fa parte dell'handshake protocol
-
-Handshake *FinishedToHandshake(Finished finished){
-    Handshake *handshake;
-    uint8_t *Bytes;
-    int bytes_size;
-    
-    switch (finished.algorithm_type) {
-        case SHA1_:
-            bytes_size = 20;
-            break;
-        case MD5:
-            bytes_size = 16;
-        default:
-            break;
-    }
-    
-    Bytes = (uint8_t*)calloc(bytes_size, sizeof(uint8_t));
-    if (Bytes == NULL) {
-        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
-        exit(1);
-    }
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
-    if (handshake == NULL) {
-        perror("Failed to create handshake pointer - FinishedToHandshake operation");
-        exit(1);
-    }
-    
-    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes, finished.signature, bytes_size);
-    
-    //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = FINISHED;
-    handshake->length = 4 + bytes_size;
-    handshake->content = Bytes;
-    
-    return handshake;
-}//TODO TEST
+};
 
 Handshake *ServerDoneToHandshake(){
     //VARIABLE DECLARATION//
     Handshake *handshake;
     uint8_t* Bytes;
+    
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(1,sizeof(uint8_t));														 //bytes is allocated and initialized with 0 since server done have no data contained
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    Bytes = NULL;
+    handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
         exit(1);
     }
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type=SERVER_DONE;														   //handshake fields initialization
-    handshake->length=5;
-    handshake->content=NULL;
+    handshake->msg_type = SERVER_DONE;//handshake fields initialization
+    handshake->length = 5;
+    handshake->content = Bytes;
     return handshake;
 }
+
+Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
+    Handshake *handshake;
+    uint8_t *Bytes;
+    int bytes_size;
+    
+    switch (certificate_verify->algorithm_type) {
+        case SHA1_:
+            bytes_size = 20;
+            break;
+        case MD5:
+            bytes_size = 16;
+        default:
+            break;
+    }
+    
+    Bytes = (uint8_t*)calloc(bytes_size, sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    Bytes[0] = certificate_verify->algorithm_type;
+    memcpy(Bytes + 1, certificate_verify->signature, bytes_size);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = CERTIFICATE_VERIFY;
+    handshake->length = 4 + bytes_size + 1;
+    handshake->content = Bytes;
+    
+    return handshake;
+};
+
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
+    Handshake *handshake;
+    uint8_t *Bytes;
+    
+    Bytes = (uint8_t*)calloc(client_key_exchange->len_key_exchange, sizeof(uint8_t));//TODO
+    if (Bytes == NULL) {
+        perror("ClientKeyExchangeToHandshake: Failed to create Bytes pointer");
+        exit(1);
+    }
+    
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("ClientKeyExchangeToHandshake:: Failed to create handshake pointer");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    memcpy(Bytes, client_key_exchange->key_exchange, client_key_exchange->len_key_exchange);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = CLIENT_KEY_EXCHANGE;
+    handshake->length = 4 + client_key_exchange->len_key_exchange;
+    handshake->content = Bytes;
+    
+    return handshake;
+};//TODO
+
+Handshake *FinishedToHandshake(Finished *finished){
+    Handshake *handshake;
+    uint8_t *Bytes;
+    int signature_size;
+    
+    switch (finished->algorithm_type) {
+        case SHA1_:
+            signature_size = 20;
+            break;
+        case MD5:
+            signature_size = 16;
+        default:
+            break;
+    }
+    
+    Bytes = (uint8_t*)calloc(signature_size + 1, sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    Bytes[0] = finished->algorithm_type;
+    memcpy(Bytes + 1, finished->signature, signature_size);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = FINISHED;
+    handshake->length = 4 + signature_size + 1;
+    handshake->content = Bytes;
+    
+    return handshake;
+}//TODO TEST
+
 
 /*
  It encapsulate an handshake packet into a record_layer packet.
@@ -364,34 +487,35 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 //Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
 RecordLayer  *readchannel2(){
 	uint8_t *buffer;
-    uint8_t buffer_length[5];//rivedere
+    uint8_t record_header[5];//rivedere
     FILE* SSLchannel;
-    uint32_t packetSize;
+    uint32_t packet_size;
     RecordLayer *returning_record;
     ContentType type;
+    ProtocolVersion version;
     
     SSLchannel=fopen("SSLchannelbyte.txt", "r");
 	if(SSLchannel==NULL)
 	{
 		printf("Error unable to read the SSLchannel");
-		return NULL;
+        exit(1);
 	}
     
-    fread(buffer_length, sizeof(uint8_t), 5*sizeof(uint8_t), SSLchannel);
-    packetSize = Bytes_To_Int(2, buffer_length+3);
-    buffer = (uint8_t*)malloc((packetSize)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
-    fseek(SSLchannel, SEEK_SET, 0);
-	fread(buffer,sizeof(uint8_t),packetSize*sizeof(uint8_t), SSLchannel);// load file into buffer
+    fread(record_header, sizeof(uint8_t), 5*sizeof(uint8_t), SSLchannel);
+    packet_size = Bytes_To_Int(2, record_header + 3);
+    buffer = (uint8_t*)malloc((packet_size - 5)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
+    fseek(SSLchannel, SEEK_SET, 5);
+	fread(buffer,sizeof(uint8_t),(packet_size-5)*sizeof(uint8_t), SSLchannel);// load file into buffer
     returning_record = calloc(6,sizeof(uint8_t));
     
-	type = buffer[0];
+	type = record_header[0];
 	returning_record->type = type;	// assign type
-	ProtocolVersion version;
-	version.minor = buffer[1];
-	version.major = buffer[2];	
+
+	version.minor = record_header[1]; //loading version
+	version.major = record_header[2];
 	returning_record->version= version;// assign version
-	returning_record->length = (uint16_t)packetSize;// assign length to record
-	returning_record->message= buffer + 5;
+	returning_record->length = (uint16_t)packet_size;// assign length to record
+	returning_record->message= buffer;
     return returning_record;//assign pointer to message
 }
 
@@ -399,18 +523,20 @@ RecordLayer  *readchannel2(){
 Handshake *RecordToHandshake(RecordLayer *record){
 	Handshake *result;
 	uint8_t *buffer;
-	result = calloc(5,sizeof(uint8_t));
-	buffer = (uint8_t*)malloc((record->length)*sizeof(uint8_t));
+    
+	result = calloc(1, sizeof(Handshake));
+	buffer = (uint8_t*)malloc((record->length - 9)*sizeof(uint8_t));
 	if(record->type != HANDSHAKE){
-		printf("\n Error record is not a handshake,  parse failed");
+		printf("\n RecordToHandshake: Error record is not a handshake,  parse failed");
+        exit(1);
 		return NULL;
 	}
-	memcpy(buffer,  record->message, record->length - 5);
+	memcpy(buffer,  record->message + 4, record->length - 9);
 	result->length = record->length - 5;
-	result->msg_type = buffer[0];
-	result->content = buffer + 4;
+	result->msg_type = record->message[0];
+	result->content = buffer;
 	
-	FreeRecord(record);
+	FreeRecordLayer(record);
 	return result;
 	
 }
@@ -526,12 +652,3 @@ int writeCertificate(X509* certificate){
     return PEM_write_X509(file_cert, certificate);
 }
 int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
-
-/* -------------------------------------------------------
-    |              FREE FUNCTION          |
-	-------------------------------------------------------*/ 
-
-void RecordFree(RecordLayer *recordLayer){
-		free(recordLayer->message - 5 );
-		free(recordLayer);	
-}

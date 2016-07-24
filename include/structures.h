@@ -47,11 +47,9 @@ typedef struct{
 }ClientServerHello;
 
 typedef struct{
-    
 }HelloRequest;
 
 typedef struct{
-    //ASN.1Cert certificate_list<1..2^24-1>; (RIV)
     uint8_t *X509_der;
     int len;
 }Certificate;
@@ -66,22 +64,23 @@ typedef enum{RSA_, DIFFIE_HELLMAN, FORTEZZA}KeyExchangeAlgorithm;
 typedef enum{SHA1_, MD5}SignatureAlgorithm;
 
 typedef struct{
-    CertificateType certificateTypes; // lo interpreto come un solo tipo anche se il nome suggerisce un plurale
-    //DistinguishedName certificate_authorities<3..2^16-1>;  Probabilmente sarà più chiaro in seguito
-}CertificateRequest;
+    CertificateType certificate_type;
+    char *certificate_authorities;
+    int name_lenght;    //each certificate authority name is represented using the same number of char.
+    int list_length;    //number of certificate of acceptable certificate authorities.
+}CertificateRequest;//TODO la struttura deve essere rivista
 
 typedef struct{
-    //volutamente bianco la struttura è proprio così
-}ServerHelloDone;
+}ServerDone;
 
 typedef struct{
     SignatureAlgorithm algorithm_type;
-    uint8_t* signature;
+    uint8_t *signature;
 }CertificateVerify;
 
 typedef struct{
     SignatureAlgorithm algorithm_type;
-    uint8_t* signature;
+    uint8_t *signature;
 }Finished;
 
 
@@ -115,9 +114,10 @@ typedef struct {//TODO
     uint8_t *signature;
 }KeyExchangeSignatures;
 
-typedef struct{
-    KeyExchangeParameters *parameters;
-    KeyExchangeSignatures *signature;
+typedef struct{//TODO
+    KeyExchangeAlgorithm algorighm_type;
+    uint8_t *key_exchange;
+    int len_key_exchange;
 }ClientKeyExchange;
 
 typedef struct{

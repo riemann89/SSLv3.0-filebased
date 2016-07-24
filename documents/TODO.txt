@@ -2,11 +2,18 @@ TODO:
 
 Le seguenti funzioni sono sta definite: resta da scrivere il corpo e sistemare le relative strutture che utilizzano:
 
-- ServerExchangeToHandshake (GIU) <-
+DEADLINE: 31 LUGLIO
+- ServerExchangeToHandshake (GIU) 
 - CertificateRequestToHandshake (GIU)
 
+- FREE FUNCTIONS (GIU/ERMES)
+	- verifica memory leaks
+- FUNZIONI HANDSHAKET0pacchettino:
+
+
+DEADLINE://
 - generare altri certificati. (GIU)
-- handshake to structs (switch) (ERMES)
+
 - derToX509 (GIU)
 
 - Non è chiaro se fare il change_cipher_spec (????)
@@ -14,5 +21,4 @@ Le seguenti funzioni sono sta definite: resta da scrivere il corpo e sistemare l
 - Client main code (DA ASSEGNARE)
 - Server main code (DA ASSEGNARE)
 
-- Verifica delle Free sui codici delle funzioni(DA ASSEGNARE)
 - Sistemare i commenti (DA ASSEGNARE)
