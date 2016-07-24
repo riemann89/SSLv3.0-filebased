@@ -112,7 +112,8 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
-//FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES
+/********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
+
 /*
  This function converts a ClientServerHello into a Handshake
 */
@@ -182,7 +183,6 @@ Handshake *CertificateToHandshake(Certificate* certificate){
     return handshake;
 }
 
-//TODO TEST
 Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange client_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -215,12 +215,12 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange client_key_exchange){
     memcpy(Bytes+parameters_size, client_key_exchange.signature->signature, signature_size);
     
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = CLIENT_HELLO;
+    handshake->msg_type = CLIENT_KEY_EXCHANGE;
     handshake->length = 4 + key_exchange_size ;
     handshake->content = Bytes;
     
     return handshake;
-};
+};//TODO TEST
 
 Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request){
     Handshake *a;
@@ -228,16 +228,80 @@ Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request)
 }; //TODO
 
 Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify){
-    Handshake *a;
-    return a;
+    Handshake *handshake;
+    uint8_t *Bytes;
+    int bytes_size;
+    
+    switch (certificate_verify.algorithm_type) {
+        case SHA1_:
+            bytes_size = 20;
+            break;
+        case MD5:
+            bytes_size = 16;
+        default:
+            break;
+    }
+    
+    Bytes = (uint8_t*)calloc(bytes_size, sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    memcpy(Bytes, certificate_verify.signature, bytes_size);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = CERTIFICATE_VERIFY;
+    handshake->length = 4 + bytes_size;
+    handshake->content = Bytes;
+    
+    return handshake;
 };//TODO va sistemata anche la struttura certificate verify...
 
 //NON è CHIARO SE BISOGNA ANCHE INSERIRE IL CHANGE_CIPHER_SPEC message, visto che fa non fa parte dell'handshake protocol
 
 Handshake *FinishedToHandshake(Finished finished){
-    Handshake *a;
-    return a;
-}//TODO va sistemato anche la struttura
+    Handshake *handshake;
+    uint8_t *Bytes;
+    int bytes_size;
+    
+    switch (finished.algorithm_type) {
+        case SHA1_:
+            bytes_size = 20;
+            break;
+        case MD5:
+            bytes_size = 16;
+        default:
+            break;
+    }
+    
+    Bytes = (uint8_t*)calloc(bytes_size, sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - FinishedToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    memcpy(Bytes, finished.signature, bytes_size);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = FINISHED;
+    handshake->length = 4 + bytes_size;
+    handshake->content = Bytes;
+    
+    return handshake;
+}//TODO TEST
 
 Handshake *ServerDoneToHandshake(){
     //VARIABLE DECLARATION//
@@ -337,15 +401,15 @@ Handshake *RecordToHandshake(RecordLayer *record){
 	Handshake *result;
 	uint8_t *buffer;
 	result = calloc(5,sizeof(uint8_t));
-	buffer = (uint8_t*)malloc(*(record->length)*sizeof(uint8_t));
-	if( *(record->type) != HANDSHAKE){
+	buffer = (uint8_t*)malloc((record->length)*sizeof(uint8_t));
+	if(record->type != HANDSHAKE){
 		printf("\n Error record is not a handshake,  parse failed");
 		return NULL;
 	}
-	memcpy(buffer,  record->message, *(record->length) - 5);
-	result->length = *(record->length) - 5;
+	memcpy(buffer,  record->message, record->length - 5);
+	result->length = record->length - 5;
 	result->msg_type = buffer[0];
-	result->content buffer + 4;
+	result->content = buffer + 4;
 	return result;
 	
 }
@@ -460,6 +524,6 @@ int writeCertificate(X509* certificate){
     file_cert=fopen("cert_out.crt", "w+");
     return PEM_write_X509(file_cert, certificate);
 }
-
+int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
 
 

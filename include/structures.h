@@ -61,6 +61,10 @@ typedef enum{
     DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH,FORTEZZA_MISSI=20
 }CertificateType;
 
+typedef enum{RSA_, DIFFIE_HELLMAN, FORTEZZA}KeyExchangeAlgorithm;
+
+typedef enum{SHA1_, MD5}SignatureAlgorithm;
+
 typedef struct{
     CertificateType certificateTypes; // lo interpreto come un solo tipo anche se il nome suggerisce un plurale
     //DistinguishedName certificate_authorities<3..2^16-1>;  Probabilmente sarà più chiaro in seguito
@@ -71,12 +75,13 @@ typedef struct{
 }ServerHelloDone;
 
 typedef struct{
-    
+    SignatureAlgorithm algorithm_type;
+    uint8_t* signature;
 }CertificateVerify;
 
-typedef struct{        //da rivedere non so come fare gli Hash #
-    uint8_t sha_hash[20];
-    uint8_t md5_hash[16];
+typedef struct{
+    SignatureAlgorithm algorithm_type;
+    uint8_t* signature;
 }Finished;
 
 
@@ -97,9 +102,6 @@ typedef struct {
 }RecordLayer;
 
 //Structs for ServerKeyExchange
-typedef enum{RSA_, DIFFIE_HELLMAN, FORTEZZA}KeyExchangeAlgorithm;
-
-typedef enum{SHA1_, MD5}SignatureAlgorithm;
 
 typedef struct {
     KeyExchangeAlgorithm algorithm_type;

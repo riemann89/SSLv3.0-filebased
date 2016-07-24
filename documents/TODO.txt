@@ -1,15 +1,12 @@
 TODO:
 
 Le seguenti funzioni sono sta definite: resta da scrivere il corpo e sistemare le relative strutture che utilizzano:
-- ServerExchangeToHandshake (GIU) <-
-- FinishedToHandshake (ERMES) <-
-- CertificateRequestToHandshake (GIU)
-- CertificateVerifyToHandshake (ERMES) 
 
+- ServerExchangeToHandshake (GIU) <-
+- CertificateRequestToHandshake (GIU)
 
 - generare altri certificati. (GIU)
-- generalizzare la lettura sul canale (ERMES)
-- fixare la questione readChannel(ERMES)
+- handshake to structs (switch) (ERMES)
 - derToX509 (GIU)
 
 - Non è chiaro se fare il change_cipher_spec (????)
