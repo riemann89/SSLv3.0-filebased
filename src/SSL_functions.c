@@ -321,7 +321,6 @@ Handshake *ServerDoneToHandshake(){
     return handshake;
 }
 
-
 /*
  It encapsulate an handshake packet into a record_layer packet.
  REMEMBER TO free:
@@ -410,6 +409,8 @@ Handshake *RecordToHandshake(RecordLayer *record){
 	result->length = record->length - 5;
 	result->msg_type = buffer[0];
 	result->content = buffer + 4;
+	
+	FreeRecord(record);
 	return result;
 	
 }
@@ -526,4 +527,11 @@ int writeCertificate(X509* certificate){
 }
 int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
 
+/* -------------------------------------------------------
+    |              FREE FUNCTION          |
+	-------------------------------------------------------*/ 
 
+void RecordFree(RecordLayer *recordLayer){
+		free(recordLayer->message - 5 );
+		free(recordLayer);	
+}

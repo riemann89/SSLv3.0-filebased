@@ -36,6 +36,7 @@ ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
 
 //TODO free functions
+void RecordFree(RecordLayer *recordLayer);
 
 //CERTIFICATE
 Certificate* loadCertificate(char * cert_name);
