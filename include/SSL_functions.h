@@ -22,19 +22,20 @@ Handshake *CertificateRequestToHandshake(CertificateRequest certificate_request)
 Handshake *CertificateVerifyToHandshake(CertificateVerify certificate_verify);
 Handshake* ServerDoneToHandshake();
 Handshake *FinishedToHandshake(Finished finished);	
-Handshake *RecordToHandshake(RecordLayer record);  //TODO  2
+Handshake *RecordToHandshake(RecordLayer *record);  //TODO  2
 
 //Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  
-RecordLayer *readchannel2();  //TODO    1 mettere readchannel()
+RecordLayer *readchannel2();  //TODO    1 sostituire con readchannel()
 
 
-ClientServerHello *readchannel();  											//TODO  4  da sostituire con HandshakeToHello( Handshake handshake);
-ClientServerHello HandshakeToHello( Handshake handshake);  // TODO 3
+ClientServerHello *readchannel();  											//TODO  4  da sostituire con HandshakeToHello( Handshake *handshake);
+ClientServerHello HandshakeToHello( Handshake *handshake);  // TODO 3
 void setPriorities(uint8_t number,uint8_t *priority);
 ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
 
+//TODO free functions
 
 //CERTIFICATE
 Certificate* loadCertificate(char * cert_name);

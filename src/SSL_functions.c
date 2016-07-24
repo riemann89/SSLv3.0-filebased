@@ -299,7 +299,6 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
 
 /* funzione per leggere il file*/
 //Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
-
 RecordLayer  *readchannel2(){
 	uint8_t *buffer;
     uint8_t buffer_length[5];//rivedere
@@ -331,6 +330,24 @@ RecordLayer  *readchannel2(){
 	returning_record->length = (uint16_t)packetSize;// assign length to record
 	returning_record->message= buffer + 5;
     return returning_record;//assign pointer to message
+}
+
+// read RecordLayer and return an Handshake
+Handshake *RecordToHandshake(RecordLayer *record){
+	Handshake *result;
+	uint8_t *buffer;
+	result = calloc(5,sizeof(uint8_t));
+	buffer = (uint8_t*)malloc(*(record->length)*sizeof(uint8_t));
+	if( *(record->type) != HANDSHAKE){
+		printf("\n Error record is not a handshake,  parse failed");
+		return NULL;
+	}
+	memcpy(buffer,  record->message, *(record->length) - 5);
+	result->length = *(record->length) - 5;
+	result->msg_type = buffer[0];
+	result->content buffer + 4;
+	return result;
+	
 }
 
 ClientServerHello *readchannel(){
