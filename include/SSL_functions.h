@@ -14,7 +14,7 @@ void OpenCommunication(Talker talker);
 Talker CheckCommunication();
 void sendPacketByte(RecordLayer *record_layer);
 
-//Handshake Protocol
+//PACKET MANAGER
 //message->handshake
 Handshake *HelloRequestToHandshake();
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
@@ -25,6 +25,19 @@ Handshake *ServerDoneToHandshake();
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify);
 Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange);
 Handshake *FinishedToHandshake(Finished *finished);
+
+/* Handshake to message types */
+
+HelloRequest *HandshakeToHelloRequest(Handshake *handshake);//TODO
+ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);//TODO
+Certificate *HandshakeToCertificate(Handshake *handshake);//TODO
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake);//TODO
+CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);//TODO
+ServerDone *HandshakeToServerdone(Handshake *handshake);//TODO
+CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);//TODO
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);//TODO
+Finished *HandshakeToFinished(Handshake *handshake);//TODO
+
 //record->handshake
 Handshake *RecordToHandshake(RecordLayer *record);  //TOCHECK GIUSEPPE
 

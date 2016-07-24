@@ -162,11 +162,8 @@ void FreeCertificateFinished(Finished *finished){
     free(finished);
 }
 
-
-
-//NON è CHIARO SE BISOGNA ANCHE INSERIRE IL CHANGE_CIPHER_SPEC message, visto che fa non fa parte dell'handshake protocol
 /********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
-/* This function converts a ClientServerHello into a Handshake */
+/* Message types to Handshake */
 Handshake *HelloRequestToHandshake(){
     //VARIABLE DECLARATION//
     Handshake *handshake;
@@ -219,7 +216,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     memcpy(Bytes+9,client_server_hello->random.random_bytes,28);
     memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);       		//38= version(1)+length(1)+session(4)+random(32)
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = CLIENT_HELLO;   												//handshake fields initialization
+    handshake->msg_type = client_server_hello->type;   												//handshake fields initialization
     handshake->length = client_server_hello->length + 3;
     handshake->content = Bytes;
     return handshake;
@@ -403,7 +400,7 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     handshake->content = Bytes;
     
     return handshake;
-};//TODO
+};
 
 Handshake *FinishedToHandshake(Finished *finished){
     Handshake *handshake;
@@ -443,14 +440,99 @@ Handshake *FinishedToHandshake(Finished *finished){
     return handshake;
 }//TODO TEST
 
+/* Handshake to message types */
+HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
+    HelloRequest *hello_request;
+    
+    if (handshake->msg_type != HELLO_REQUEST){
+            perror("HandshakeToHelloRequest: handshake does not contain an hello request message.");
+            exit(1);
+        }
+    
+    hello_request = (HelloRequest*)calloc(1, sizeof(HelloRequest));
+    
+    return hello_request;
+    }//TOCHECK <- USARLO COME MODELLO PER LE FUNZIONI SUCCESSIVE
 
-/*
- It encapsulate an handshake packet into a record_layer packet.
- REMEMBER TO free:
- -Bytes
- -recordlayer
-*/
+ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
+    ClientServerHello *client_server_hello;
+    
+    if (handshake->msg_type != CLIENT_HELLO || handshake->msg_type != SERVER_HELLO){
+        perror("HandshakeToClientServerHello: handshake does not contain an client_hello/server_hello message.");
+        exit(1);
+    }
+    
+    client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
+    
+    client_server_hello->length = handshake->length-4;
+    client_server_hello->version = handshake->content[0];
+    //client_server_hello->random = 1; //TODO
+    //client_server_hello->sessionId = //TODO
+    return client_server_hello;
+};//RIVEDERE da completare
 
+Certificate *HandshakeToCertificate(Handshake *handshake){
+    Certificate *certificate;
+    uint8_t *buffer;
+    int certificate_len;
+    
+    if (handshake->msg_type != CERTIFICATE){
+        perror("HandshakeToCertificate: handshake does not contain a certificate message.");
+        exit(1);
+    }
+    
+    certificate_len = handshake->length - 4;
+    
+    certificate = (Certificate *)calloc(1, sizeof(Certificate));
+    buffer = (uint8_t *)calloc(certificate_len, sizeof(uint8_t));
+    
+    memcpy(buffer, handshake->content, certificate_len);
+    
+    certificate->len = certificate_len;
+    certificate->X509_der = buffer;
+    
+    return certificate;
+};//TOCHECK
+
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake){
+    ServerKeyExchange *server_key_exchange;
+    KeyExchangeParameters *parameters;
+    KeyExchangeSignatures *signature;
+    int certificate_len;
+    
+    if (handshake->msg_type != SERVER_KEY_EXCHANGE){
+        perror("HandshakeToServerKeyExchange: handshake does not contain a server key exchange message.");
+        exit(1);
+    }
+    
+    certificate_len = handshake->length - 4;
+    
+    server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
+    parameters = (KeyExchangeParameters *)calloc(1, sizeof(KeyExchangeParameters));
+    signature = (KeyExchangeSignatures *)calloc(1, sizeof(KeyExchangeSignatures));
+    
+    parameters->algorithm_type =
+    
+    memcpy(buffer, handshake->content, certificate_len);
+    
+    certificate->len = certificate_len;
+    certificate->X509_der = buffer;
+    
+    return certificate;
+
+};//TODO : Probabilmente va rivista la struttura, perchè dall'handshake, non riusciamo a ricavare il tipo di algoritmo.E quindi è impossibile completare tutti i campi.
+
+CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);//TODO
+
+ServerDone *HandshakeToServerdone(Handshake *handshake);//TODO
+
+CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);//TODO
+
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);//TODO
+
+Finished *HandshakeToFinished(Handshake *handshake);//TODO
+
+/* Handshake to RecordLayer */
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //VARIABLE DECLARATION//
     uint8_t *Bytes;
@@ -483,8 +565,30 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     return recordlayer;
 }
 
+/* RecordLayer to Handshake */
+Handshake *RecordToHandshake(RecordLayer *record){
+    Handshake *result;
+    uint8_t *buffer;
+    
+    result = calloc(1, sizeof(Handshake));
+    buffer = (uint8_t*)malloc((record->length - 9)*sizeof(uint8_t));
+    if(record->type != HANDSHAKE){
+        printf("\n RecordToHandshake: Error record is not a handshake,  parse failed");
+        exit(1);
+        return NULL;
+    }
+    memcpy(buffer,  record->message + 4, record->length - 9);
+    result->length = record->length - 5;
+    result->msg_type = record->message[0];
+    result->content = buffer;
+    
+    FreeRecordLayer(record);
+    return result;
+    
+}
+
 /* funzione per leggere il file*/
-//Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
+
 RecordLayer  *readchannel2(){
 	uint8_t *buffer;
     uint8_t record_header[5];//rivedere
@@ -517,29 +621,7 @@ RecordLayer  *readchannel2(){
 	returning_record->length = (uint16_t)packet_size;// assign length to record
 	returning_record->message= buffer;
     return returning_record;//assign pointer to message
-}
-
-// read RecordLayer and return an Handshake
-Handshake *RecordToHandshake(RecordLayer *record){
-	Handshake *result;
-	uint8_t *buffer;
-    
-	result = calloc(1, sizeof(Handshake));
-	buffer = (uint8_t*)malloc((record->length - 9)*sizeof(uint8_t));
-	if(record->type != HANDSHAKE){
-		printf("\n RecordToHandshake: Error record is not a handshake,  parse failed");
-        exit(1);
-		return NULL;
-	}
-	memcpy(buffer,  record->message + 4, record->length - 9);
-	result->length = record->length - 5;
-	result->msg_type = record->message[0];
-	result->content = buffer;
-	
-	FreeRecordLayer(record);
-	return result;
-	
-}
+} //Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
 
 ClientServerHello *readchannel(){
     
@@ -637,9 +719,7 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
 				exit(1);
 }
 
-/*
- 
- */
+/* about certificates*/
 
 int writeCertificate(X509* certificate){
     /* Per leggere il der
