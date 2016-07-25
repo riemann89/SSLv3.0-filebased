@@ -67,6 +67,7 @@ typedef enum{SHA1_, MD5}SignatureAlgorithm;
 typedef struct{
     CertificateType certificate_type;
     char *certificate_authorities;
+    
     int name_lenght;    //each certificate authority name is represented using the same number of char.
     int list_length;    //number of certificate of acceptable certificate authorities.
 }CertificateRequest;//TODO la struttura deve essere rivista
@@ -80,8 +81,7 @@ typedef struct{
 }CertificateVerify;
 
 typedef struct{
-    SignatureAlgorithm algorithm_type;
-    uint8_t *signature;
+    uint8_t hash[36];
 }Finished;
 
 

@@ -8,6 +8,7 @@ DEADLINE: 31 LUGLIO
 	- verifica memory leaks
 - FUNZIONI HANDSHAKET0pacchettino:
 
+- Session and Connection structs
 
 DEADLINE://
 - generare altri certificati. (GIU)
