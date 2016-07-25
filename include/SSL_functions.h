@@ -59,7 +59,7 @@ void FreeHandshake(Handshake *handshake);
 void FreeClientServerHello(ClientServerHello *client_server_hello);
 void FreeCertificate(Certificate *certificate);
 void FreeCertificateVerify(CertificateVerify *certificate_verify);
-void FreeServerHelloDone(ServerHelloDone *server_hello_done);
+void FreeServerHelloDone(ServerDone *server_done);
 void FreeCertificateFinished(Finished *finished);
 void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange);
 

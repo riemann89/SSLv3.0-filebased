@@ -158,9 +158,8 @@ void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
 }
 
 void FreeCertificateFinished(Finished *finished){
-    free(finished->signature);
     free(finished);
-}
+}//TODO ricontrollare questa free
 
 /********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
 /* Message types to Handshake */
@@ -405,36 +404,25 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
 Handshake *FinishedToHandshake(Finished *finished){
     Handshake *handshake;
     uint8_t *Bytes;
-    int signature_size;
     
-    switch (finished->algorithm_type) {
-        case SHA1_:
-            signature_size = 20;
-            break;
-        case MD5:
-            signature_size = 16;
-        default:
-            break;
-    }
-    
-    Bytes = (uint8_t*)calloc(signature_size + 1, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(36, sizeof(uint8_t));
     if (Bytes == NULL) {
-        perror("Failed to create Bytes pointer - FinishedToHandshake operation");
+        perror("ERROR FinishedToHandshake: Failed to create Bytes pointer");
         exit(1);
     }
     handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
-        perror("Failed to create handshake pointer - FinishedToHandshake operation");
+        perror("ERROR FinishedToHandshake: Failed to create Handshake pointer");
         exit(1);
     }
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    Bytes[0] = finished->algorithm_type;
-    memcpy(Bytes + 1, finished->signature, signature_size);
+    
+    memcpy(Bytes, finished->hash, 36); //MD5 + SHA1
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = FINISHED;
-    handshake->length = 4 + signature_size + 1;
+    handshake->length = 4 + 36;
     handshake->content = Bytes;
     
     return handshake;
@@ -445,14 +433,19 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
     HelloRequest *hello_request;
     
     if (handshake->msg_type != HELLO_REQUEST){
-            perror("HandshakeToHelloRequest: handshake does not contain an hello request message.");
+            perror("ERROR HandshakeToHelloRequest: handshake does not contain an hello request message.");
             exit(1);
         }
     
     hello_request = (HelloRequest*)calloc(1, sizeof(HelloRequest));
     
+    if (hello_request == NULL){
+        perror("ERROR HandshakeToHelloRequest: memory allocation leak.");
+        exit(1);
+    }
+    
     return hello_request;
-    }//TOCHECK <- USARLO COME MODELLO PER LE FUNZIONI SUCCESSIVE
+    }//TOCHECK
 
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
@@ -477,13 +470,19 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     int certificate_len;
     
     if (handshake->msg_type != CERTIFICATE){
-        perror("HandshakeToCertificate: handshake does not contain a certificate message.");
+        perror("ERROR HandshakeToCertificate: handshake does not contain a certificate message.");
         exit(1);
     }
     
     certificate_len = handshake->length - 4;
     
     certificate = (Certificate *)calloc(1, sizeof(Certificate));
+    
+    if (certificate == NULL){
+        perror("ERROR HandshakeToHelloRequest: memory allocation leak.");
+        exit(1);
+    }
+    
     buffer = (uint8_t *)calloc(certificate_len, sizeof(uint8_t));
     
     memcpy(buffer, handshake->content, certificate_len);
@@ -522,15 +521,122 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake){
 
 };//TODO : Probabilmente va rivista la struttura, perchè dall'handshake, non riusciamo a ricavare il tipo di algoritmo.E quindi è impossibile completare tutti i campi.
 
-CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);//TODO
+CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
+    CertificateRequest *certificate_request;
+    uint8_t *buffer;
+    int buffer_len;
+    
+    if (handshake->msg_type != CERTIFICATE_REQUEST){
+        perror("ERROR HandshakeToCertificateRequest: handshake does not contain a certificate request message.");
+        exit(1);
+    }
+    
+    buffer_len = handshake->length - 4;
+    
+    certificate_request = (CertificateRequest *)calloc(1, sizeof(CertificateRequest));
+    if (certificate_request == NULL){
+        perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
+        exit(1);
+    }
+    
+    buffer = (uint8_t *)calloc(buffer_len, sizeof(uint8_t));
+    if (buffer == NULL){
+        perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
+        exit(1);
+    }
+    
+    memcpy(buffer, handshake->content, buffer_len);
+    
+    certificate->len = certificate_len;
+    certificate->X509_der = buffer;
+    
+    return certificate;
+};//TODO Rivedere: non riesco a rappresentare le liste, rivedere anche la struttura a questo punto.
 
-ServerDone *HandshakeToServerdone(Handshake *handshake);//TODO
+ServerDone *HandshakeToServerdone(Handshake *handshake){
+    ServerDone *server_done;
+    
+    if (handshake->msg_type != SERVER_DONE){
+        perror("ERROR HandshakeToServerDone: handshake does not contain a server done message.");
+        exit(1);
+    }
+    
+    server_done = (ServerDone*)calloc(1, sizeof(ServerDone));
+    
+    if (server_done == NULL){
+        perror("ERROR HandshakeToServerDone: memory allocation leak.");
+        exit(1);
+    }
+    
+    return server_done;
 
-CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);//TODO
+};//TOCHECK
+
+CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
+    CertificateVerify *certificate_verify;
+    uint8_t *signature;
+    int signature_len;
+    
+    if (handshake->msg_type != CERTIFICATE_VERIFY){
+        perror("ERROR HandshakeToCertificateVerify: handshake does not contain a certificate verify message.");
+        exit(1);
+    }
+    
+    certificate_verify = (CertificateVerify *)calloc(1, sizeof(CertificateVerify));
+    if (certificate_verify == NULL){
+        perror("ERROR HandshakeToCertificateVerify: memory allocation leak.");
+        exit(1);
+    }
+    
+    signature_len = handshake->length - 4;
+    signature = (uint8_t *)calloc(signature_len, sizeof(uint8_t));
+    if (signature == NULL){
+        perror("ERROR HandshakeToCertificateVerify: memory allocation leak.");
+        exit(1);
+    }
+    
+    switch (signature_len) {
+        case 20:
+            certificate_verify->algorithm_type = SHA1_;
+            break;
+            
+        case 16:
+            certificate_verify->algorithm_type = MD5;
+            break;
+        default:
+            perror("ERROR HandshakeToCertificateVerify: signature size not valid.");
+            exit(1);
+            
+    }
+    
+    memcpy(signature, handshake->content, signature_len);
+    
+    return certificate_verify;
+    
+};//TOCHECK
 
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);//TODO
 
-Finished *HandshakeToFinished(Handshake *handshake);//TODO
+Finished *HandshakeToFinished(Handshake *handshake){
+    Finished *finished;
+   
+    if (handshake->msg_type != FINISHED){
+        perror("ERROR HandshakeToFinished: handshake does not contain a finished message.");
+        exit(1);
+    }
+    
+    finished = (Finished *)calloc(1, sizeof(Finished));
+    if (finished == NULL){
+        perror("ERROR HandshakeToFinished: memory allocation leak.");
+        exit(1);
+    }
+    
+    memcpy(finished->hash, handshake->content, 36);
+    
+    return finished;
+
+
+};//TOCHECK
 
 /* Handshake to RecordLayer */
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
