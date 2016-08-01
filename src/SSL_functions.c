@@ -1,6 +1,4 @@
 #include "SSL_functions.h"
-#include <openssl/x509.h>
-#include <openssl/pem.h>
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -53,6 +51,7 @@ Talker CheckCommunication(){
 /*
  This function load a certificate from a file and return an array of bites where are contained certificate information in DER format
  */
+ 
 Certificate* loadCertificate(char * cert_name){
     
     Certificate *certificate;
@@ -77,7 +76,6 @@ Certificate* loadCertificate(char * cert_name){
     certificate->len = len;
     return certificate;
 }
-
 /*
  It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.
  */
@@ -132,12 +130,12 @@ void FreeClientServerHello(ClientServerHello *client_server_hello){
     free(client_server_hello->ciphersuite);
     free(client_server_hello);
 }
-
+/*
 void FreeCertificate(Certificate *certificate){
     free(certificate->X509_der);
     free(certificate);
 }
-
+*/
 void FreeCertificateRequest(CertificateRequest *certificate_request){
     free(certificate_request->certificate_authorities);
     free(certificate_request);
@@ -220,7 +218,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     handshake->content = Bytes;
     return handshake;
 }
-
+/*
 Handshake *CertificateToHandshake(Certificate *certificate){
     //VARIABLE DECLARATION//
     Handshake *handshake; 																		 	//returning variable
@@ -246,7 +244,7 @@ Handshake *CertificateToHandshake(Certificate *certificate){
     handshake->content = Bytes;
     return handshake;
 }
-
+*/
 Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -429,6 +427,7 @@ Handshake *FinishedToHandshake(Finished *finished){
 }//TODO TEST
 
 /* Handshake to message types */
+
 HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
     HelloRequest *hello_request;
     
@@ -493,6 +492,7 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     return certificate;
 };//TOCHECK
 
+/*
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake){
     ServerKeyExchange *server_key_exchange;
     KeyExchangeParameters *parameters;
@@ -571,7 +571,7 @@ ServerDone *HandshakeToServerdone(Handshake *handshake){
     return server_done;
 
 };//TOCHECK
-
+*/
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     CertificateVerify *certificate_verify;
     uint8_t *signature;

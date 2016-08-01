@@ -57,8 +57,26 @@ int main(int argc, const char *argv[]){
 	}
 	
 	list[30]=0;
-
 setPriorities(len,list);    //setto la lista caricata
+
+//comunicazione
+RecordLayer  *currentRecord;
+Handshake *currentHandshake;
+if(CheckComunication()==server){
+	currentRecord= readchannel2();
+	currentHandshake = RecordToHandshake(currentRecord);
+	switch (currentRecord.message )
+		case CLIENT_HELLO :
+		ClientServerHello *clienthello; 
+		clienthello =  HandshakeToClientServerHello(currentHandshake);   //adeso ho letto il clienthello fatto da client
+			
+	//bla bla
+ //avanti con gli altri case
+}
+
+
+
+
 	
 	// comincio la comunicazione
 	  int  timestep=0;

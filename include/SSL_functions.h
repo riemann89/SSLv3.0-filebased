@@ -6,8 +6,8 @@
 #include <time.h>
 #include "structures.h"
 #include "Utilities.h"
-#include <openssl/x509.h>
-#include <openssl/pem.h>
+#include "openssl/x509.h"
+#include "openssl/pem.h"
 
 //Connection
 void OpenCommunication(Talker talker);
