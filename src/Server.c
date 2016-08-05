@@ -62,6 +62,9 @@ setPriorities(len,list);    //setto la lista caricata
 //comunicazione
 RecordLayer  *currentRecord;
 Handshake *currentHandshake;
+RecordLayer  *recordSend;
+Handshake *handshakeSend;
+
 if(CheckComunication()==server){
 	currentRecord= readchannel2();
 	currentHandshake = RecordToHandshake(currentRecord);
@@ -69,7 +72,26 @@ if(CheckComunication()==server){
 		case CLIENT_HELLO :
 		ClientServerHello *clienthello; 
 		clienthello =  HandshakeToClientServerHello(currentHandshake);   //adeso ho letto il clienthello fatto da client
-			
+					
+					printf("\n printsessionid :");			
+					printf(" %lu \n", clienthello->sessionId);
+		
+	 
+				CipherSuite *choosen; 																 //lista da sostituire a quella del clienthello per completare il serverhello
+				CipherSuite clientsuite;
+				choosen=&clientsuite;
+				clientsuite= get_cipher_suite(chooseChipher(clienthello)); 	
+				ClientServerHello *serverHello;
+				clienthello->ciphersuite= choosen;
+				clienthello->length =39;
+				
+				handshakeSend = ClientServerHelloToHandshake(clienthello);
+				recordSend= HandshakeToRecordLayer(handshakeSend);
+				sendPacketByte(recordSend);
+				
+				OpenCommunication(client);				//apro comunicazione a client
+				
+		break;	
 	//bla bla
  //avanti con gli altri case
 }
