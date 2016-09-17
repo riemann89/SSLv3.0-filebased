@@ -15,7 +15,7 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    
+
    /* char a='s';
     for (int i=0; i<10; i++) {
         while(CheckCommunication(0)!=0){
@@ -58,7 +58,7 @@ int main(int argc, const char *argv[]){
 	
 	list[30]=0;
 setPriorities(len,list);    //setto la lista caricata
-
+/*
 //comunicazione
 RecordLayer  *currentRecord;
 Handshake *currentHandshake;
@@ -68,8 +68,8 @@ Handshake *handshakeSend;
 if(CheckComunication()==server){
 	currentRecord= readchannel2();
 	currentHandshake = RecordToHandshake(currentRecord);
-	switch (currentRecord.message )
-		case CLIENT_HELLO :
+	switch (currentRecord->message)
+		case CLIENT_HELLO:
 		ClientServerHello *clienthello; 
 		clienthello =  HandshakeToClientServerHello(currentHandshake);   //adeso ho letto il clienthello fatto da client
 					
@@ -154,7 +154,7 @@ if(CheckComunication()==server){
 	}
 	
 	
-	
+*/	
 	
 	return 0;
 }

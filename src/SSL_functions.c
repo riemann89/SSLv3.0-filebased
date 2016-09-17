@@ -58,20 +58,21 @@ Certificate* loadCertificate(char * cert_name){
     certificate = calloc(1,sizeof(certificate));
     X509* certificate_x509 = NULL;
     uint8_t *buf;
+    FILE* certificate_file;
     
-    int len;
+    int len = 0;
     
     buf = NULL;
-    FILE* f = fopen(cert_name, "r");
+    certificate_file = fopen(cert_name, "r");
     
-    if (f != NULL){
-        certificate_x509 = PEM_read_X509(f, NULL, 0, NULL);
-        len = i2d_X509(certificate_x509, &buf);
-        if (len < 0){
-            perror("in loadCertificate: Certificate Not Valid\n");
-            exit(1);
-        }
+    if (certificate_file == NULL){
+        perror("Certificate File not found\n");
+        exit(1);
     }
+    
+    certificate_x509 = PEM_read_X509(certificate_file, NULL, 0, NULL);
+    len = i2d_X509(certificate_x509, &buf);
+    
     certificate->X509_der = buf;
     certificate->len = len;
     return certificate;
@@ -444,17 +445,19 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
     }
     
     return hello_request;
-    }//TOCHECK
+    }
 
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
+    CipherSuite *cipher_suite_list;
     
-    if (handshake->msg_type != CLIENT_HELLO || handshake->msg_type != SERVER_HELLO){
+    if (handshake->msg_type != CLIENT_HELLO && handshake->msg_type != SERVER_HELLO){
         perror("HandshakeToClientServerHello: handshake does not contain an client_hello/server_hello message.");
         exit(1);
     }
     
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
+    cipher_suite_list = (CipherSuite*)calloc(1, sizeof(CipherSuite));
     
     client_server_hello->length = handshake->length-4;
     client_server_hello->version = handshake->content[0];
