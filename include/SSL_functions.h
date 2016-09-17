@@ -27,7 +27,6 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange);
 Handshake *FinishedToHandshake(Finished *finished);
 
 /* Handshake to message types */
-
 HelloRequest *HandshakeToHelloRequest(Handshake *handshake);//TODO
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);//TODO
 Certificate *HandshakeToCertificate(Handshake *handshake);//TODO
@@ -44,10 +43,8 @@ Handshake *RecordToHandshake(RecordLayer *record);  //TOCHECK GIUSEPPE
 
 //Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  
-RecordLayer *readchannel2();  //TODO    1 sostituire con readchannel()
+RecordLayer *readchannel();  //TODO    1 sostituire con readchannel()
 
-
-ClientServerHello *readchannel();//TODO  4  da sostituire con HandshakeToHello( Handshake *handshake);
 ClientServerHello HandshakeToHello(Handshake *handshake);  // TODO 3
 void setPriorities(uint8_t number,uint8_t *priority);
 ClientServerHello *makeServerHello();

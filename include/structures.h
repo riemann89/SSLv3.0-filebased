@@ -52,7 +52,7 @@ typedef struct{
 
 typedef struct{
     uint8_t *X509_der;
-    int len;
+    uint32_t len;
 }Certificate;
 
 typedef enum{
@@ -115,10 +115,13 @@ typedef struct {//TODO
     uint8_t *signature;
 }KeyExchangeSignatures;
 
-typedef struct{//TODO
-    KeyExchangeAlgorithm algorighm_type;
+typedef struct{
+    KeyExchangeAlgorithm algorithm_type;
+    KeyExchangeSignatures signature_type;
     uint8_t *key_exchange;
+    uint8_t *signature;
     int len_key_exchange;
+    int len_signature;
 }ClientKeyExchange;
 
 typedef struct{

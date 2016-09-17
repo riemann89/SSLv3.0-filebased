@@ -51,7 +51,6 @@ Talker CheckCommunication(){
 /*
  This function load a certificate from a file and return an array of bites where are contained certificate information in DER format
  */
- 
 Certificate* loadCertificate(char * cert_name){
     
     Certificate *certificate;
@@ -77,6 +76,7 @@ Certificate* loadCertificate(char * cert_name){
     certificate->len = len;
     return certificate;
 }
+
 /*
  It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.
  */
@@ -111,6 +111,42 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
+/* funzione per leggere il file*/
+
+RecordLayer  *readchannel(){
+    uint8_t *buffer;
+    uint8_t record_header[5];//rivedere
+    FILE* SSLchannel;
+    uint32_t packet_size;
+    RecordLayer *returning_record;
+    ContentType type;
+    ProtocolVersion version;
+    
+    SSLchannel=fopen("SSLchannelbyte.txt", "r");
+    if(SSLchannel==NULL)
+    {
+        printf("Error unable to read the SSLchannel");
+        exit(1);
+    }
+    
+    fread(record_header, sizeof(uint8_t), 5*sizeof(uint8_t), SSLchannel);
+    packet_size = Bytes_To_Int(2, record_header + 3);
+    buffer = (uint8_t*)malloc((packet_size - 5)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
+    fseek(SSLchannel, SEEK_SET, 5);
+    fread(buffer,sizeof(uint8_t),(packet_size-5)*sizeof(uint8_t), SSLchannel);// load file into buffer
+    returning_record = calloc(6,sizeof(uint8_t));
+    
+    type = record_header[0];
+    returning_record->type = type;	// assign type
+    
+    version.minor = record_header[1]; //loading version
+    version.major = record_header[2];
+    returning_record->version= version;// assign version
+    returning_record->length = (uint16_t)packet_size;// assign length to record
+    returning_record->message= buffer;
+    return returning_record;//assign pointer to message
+}
+
 /***************************************FREE FUNCTIONS**********************************************/
 
 void FreeRecordLayer(RecordLayer *recordLayer){
@@ -131,12 +167,12 @@ void FreeClientServerHello(ClientServerHello *client_server_hello){
     free(client_server_hello->ciphersuite);
     free(client_server_hello);
 }
-/*
+
 void FreeCertificate(Certificate *certificate){
     free(certificate->X509_der);
     free(certificate);
 }
-*/
+
 void FreeCertificateRequest(CertificateRequest *certificate_request){
     free(certificate_request->certificate_authorities);
     free(certificate_request);
@@ -219,7 +255,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     handshake->content = Bytes;
     return handshake;
 }
-/*
+
 Handshake *CertificateToHandshake(Certificate *certificate){
     //VARIABLE DECLARATION//
     Handshake *handshake; 																		 	//returning variable
@@ -245,7 +281,7 @@ Handshake *CertificateToHandshake(Certificate *certificate){
     handshake->content = Bytes;
     return handshake;
 }
-*/
+
 Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -314,7 +350,7 @@ Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request
     handshake->length = 4 + bytes_size;
     handshake->content = Bytes;
     return handshake;
-};
+}
 
 Handshake *ServerDoneToHandshake(){
     //VARIABLE DECLARATION//
@@ -398,7 +434,7 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     handshake->content = Bytes;
     
     return handshake;
-};
+}
 
 Handshake *FinishedToHandshake(Finished *finished){
     Handshake *handshake;
@@ -464,7 +500,7 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     //client_server_hello->random = 1; //TODO
     //client_server_hello->sessionId = //TODO
     return client_server_hello;
-};//RIVEDERE da completare
+}//RIVEDERE da completare
 
 Certificate *HandshakeToCertificate(Handshake *handshake){
     Certificate *certificate;
@@ -493,7 +529,7 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     certificate->X509_der = buffer;
     
     return certificate;
-};//TOCHECK
+}
 
 /*
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake){
@@ -616,7 +652,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     
     return certificate_verify;
     
-};//TOCHECK
+}//TOCHECK
 
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);//TODO
 
@@ -639,7 +675,7 @@ Finished *HandshakeToFinished(Handshake *handshake){
     return finished;
 
 
-};//TOCHECK
+}//TOCHECK
 
 /* Handshake to RecordLayer */
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
@@ -694,104 +730,6 @@ Handshake *RecordToHandshake(RecordLayer *record){
     FreeRecordLayer(record);
     return result;
     
-}
-
-/* funzione per leggere il file*/
-
-RecordLayer  *readchannel2(){
-	uint8_t *buffer;
-    uint8_t record_header[5];//rivedere
-    FILE* SSLchannel;
-    uint32_t packet_size;
-    RecordLayer *returning_record;
-    ContentType type;
-    ProtocolVersion version;
-    
-    SSLchannel=fopen("SSLchannelbyte.txt", "r");
-	if(SSLchannel==NULL)
-	{
-		printf("Error unable to read the SSLchannel");
-        exit(1);
-	}
-    
-    fread(record_header, sizeof(uint8_t), 5*sizeof(uint8_t), SSLchannel);
-    packet_size = Bytes_To_Int(2, record_header + 3);
-    buffer = (uint8_t*)malloc((packet_size - 5)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
-    fseek(SSLchannel, SEEK_SET, 5);
-	fread(buffer,sizeof(uint8_t),(packet_size-5)*sizeof(uint8_t), SSLchannel);// load file into buffer
-    returning_record = calloc(6,sizeof(uint8_t));
-    
-	type = record_header[0];
-	returning_record->type = type;	// assign type
-
-	version.minor = record_header[1]; //loading version
-	version.major = record_header[2];
-	returning_record->version= version;// assign version
-	returning_record->length = (uint16_t)packet_size;// assign length to record
-	returning_record->message= buffer;
-    return returning_record;//assign pointer to message
-} //Read Channel and return the reconstructed ClientHello from wich i will get the SeverHello wich i will have to send into the channel..  TODO now just return clienthello.. does not read the  handshake in general
-
-ClientServerHello *readchannel(){
-    
-    
-    uint8_t *buffer;
-    FILE* SSLchannel;
-    SSLchannel=fopen("SSLchannelbyte.txt", "r");
-    
-    ClientServerHello *returning_hello;	 //returning variable
-    returning_hello=(ClientServerHello*) calloc(1,sizeof(returning_hello));
-    
-    
-    
-    buffer = (uint8_t *)malloc((150)*sizeof(uint8_t));    // Enough memory for file + \0
-    fread(buffer, 100, 1, SSLchannel);
-    
-    
-    uint8_t  version=(uint8_t)*(buffer+9);
-    
-    
-    uint8_t  length= (uint8_t)*(buffer +8) -4 ;  //tolgo i byte in più dell' handshake  (version + length)   è un po' sporca...sfrutto il fatto che la lunghezza sta in realtà in un byte... TODO
-    
-    uint8_t session[4];
-    
-    for(int i =0;i<4;i++){
-        session[i]= *(buffer + 10 + i);
-    }
-    reverse(session,4);   // reversing dei bytes della session
-    
-    uint32_t  SessionId=(uint32_t)(session[0] + session[1] *256 + session[2]*256*256 + session[3]*256*256);
-    Random ran;
-    ran.gmt_unix_time=time(0);  //metto il tempo nuovo in secondi.. dovrei trovare quella in millis
-    
-    
-    for (int i =0; i<28;i++){
-        
-        ran.random_bytes[i]=(uint8_t)*(buffer +(18+i));
-    }
-    
-    //uint8_t  ciphers[length - 38]; //length of  ciphers
-    CipherSuite *ciphers = malloc((50)*sizeof(CipherSuite));
-    
-    
-    
-    for (int i =0; i<length-32;i++){
-        printf("%d",i+18);
-        ciphers[i]= get_cipher_suite(buffer[18 +28 +i]);
-    }
-    //uint8_t *ciphers_ptr;
-    
-    //ciphers_ptr=&ciphers;
-    
-    printf("carico ritorno");
-    returning_hello->version=version;
-    returning_hello->length=length;
-    returning_hello->sessionId=SessionId;
-    returning_hello->random=ran;
-    returning_hello->ciphersuite=ciphers;
-    //printf("%02x\n \n",ciphers[0].code);  //comodo come controllo
-    //returning_hello->ciphersuite= (Cipher_Suite*)ciphers_ptr;
-    return returning_hello;
 }
 
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
