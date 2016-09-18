@@ -18,7 +18,7 @@ void OpenCommunication(Talker talker){
 
     //CHECKING INPUT//
     if (talker!=client && talker!=server) {
-        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");    //problema a incolonnare non si può spezzare la stringa
+        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");
         exit(1);
     }
     //AUTHORIZING SELECTED TALKER//
@@ -39,16 +39,16 @@ Talker CheckCommunication(){
     //VARIABLES DECLARATION
     FILE* token;
     Talker authorized_talker;																													//returning variable
-    token=fopen("token.txt", "r");    																										//on token.txt is saved the current authorized talker 
+    token = fopen("token.txt", "r");    																										//on token.txt is saved the current authorized talker 
     if(token == NULL) {
-        perror("Failed to open token.txt - CheckCommunication(client) operation");							//is the file empty?? it shouldn't
+        perror("Failed to open token.txt - CheckCommunication() operation\n");							//is the file empty?? it shouldn't
         exit(1);
     }
 	//SEEK WICH ONE IS AUTHORIZETD TO TALK//
     fscanf(token,"%u",&(authorized_talker));																						//read value from talker and insert it into the returning variable
     fclose(token);																																		//Close file
     if (authorized_talker!=client && authorized_talker!=server) {
-        perror("Error in token.txt - nor client,nor server authorized");													//is the read value an acceptable value?? in case not return an error.
+        perror("Error in token.txt - nor client,nor server authorized\n");													//is the read value an acceptable value?? in case not return an error.
         exit(1);
     }
     return authorized_talker;
@@ -96,7 +96,7 @@ void sendPacketByte(RecordLayer *record_layer){
     //Channel Operations//
     SSLchannel=fopen("SSLchannelbyte.txt", "wb");															 		//channel opening in creating-writing mode
     if (SSLchannel == NULL) {
-        perror("Failed to open SSLchannel.txt - sendPacket operation");										//error
+        perror("Failed to open SSLchannel.txt - sendPacket operation\n");										//error
         exit(1);
     }
     //extracting fields from record_layer, loading into temporary variables
@@ -131,7 +131,7 @@ RecordLayer  *readchannel(){
     SSLchannel=fopen("SSLchannelbyte.txt", "r");
     if(SSLchannel==NULL)
     {
-        printf("Error unable to read the SSLchannel");
+        printf("Error unable to read the SSLchannel\n");
         exit(1);
     }
     
@@ -201,7 +201,7 @@ void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
 
 void FreeCertificateFinished(Finished *finished){
     free(finished);
-}//TODO ricontrollare questa free
+}
 
 /********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
 /* Message types to Handshake */
@@ -228,13 +228,14 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //VARIABLE DECLARATION//
     CipherSuite *cipher;
     Handshake *handshake; 																		 	//returning variable
-    uint8_t timeB[4]; 																							//current time bytes representation
-    uint8_t session[4];			 																				//session bytes representation
-    uint8_t cipher_codes[client_server_hello->length-38];    							// 38= Random(32)+session(4) + version(1) + length(1)  //array of all ciphers supported
-    uint8_t *Bytes;																								//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
+    uint8_t timeB[4]; 																					//current time bytes representation
+    uint8_t session[4];			 																		//session bytes representation
+    uint8_t cipher_codes[client_server_hello->length-38]; // 38= Random(32)+session(4) + version(1) + length(1)
+    														//array of all ciphers supported
+    uint8_t *Bytes;							//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
+    
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(client_server_hello->length
-	,sizeof(uint8_t));																								 //bytes data vector, as said Bytes is an array which represents client_server_hello
+    Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -245,7 +246,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
         exit(1);
     }
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    cipher=client_server_hello->ciphersuite;   													 //temporary vector containing all cipher codes - it is requested to perform following memcopy
+    cipher = client_server_hello->ciphersuite;   //temporary vector containing all cipher codes - it is requested to perform following memcopy
     for (int i=0;i<(client_server_hello->length-38);i++){  
         cipher_codes[i]=(cipher+i)->code;
     }
@@ -408,7 +409,7 @@ Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
     handshake->content = Bytes;
     
     return handshake;
-};
+}
 
 Handshake *FinishedToHandshake(Finished *finished){
     Handshake *handshake;
@@ -435,7 +436,7 @@ Handshake *FinishedToHandshake(Finished *finished){
     handshake->content = Bytes;
     
     return handshake;
-}//TODO TEST
+}
 
 /********************FUNCTION TO CONSTRUCT PACKET FROM HANDSHAKE*************************/
 
@@ -467,11 +468,24 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     }
     
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
+    
+    if (client_server_hello == NULL){
+        perror("HandshakeToClientServerHello: memory allocation leak.");
+        exit(1);
+    }
+    
     cipher_suite_list = (CipherSuite*)calloc(1, sizeof(CipherSuite));
+    
+    if (cipher_suite_list == NULL){
+        perror("HandshakeToClientServerHello: memory allocation leak.");
+        exit(1);
+    }
+    
+    
     
     client_server_hello->length = handshake->length-4;
     client_server_hello->version = handshake->content[0];
-    //client_server_hello->random = 1; //TODO
+    //client_server_hello->random = handshake->; //TODO
     //client_server_hello->sessionId = //TODO
     return client_server_hello;
 }//RIVEDERE da completare
@@ -505,67 +519,6 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     return certificate;
 }
 
-/*
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake){
-    ServerKeyExchange *server_key_exchange;
-    KeyExchangeParameters *parameters;
-    KeyExchangeSignatures *signature;
-    int certificate_len;
-    
-    if (handshake->msg_type != SERVER_KEY_EXCHANGE){
-        perror("HandshakeToServerKeyExchange: handshake does not contain a server key exchange message.");
-        exit(1);
-    }
-    
-    certificate_len = handshake->length - 4;
-    
-    server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
-    parameters = (KeyExchangeParameters *)calloc(1, sizeof(KeyExchangeParameters));
-    signature = (KeyExchangeSignatures *)calloc(1, sizeof(KeyExchangeSignatures));
-    
-    parameters->algorithm_type =
-    
-    memcpy(buffer, handshake->content, certificate_len);
-    
-    certificate->len = certificate_len;
-    certificate->X509_der = buffer;
-    
-    return certificate;
-
-};//TODO : Probabilmente va rivista la struttura, perchè dall'handshake, non riusciamo a ricavare il tipo di algoritmo.E quindi è impossibile completare tutti i campi.
-
-CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
-    CertificateRequest *certificate_request;
-    uint8_t *buffer;
-    int buffer_len;
-    
-    if (handshake->msg_type != CERTIFICATE_REQUEST){
-        perror("ERROR HandshakeToCertificateRequest: handshake does not contain a certificate request message.");
-        exit(1);
-    }
-    
-    buffer_len = handshake->length - 4;
-    
-    certificate_request = (CertificateRequest *)calloc(1, sizeof(CertificateRequest));
-    if (certificate_request == NULL){
-        perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
-        exit(1);
-    }
-    
-    buffer = (uint8_t *)calloc(buffer_len, sizeof(uint8_t));
-    if (buffer == NULL){
-        perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
-        exit(1);
-    }
-    
-    memcpy(buffer, handshake->content, buffer_len);
-    
-    certificate->len = certificate_len;
-    certificate->X509_der = buffer;
-    
-    return certificate;
-};//TODO Rivedere: non riesco a rappresentare le liste, rivedere anche la struttura a questo punto.
-
 ServerDone *HandshakeToServerdone(Handshake *handshake){
     ServerDone *server_done;
     
@@ -584,7 +537,6 @@ ServerDone *HandshakeToServerdone(Handshake *handshake){
     return server_done;
 
 };//TOCHECK
-*/
 
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     CertificateVerify *certificate_verify;
@@ -691,6 +643,40 @@ Finished *HandshakeToFinished(Handshake *handshake){
 
 
 }//TOCHECK
+
+CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
+ CertificateRequest *certificate_request;
+ uint8_t *buffer;
+ int buffer_len;
+ 
+ if (handshake->msg_type != CERTIFICATE_REQUEST){
+ perror("ERROR HandshakeToCertificateRequest: handshake does not contain a certificate request message.");
+ exit(1);
+ }
+ 
+ buffer_len = handshake->length - 4;
+ 
+ certificate_request = (CertificateRequest *)calloc(1, sizeof(CertificateRequest));
+ if (certificate_request == NULL){
+ perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
+ exit(1);
+ }
+ 
+ buffer = (uint8_t *)calloc(buffer_len, sizeof(uint8_t));
+ if (buffer == NULL){
+ perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
+ exit(1);
+ }
+ 
+ memcpy(buffer, handshake->content, buffer_len);
+ 
+ //certificate->len = certificate_len;
+ //certificate->X509_der = buffer;
+ 
+ return certificate_request;
+ } //TODO Rivedere: non riesco a rappresentare le liste, rivedere anche la struttura certificate_request.
+
+/***************************************HANDSHAKE TO/FROM RECORDLAYER******************************************************/
 
 /* Handshake to RecordLayer */
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){

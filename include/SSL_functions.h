@@ -41,9 +41,9 @@ Handshake *RecordToHandshake(RecordLayer *record);  //TOCHECK GIUSEPPE
 
 //Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  
-RecordLayer *readchannel();  //TODO    1 sostituire con readchannel()
+RecordLayer *readchannel();
 
-ClientServerHello HandshakeToHello(Handshake *handshake);  // TODO 3
+
 void setPriorities(uint8_t number,uint8_t *priority);
 ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);

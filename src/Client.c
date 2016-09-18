@@ -4,82 +4,78 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <openssl/rand.h>
 #include "SSL_functions.h"
 
 
 int main(int argc, const char *argv[]){
     //VARIABLE DECLARATION
     
-    Talker client;
-    int  timestep=0;
-    Random ran;
-    ClientServerHello client_hello,*client_hello_p;
-    Handshake *handshake;
-    RecordLayer *recordlayer;
+    Talker talker;
     
-    printf("ciao");
-    X509* test;
-    test = loadCertificate("server.crt");
+    ClientServerHello client_hello, *server_hello;
+    Handshake *handshake, *server_handshake;
+    RecordLayer *record, *server_message;
+    ServerDone *server_done;
     
+	int  timestep;
+    printf("ciao\n");
+    int phase = 0;
     
     //CLIENT STEPS
-    client=0;    //initialise client
+    timestep = 0;
+    talker = client;    //initialise client
 	
+    ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     OpenCommunication(client);
-	
-    while(timestep<2){
-        
-        if(CheckCommunication()==client){
-            
-            if(timestep==0){
 
-                ran.gmt_unix_time=35; // ???????????????
-                
-                for(int i=0;i<28;i++){
-                    ran.random_bytes[i]=(uint8_t) i;
-                }
-                client_hello.random=ran;
-                client_hello.sessionId=55;
-                client_hello.version=3;
-                client_hello.ciphersuite=lista;
-                client_hello.length=69;
-                
-                client_hello_p=&client_hello; //
- 
-                handshake = ClientServerHelloToHandshake(client_hello_p);
+    //COSTRUZIONE CLIENT HELLO
+    client_hello.length = 69;
+    client_hello.version = 3;
+    client_hello.random.gmt_unix_time=(uint32_t)time(NULL); //TODO: rivedere se è corretto
+    RAND_bytes(client_hello.random.random_bytes, 28);
+	client_hello.sessionId = 0;
+    client_hello.ciphersuite = lista; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 				
-                recordlayer=HandshakeToRecordLayer(handshake);
-				
-                sendPacketByte(recordlayer);
+    //WRAPPING
+    handshake = ClientServerHelloToHandshake(&client_hello);
+    record = HandshakeToRecordLayer(handshake);
                 
-                //ora ho mandato il clienthello  passo il turno al server in attesa di risposta
-            }
-            
-            else if(timestep==1){
-                
-                ClientServerHello *serverhello;
-                serverhello=readchannel();
-                printf("\n scelto l'algoritmo: %02x", serverhello->ciphersuite[0].code );
-                
-            }
-            OpenCommunication(server);
-            timestep++;
-            
-        }
-    }
+    //INVIAMO e APRIAMO LA COMUNICAZIONE AL SERVER
+    sendPacketByte(record);
+    phase = 1;
+    
+    OpenCommunication(server);
+    while(CheckCommunication() == server)
+    
+    server_message = readchannel();
+    server_handshake = RecordToHandshake(server_message);
+    server_hello = HandshakeToClientServerHello(server_handshake);//SERVER HELLO
+    
+    OpenCommunication(server);
+    while(CheckCommunication() == server)
+        
+    //SERVER DONE
+    server_message = readchannel();
+    server_handshake = RecordToHandshake(server_message);
+    server_done = HandshakeToServerdone(server_handshake);
+    
+	//CLIENT_KEY_EXCHANGE
     
     
-    /*while(i<5){
-     if(CheckCommunication()==client){
-     OpenCommunication(server);
-     i++;
-	    canaleSSL=fopen("canaleSSL.txt", "a+");
-     fprintf(canaleSSL,"%c",a);
-     fclose(canaleSSL);
-     
-     }
-     
-     * */
+    OpenCommunication(server);
+    while(CheckCommunication() == server);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
     
     
     
