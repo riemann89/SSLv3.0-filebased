@@ -171,6 +171,7 @@ void FreeHandshake(Handshake *handshake){
 
 void FreeClientServerHello(ClientServerHello *client_server_hello){
     free(client_server_hello->ciphersuite);
+    free(client_server_hello->random);
     free(client_server_hello);
 }
 
@@ -462,21 +463,20 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
 
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
-    uint8_t *ciphers;
+    CipherSuite *ciphers;
     Random *random;
+    ciphers = (CipherSuite*)calloc(handshake->length-41,sizeof(CipherSuite));    
+    client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
+    random = (Random*)calloc(1,sizeof(Random));
     
     if (handshake->msg_type != CLIENT_HELLO && handshake->msg_type != SERVER_HELLO){
         perror("HandshakeToClientServerHello: handshake does not contain a client_hello/server_hello message.");
         exit(1);
     }
     
-    client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
-    random = (Random*)calloc(1,sizeof(Random));
-    memcpy(random->gmt_unix_time,handshake->content[5],4);
-    memcpy(random->random_bytes,handshake->content[9],28);
-    
-    ciphers = (uint8_t*)calloc(handshake->length-41,sizeof(uint8_t));
-    memcpy(ciphers,handshake->content[37],(handshake->length-41));
+        random->gmt_unix_time=Bytes_To_Int(4,handshake->content);
+        memcpy(random->random_bytes,handshake->content[9],28);    
+        memcpy(ciphers,handshake->content[37],(handshake->length-41));
         
     client_server_hello->length = handshake->length-4;
     client_server_hello->version = handshake->content[0];
