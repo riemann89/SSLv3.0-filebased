@@ -17,6 +17,7 @@ int main(int argc, const char *argv[]){
     Handshake *handshake, *server_handshake;
     RecordLayer *record, *server_message;
     ServerDone *server_done;
+    ClientKeyExchange client_key_exchange;
     
 	int  timestep;
     printf("ciao\n");
@@ -32,8 +33,8 @@ int main(int argc, const char *argv[]){
     //COSTRUZIONE CLIENT HELLO
     client_hello.length = 69;
     client_hello.version = 3;
-    client_hello.random.gmt_unix_time=(uint32_t)time(NULL); //TODO: rivedere se è corretto
-    RAND_bytes(client_hello.random.random_bytes, 28);
+    client_hello.random->gmt_unix_time=(uint32_t)time(NULL); //TODO: rivedere se è corretto
+    RAND_bytes(client_hello.random->random_bytes, 28);
 	client_hello.sessionId = 0;
     client_hello.ciphersuite = lista; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 				
@@ -61,10 +62,12 @@ int main(int argc, const char *argv[]){
     server_done = HandshakeToServerdone(server_handshake);
     
 	//CLIENT_KEY_EXCHANGE
-    
+    //TODO
     
     OpenCommunication(server);
     while(CheckCommunication() == server);
+    
+    
     
     
     
