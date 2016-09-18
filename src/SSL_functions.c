@@ -368,8 +368,9 @@ Handshake *ServerDoneToHandshake(){
         exit(1);
     }
     //HANDSHAKE CONSTRUCTION//
+    printf("CIAONE\n");
     handshake->msg_type = SERVER_DONE;//handshake fields initialization
-    handshake->length = 5;
+    handshake->length = 4;
     handshake->content = Bytes;
     return handshake;
 }
@@ -470,17 +471,18 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     random = (Random*)calloc(1,sizeof(Random));
     
     if (handshake->msg_type != CLIENT_HELLO && handshake->msg_type != SERVER_HELLO){
-        perror("HandshakeToClientServerHello: handshake does not contain a client_hello/server_hello message.");
+        printf("%d\n",handshake->msg_type);
+        perror("HandshakeToClientServerHello: handshake does not contain a client_hello/server_hello message.\n");
         exit(1);
     }
     
-        random->gmt_unix_time=Bytes_To_Int(4,handshake->content);
-        memcpy(random->random_bytes,handshake->content[9],28);    
-        memcpy(ciphers,handshake->content[37],(handshake->length-41));
+    random->gmt_unix_time=Bytes_To_Int(4,handshake->content);
+    memcpy(random->random_bytes, handshake->content + 9,28);
+    memcpy(ciphers, handshake->content + 37, (handshake->length-41));
         
     client_server_hello->length = handshake->length-4;
     client_server_hello->version = handshake->content[0];
-    client_server_hello->sessionId = Bytes_To_Int(4,handshake->content[1]);    
+    client_server_hello->sessionId = Bytes_To_Int(4, handshake->content + 1);
     client_server_hello->random = random;
     client_server_hello->ciphersuite = ciphers;
 

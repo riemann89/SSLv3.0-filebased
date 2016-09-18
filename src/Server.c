@@ -12,149 +12,129 @@
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <openssl/rand.h>
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-
-   /* char a='s';
-    for (int i=0; i<10; i++) {
-        while(CheckCommunication(0)!=0){
-            usleep(100);
-        };
-        canaleSSL=fopen("canaleSSL.txt", "a+");
-        if(canaleSSL == NULL) {
-            perror("Errore in apertura del file");
-            exit(1);
-        }
-        fprintf(canaleSSL,"%c",a);
-        fclose(canaleSSL);
+    printf("Server avviatoaaaa.\n");
+    //VARIABLE DECLARATION
+    ClientServerHello server_hello, *client_hello;
+    Handshake *handshake, *client_handshake;
+    RecordLayer *record, *client_message;
+    ServerDone server_done;
+    ClientKeyExchange *client_key_exchange;
+    Random random;
+    Certificate *certificate;
+    CertificateVerify *certificate_verify;
+    Finished *client_finished, finished;
+    
+    printf("Server avviato.\n");
+    int phase = 0;
+    
+    //CLIENT STEPS
+    
+    ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
+    while(CheckCommunication() == client){}
+    client_message = readchannel();
+    client_handshake = RecordToHandshake(client_message);
+    client_hello = HandshakeToClientServerHello(client_handshake);
+    printf("ClientHello read!!!\n	CipherSuite:%02X\n", client_hello->ciphersuite->code);
+    
+    //COSTRUZIONE SERVER HELLO
+    random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
+    RAND_bytes(random.random_bytes, 28);
+    
+    server_hello.type = SERVER_HELLO;
+    server_hello.length = 45;
+    server_hello.version = 3;
+    server_hello.random = &random;
+    server_hello.sessionId = 32;
+    server_hello.ciphersuite = lista2; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
+				
+    //WRAPPING
+    handshake = ClientServerHelloToHandshake(&server_hello);
+    record = HandshakeToRecordLayer(handshake);
+    
+    //INVIAMO e APRIAMO LA COMUNICAZIONE AL SERVER
+    sendPacketByte(record);
+    printf("ServerHello sent!!!\n");
+    OpenCommunication(client);
+    
+    ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
+    while(CheckCommunication() == client){}
+    
+    
+    //CERTIFICATE
+    certificate = loadCertificate("certificates/RSA_server.crt");
+    handshake = CertificateToHandshake(certificate);
+    record = HandshakeToRecordLayer(handshake);
+    
+    sendPacketByte(record);
+    printf("Certificate sent!!!\n");
+    OpenCommunication(client);
+    while(CheckCommunication() == client){}
+    
+    //SERVER KEY EXCHANGE
+    
+    //CERTIFICATE REQUEST
+    
+    //SERVER HELLO DONE
+    handshake = ServerDoneToHandshake();
+    record = HandshakeToRecordLayer(handshake);
+    
+    sendPacketByte(record);
+    printf("ServerDone sent!!!\n");
+    OpenCommunication(client);
+    
+    ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
+    
+    phase = 3;
+    while(phase == 3){
+        while(CheckCommunication() == client){}
         
-        OpenCommunicationClient();
+        client_message = readchannel();
+        client_handshake = RecordToHandshake(client_message);
+        
+        switch (client_handshake->msg_type) {
+            case CERTIFICATE:
+                certificate = HandshakeToCertificate(client_handshake);
+                printf("Certificate read\n");
+                OpenCommunication(client);
+                break;
+            case CLIENT_KEY_EXCHANGE:
+                printf("Server Key Exchange read\n");
+                OpenCommunication(client);
+                break;
+            case CERTIFICATE_VERIFY:
+                certificate_verify = HandshakeToCertificateVerify(client_handshake);
+                printf("CertificateRequest read\n");
+                OpenCommunication(client);
+                break;
+            case FINISHED:
+                phase = 4;
+                client_finished = HandshakeToFinished(client_handshake);
+                break;
+            default:
+                printf("%02X\n", client_handshake->msg_type);
+                perror("ERROR: Unattended message in phase 3.\n");
+                exit(1);
+                break;
+        }
     }
-     */
+    
+    ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
+    RAND_bytes(finished.hash, 36);
+    handshake = FinishedToHandshake(&finished);
+    record = HandshakeToRecordLayer(handshake);
+    
+    sendPacketByte(record);
+    printf("client finished sent.\n");
+    OpenCommunication(client);
+
+    
+    
     
 
-	
-	/*while(i<5){
-		if(CheckCommunication()==server){
-			OpenCommunication(client);
-			i++;
-			canaleSSL=fopen("canaleSSL.txt", "a+");
-         fprintf(canaleSSL,"%c",a);
-        fclose(canaleSSL);
-			
-		}
-		
-	}
-	*/
-	
-	
-    uint8_t  list[32];  //lunghezza massima  di liste supportate, list[0] = n° di cipher supportate "lunghezza vera della lista"
-	uint8_t len = 10;
-	
-	for(int i = 0; i<len; i++){		   //carico le ciphre supportate dal server in ordine decrescente di priorità  (scelte a cazzo tanto per non avere lite banali di un solo elemento o di tutte le possibili chiphers)
-		list[i] =  (uint8_t) (i +10);
-	}
-	
-	list[30]=0;
-setPriorities(len,list);    //setto la lista caricata
-/*
-//comunicazione
-RecordLayer  *currentRecord;
-Handshake *currentHandshake;
-RecordLayer  *recordSend;
-Handshake *handshakeSend;
-
-if(CheckComunication()==server){
-	currentRecord= readchannel2();
-	currentHandshake = RecordToHandshake(currentRecord);
-	switch (currentRecord->message)
-		case CLIENT_HELLO:
-		ClientServerHello *clienthello; 
-		clienthello =  HandshakeToClientServerHello(currentHandshake);   //adeso ho letto il clienthello fatto da client
-					
-					printf("\n printsessionid :");			
-					printf(" %lu \n", clienthello->sessionId);
-		
-	 
-				CipherSuite *choosen; 																 //lista da sostituire a quella del clienthello per completare il serverhello
-				CipherSuite clientsuite;
-				choosen=&clientsuite;
-				clientsuite= get_cipher_suite(chooseChipher(clienthello)); 	
-				ClientServerHello *serverHello;
-				clienthello->ciphersuite= choosen;
-				clienthello->length =39;
-				
-				handshakeSend = ClientServerHelloToHandshake(clienthello);
-				recordSend= HandshakeToRecordLayer(handshakeSend);
-				sendPacketByte(recordSend);
-				
-				OpenCommunication(client);				//apro comunicazione a client
-				
-		break;	
-	//bla bla
- //avanti con gli altri case
-}
-
-
-
-
-	
-	// comincio la comunicazione
-	  int  timestep=0;
-	
-	while(timestep<2){
-	
-			if(CheckCommunication()==server){    											//controllo se posso parlare o meno
-
- 			if(timestep==0){
-
-				ClientServerHello *clienthello; 
-			    clienthello=readchannel(); 														//leggo quello che è stato scritto dal client
-				
-				printf("\n printsessionid \n");
-			
-					printf("%lu ", clienthello->sessionId);
-				
-	
-	printf("\n");
-				
-				CipherSuite *choosen; 																 //lista da sostituire a quella del clienthello per completare il serverhello
-				CipherSuite clientsuite;
-				choosen=&clientsuite;
-				clientsuite= get_cipher_suite(chooseChipher(clienthello)); 	 //scelgo la miglior cifratura condivisa da server e client
-				clienthello->ciphersuite=choosen;  											 //sostituisco alla lista con tutti le chiphers supportate da client la lista composta dalla sola cifratura scelta da server
-				clienthello->length=39;                											     //avrò una sola cipher
-				
-				//spedisco il tutto sul canale in attesa di client  
-				Handshake hand;
-				RecordLayer record;
-				Handshake  *serverhand;    
-				RecordLayer *serverRecord;
-				serverhand=&hand;
-				serverRecord=&record;
-				
-				serverhand=ClientServerHelloToHandshake(clienthello);
-				serverRecord =HandshakeToRecordLayer(serverhand);
-                sendPacketByte(serverRecord);   //pacchetto inviato!
-	
-		
-		}
-		
-		else if(timestep==1){
-			
-			
-			printf("\n ServerDone ");
-			
-		}
-		OpenCommunication(client); //apro la comunicazione a client
-		timestep++;
-
-		}
-	}
-	
-	
-*/	
-	
+   	
 	return 0;
 }

@@ -40,7 +40,7 @@ typedef struct{
 typedef struct{
     uint8_t length;  //uint8_t beacause the maximum length will < 256;    38 + #ciphersuite*4 ,   WARNING: in the handshake there will be no more this byite 
     uint8_t version;
-    Random *random; //TODO sostituire con un puntatore (bisogna risistemare tutte le funzioni che lavorano con client_hello)
+    Random *random;
     uint32_t sessionId;
     CipherSuite *ciphersuite;
     HandshakeType type;
@@ -115,6 +115,7 @@ typedef struct{
 
 //Extern variables
 extern CipherSuite lista[31];
+extern CipherSuite lista2[8];
 extern ProtocolVersion std_version;
 
 CipherSuite get_cipher_suite(uint8_t id);
