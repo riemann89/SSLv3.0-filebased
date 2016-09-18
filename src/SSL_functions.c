@@ -7,9 +7,15 @@
 /*
  It allows the communication to the indicated talker: (0 - client, 1 - server, as defined in Talker enum)
  */
+
+/**
+ * Ciao ciao ciao
+ * @param talker
+ */
 void OpenCommunication(Talker talker){
     //VARIABLE DECLARATION//
     FILE* token;
+
     //CHECKING INPUT//
     if (talker!=client && talker!=server) {
         perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");    //problema a incolonnare non si può spezzare la stringa
@@ -764,6 +770,17 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
     }
     printf("\nError, uncompatibles chiphers");   																		//no compatible chipher, print error
 				exit(1);
+}
+
+KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
+    if(cipher.code>0&& cipher.code<11)
+        return RSA_;
+    if(cipher.code>10&& cipher.code<28)
+        return DIFFIE_HELLMAN;
+    if(cipher.code>27&& cipher.code<31)
+        return FORTEZZA;
+    perror("Cipher null or not a valid ");
+    exit(1);
 }
 
 /* about certificates*/

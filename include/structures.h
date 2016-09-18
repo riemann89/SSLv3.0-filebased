@@ -60,7 +60,7 @@ typedef enum{
     DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH,FORTEZZA_MISSI=20
 }CertificateType;
 
-typedef enum{RSA_, DIFFIE_HELLMAN, FORTEZZA}KeyExchangeAlgorithm;
+typedef enum{RSA_=0, DIFFIE_HELLMAN=1, FORTEZZA=2}KeyExchangeAlgorithm;
 
 typedef enum{SHA1_, MD5}SignatureAlgorithm;
 
