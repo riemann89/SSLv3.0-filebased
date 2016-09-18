@@ -250,12 +250,12 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     for (int i=0;i<(client_server_hello->length-38);i++){  
         cipher_codes[i]=(cipher+i)->code;
     }
-    int_To_Bytes(client_server_hello->random.gmt_unix_time, timeB);   	    //unix_time 
+    int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);   	    //unix_time 
     int_To_Bytes(client_server_hello->sessionId, session);  								// session values to bytes transformation
     Bytes[0]=client_server_hello->version;   														//serializing client/server_hello field into bytes data vector
     memcpy(Bytes+1 ,session, 4);
     memcpy(Bytes+5 ,timeB , 4);
-    memcpy(Bytes+9,client_server_hello->random.random_bytes,28);
+    memcpy(Bytes+9,client_server_hello->random->random_bytes,28);
     memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);       		//38= version(1)+length(1)+session(4)+random(32)
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = client_server_hello->type;   												//handshake fields initialization
@@ -449,6 +449,8 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
         }
     
     hello_request = (HelloRequest*)calloc(1, sizeof(HelloRequest));
+  
+    
     
     if (hello_request == NULL){
         perror("ERROR HandshakeToHelloRequest: memory allocation leak.");
@@ -460,33 +462,28 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
 
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
-    CipherSuite *cipher_suite_list;
+    uint8_t *ciphers;
+    Random *random;
     
     if (handshake->msg_type != CLIENT_HELLO && handshake->msg_type != SERVER_HELLO){
-        perror("HandshakeToClientServerHello: handshake does not contain an client_hello/server_hello message.");
+        perror("HandshakeToClientServerHello: handshake does not contain a client_hello/server_hello message.");
         exit(1);
     }
     
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
+    random = (Random*)calloc(1,sizeof(Random));
+    memcpy(random->gmt_unix_time,handshake->content[5],4);
+    memcpy(random->random_bytes,handshake->content[9],28);
     
-    if (client_server_hello == NULL){
-        perror("HandshakeToClientServerHello: memory allocation leak.");
-        exit(1);
-    }
-    
-    cipher_suite_list = (CipherSuite*)calloc(1, sizeof(CipherSuite));
-    
-    if (cipher_suite_list == NULL){
-        perror("HandshakeToClientServerHello: memory allocation leak.");
-        exit(1);
-    }
-    
-    
-    
+    ciphers = (uint8_t*)calloc(handshake->length-41,sizeof(uint8_t));
+    memcpy(ciphers,handshake->content[37],(handshake->length-41));
+        
     client_server_hello->length = handshake->length-4;
     client_server_hello->version = handshake->content[0];
-    //client_server_hello->random = handshake->; //TODO
-    //client_server_hello->sessionId = //TODO
+    client_server_hello->sessionId = Bytes_To_Int(4,handshake->content[1]);    
+    client_server_hello->random = random;
+    client_server_hello->ciphersuite = ciphers;
+
     return client_server_hello;
 }//RIVEDERE da completare
 
@@ -764,7 +761,7 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
         }
     }
     printf("\nError, uncompatibles chiphers");   																		//no compatible chipher, print error
-				exit(1);
+    exit(1);
 }
 
 KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
