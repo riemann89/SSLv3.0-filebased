@@ -19,27 +19,25 @@ void sendPacketByte(RecordLayer *record_layer);
 Handshake *HelloRequestToHandshake();
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
 Handshake *CertificateToHandshake(Certificate *certificate);
-Handshake *ServerClientKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange);
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request);
 Handshake *ServerDoneToHandshake();
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify);
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange);
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange); //va adattato per il server_client_exchange eventualmente
 Handshake *FinishedToHandshake(Finished *finished);
 
 /* Handshake to message types */
 HelloRequest *HandshakeToHelloRequest(Handshake *handshake);//TODO
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);//TODO
-Certificate *HandshakeToCertificate(Handshake *handshake);//TODO
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake);//TODO
+Certificate *HandshakeToCertificate(Handshake *handshake); //tested
+//ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake);//TODO
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);//TODO
 ServerDone *HandshakeToServerdone(Handshake *handshake);//TODO
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);//TODO
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);//TODO
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature);//TODO
 Finished *HandshakeToFinished(Handshake *handshake);//TODO
 
 //record->handshake
 Handshake *RecordToHandshake(RecordLayer *record);  //TOCHECK GIUSEPPE
-
 
 //Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  

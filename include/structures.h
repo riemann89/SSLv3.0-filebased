@@ -103,30 +103,16 @@ typedef struct {
 
 //Structs for ServerKeyExchange
 
-typedef struct {
-    KeyExchangeAlgorithm algorithm_type;
-    int size; //TODO rivedere cosa indica precisamente
-    uint8_t *parameters;
-}KeyExchangeParameters;
-
-typedef struct {//TODO
-    SignatureAlgorithm algorithm_type;
-    int size;
-    uint8_t *signature;
-}KeyExchangeSignatures;
-
 typedef struct{
     KeyExchangeAlgorithm algorithm_type;
-    KeyExchangeSignatures signature_type;
-    uint8_t *key_exchange;
+    SignatureAlgorithm signature_type;
+    uint8_t *parameters;
     uint8_t *signature;
-    int len_key_exchange;
-    int len_signature;
+    uint32_t len_parameters;
+    uint32_t len_signature;
 }ClientKeyExchange;
 
 typedef struct{
-    KeyExchangeParameters *parameters;
-    KeyExchangeSignatures *signature;
 }ServerKeyExchange;
 
 //Extern variables
