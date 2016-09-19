@@ -18,18 +18,29 @@ int main(int argc, const char *argv[]){
     RecordLayer *record, *server_message;
     Random random;
     ServerDone *server_done;
-    ClientKeyExchange server_key_exchange, client_key_exchange;
-    Certificate *certificate;
+    ClientKeyExchange *server_key_exchange, client_key_exchange;
+    Certificate *certificate = NULL;
     CertificateRequest *certificate_request;
     Finished finished, *server_finished;
+    KeyExchangeAlgorithm algorithm_type;
+    X509 *cert_509;
+    EVP_PKEY * pubkey;
+    RSA * rsa;
+    uint32_t len_parameters;
+    int phase;
+    uint8_t *pre_master_secret, *pre_master_secret_encrypted;
     
-	int  timestep;
+    //INIZIALIZZAZIONI
+    //handshake = NULL;
+    
     printf("client avviato\n");
-    int phase = 0;
+    phase = 0;
+    len_parameters = 0;
+    algorithm_type = RSA_;
+    
     
     
     //CLIENT STEPS
-    timestep = 0;
     talker = client;    //initialise client
 	
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
@@ -75,7 +86,12 @@ int main(int argc, const char *argv[]){
         switch (server_handshake->msg_type) {
             case CERTIFICATE:
                 certificate = HandshakeToCertificate(server_handshake);
+                printf("Certificato salvato.\n");
+                //TODO queste variabili andrebbero estratte dal certificato e dalla cipher suite scelta
+                algorithm_type = RSA_;
+                len_parameters = 128; //TODO dipende dal certificato
             	printf("Certificate read\n");
+                printf("MEMORIA[0]= %X\n", certificate->X509_der[0]);
                 OpenCommunication(server);
                 break;
             case SERVER_KEY_EXCHANGE:
@@ -101,9 +117,37 @@ int main(int argc, const char *argv[]){
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
         //CERTIFICATE
-        printf("PHASE 33333\n");
+        
 		//CLIENT_KEY_EXCHANGE
-        printf("client key exchange.\n");
+        client_key_exchange.algorithm_type = algorithm_type;
+        //TODO: da dove ricavarle??
+        client_key_exchange.len_parameters = len_parameters;
+		cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len); //converto certificato der -> X509 format
+		pubkey = X509_get_pubkey(cert_509);
+        printf("la chiave pubblica generica estratta\n");
+        rsa = EVP_PKEY_get1_RSA(pubkey);
+        printf("la chiave pubblica rsa estratta\n");
+        pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
+        RAND_bytes(pre_master_secret, 48);
+        printf("PRE-MASTER KEY:");
+        for (int i=0; i< 48; i++){
+            printf("%02X ", pre_master_secret[i]);
+        }
+        printf("\n");
+        pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
+        //cifro con RSA
+        int flag = 0;
+        flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
+        //TODO: RECALL to free EVP_PKEY_free(pubkey); and cert_509,rsa, pre_master_secret
+        client_key_exchange.parameters = pre_master_secret_encrypted;
+        
+        handshake = ClientKeyExchangeToHandshake(&client_key_exchange);
+        record = HandshakeToRecordLayer(handshake);
+        
+        sendPacketByte(record);
+        printf("client key exchange sent!.\n");
+        OpenCommunication(server);
+
     	//TODO
         
         //CERTIFICATE_VERIFY

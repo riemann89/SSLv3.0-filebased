@@ -102,7 +102,8 @@ int main(int argc, const char *argv[]){
                 OpenCommunication(client);
                 break;
             case CLIENT_KEY_EXCHANGE:
-                printf("Server Key Exchange read\n");
+                client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);
+                printf("Client Key Exchange read\n");
                 OpenCommunication(client);
                 break;
             case CERTIFICATE_VERIFY:

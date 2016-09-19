@@ -29,11 +29,11 @@ Handshake *FinishedToHandshake(Finished *finished);
 HelloRequest *HandshakeToHelloRequest(Handshake *handshake);//TODO
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);//TODO
 Certificate *HandshakeToCertificate(Handshake *handshake); //tested
-//ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake);//TODO
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters);//TODO
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);//TODO
 ServerDone *HandshakeToServerdone(Handshake *handshake);//TODO
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);//TODO
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature);//TODO
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature);//TODO
 Finished *HandshakeToFinished(Handshake *handshake);//TODO
 
 //record->handshake

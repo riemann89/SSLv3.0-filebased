@@ -196,8 +196,13 @@ void FreeCertificateVerify(CertificateVerify *certificate_verify){
 
 void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
     free(client_key_exchange->parameters);
-    free(client_key_exchange->signature);
     free(client_key_exchange);
+}
+
+void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
+    free(server_key_exchange->parameters);
+    free(server_key_exchange->signature);
+    free(server_key_exchange);
 }
 
 void FreeCertificateFinished(Finished *finished){
@@ -295,12 +300,10 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
     uint32_t len_parameters;
-    uint32_t len_signature;
     
     len_parameters = client_key_exchange->len_parameters;
-    len_signature = client_key_exchange->len_signature;
     
-    Bytes = (uint8_t*)calloc(client_key_exchange->len_parameters + client_key_exchange->len_signature, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
         exit(1);
@@ -314,11 +317,10 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     memcpy(Bytes, client_key_exchange->parameters, len_parameters);
-    memcpy(Bytes + len_parameters, client_key_exchange->signature, len_signature);
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = CLIENT_KEY_EXCHANGE;
-    handshake->length = 4 + len_signature + len_parameters;
+    handshake->length = 4 + len_parameters;
     handshake->content = Bytes;
     
     return handshake;
@@ -580,7 +582,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     
 }//TOCHECK
 
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature){
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters){
     
     ClientKeyExchange *client_key_exchange;
     
@@ -596,10 +598,8 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
     }
     
     client_key_exchange->algorithm_type = algorithm_type;
-    client_key_exchange->signature_type = signature_type;
     
     client_key_exchange->len_parameters = len_parameters;
-    client_key_exchange->len_signature = len_signature;
     
     client_key_exchange->parameters = (uint8_t *)calloc(len_parameters, sizeof(uint8_t));
     
@@ -608,18 +608,50 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
         exit(1);
     }
     
-    client_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
+    memcpy(handshake->content, client_key_exchange->parameters, len_parameters);
     
-    if (client_key_exchange->signature == NULL){
+    return client_key_exchange;
+}//TOCHECK
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature){
+    
+    ServerKeyExchange *server_key_exchange;
+    
+    if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
+        perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
+        exit(1);
+    }
+    
+    server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
+    if (server_key_exchange == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
-    memcpy(handshake->content, client_key_exchange->parameters, len_parameters);
+    server_key_exchange->algorithm_type = algorithm_type;
+    server_key_exchange->signature_type = signature_type;
     
-    memcpy(handshake->content + len_parameters, client_key_exchange->signature, len_signature);
-	
-    return client_key_exchange;
+    server_key_exchange->len_parameters = len_parameters;
+    server_key_exchange->len_signature = len_signature;
+    
+    server_key_exchange->parameters = (uint8_t *)calloc(len_parameters, sizeof(uint8_t));
+    
+    if (server_key_exchange->parameters == NULL){
+        perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
+        exit(1);
+    }
+    
+    server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
+    
+    if (server_key_exchange->signature == NULL){
+        perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
+        exit(1);
+    }
+    
+    memcpy(handshake->content, server_key_exchange->parameters, len_parameters);
+    
+    memcpy(handshake->content + len_parameters, server_key_exchange->signature, len_signature);
+    
+    return server_key_exchange;
 }//TOCHECK
 
 Finished *HandshakeToFinished(Handshake *handshake){

@@ -103,14 +103,17 @@ typedef struct {
 
 typedef struct{
     KeyExchangeAlgorithm algorithm_type;
+    uint8_t *parameters;
+    uint32_t len_parameters;
+}ClientKeyExchange;
+
+typedef struct{
+    KeyExchangeAlgorithm algorithm_type;
     SignatureAlgorithm signature_type;
     uint8_t *parameters;
     uint8_t *signature;
     uint32_t len_parameters;
     uint32_t len_signature;
-}ClientKeyExchange;
-
-typedef struct{
 }ServerKeyExchange;
 
 //Extern variables
