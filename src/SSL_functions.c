@@ -766,35 +766,41 @@ Handshake *RecordToHandshake(RecordLayer *record){
 
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
 
-void setPriorities(uint8_t number,uint8_t *priority){   																//numero ciphers supportati,  lista priorità da inserire in ordine decrescentenell'array priority[number]
-    FILE* PriorityList; 																														//creo il file
-    PriorityList = fopen("PriorityList.txt", "wb");   																			//file where will be stored the chipers supported by server in decrescent order of priority
-    uint8_t *length;   																													 	//inserisco lunghezza
-    length=&number;
-    fwrite(length,sizeof(uint8_t),1,PriorityList);
-    for(int i = 0; i<number; i++){   																									//loading chiphers
-        fwrite((priority +i),sizeof(uint8_t),1,PriorityList);
+void setPriorities(uint8_t *number,CipherSuite *priority){   															
+
+    FILE* PriorityList; 																														
+    PriorityList = fopen("PriorityList.txt", "wb");   																																													 	
+    printf("time to write\n");
+    fwrite(number,sizeof(uint8_t),1,PriorityList);
+    printf("wrote length \n");
+    for(int i = 0; i<*number; i++){   																									
+
+        fwrite(&(priority +i)->code,sizeof(uint8_t),1,PriorityList);
     }
-    fclose(PriorityList);                                                                                                                     //close file
+    fclose(PriorityList);                                                                                                                    
 }
 
-//that function read from PryorityList.txt and the input struct ClientServerHello, comparing chiphers Priority and avaiable and choosing the best fitting in a naive way
+//this function read from PryorityList.txt and the input struct ClientServerHello, comparing chiphers Priority and avaiable and choosing the best fitting in a naive way
 uint8_t chooseChipher(ClientServerHello *client_supported_list){
     FILE* PriorityList;
-    PriorityList = fopen("PriorityList.txt", "r");  	 																		//read the  priority list written by setPryorities on this file
-    uint8_t *buffer ;
+    uint8_t choosen;
+    PriorityList = fopen("PriorityList.txt", "rb");  	 																		
+    uint8_t *buffer;
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
-    fread(buffer, 32, 1, PriorityList);    																						//temporary priorities are stored here easier to manage
-    uint8_t choosen;  																													//the returning variable, the choice
-    for(int i=1; i<(int)buffer[0]+1; i++){          																				// check decrescently if a certain chipher is avaiable on client_supported_list
-        for(int j=0;j<client_supported_list->length -38 ;j++){  
-            if(buffer[i]==client_supported_list->ciphersuite[j].code){  										//check if the suite is avaiable
-                choosen=buffer[i];
-                return choosen;   																										//find the best possible chipher according to my list, return that one as a byte
+    fread(buffer, 32, 1, PriorityList);
+    //printf("%d\n",buffer[0]);
+    for(int i=1; i<(int)(buffer[0])+1; i++){
+        //printf("%d, %02X \n", i, buffer[i]);
+        for(int j=0;j<client_supported_list->length -38 ;j++){ 
+           //printf("    %d: %02X\n",j,client_supported_list->ciphersuite[j].code);
+            if(buffer[i]==client_supported_list->ciphersuite[j].code){  
+                choosen = buffer[i];
+                return choosen; 																									
             }
+            
         }
     }
-    printf("\nError, uncompatibles chiphers");   																		//no compatible chipher, print error
+    printf("\nError, uncompatibles chiphers");   		
     exit(1);
 }
 

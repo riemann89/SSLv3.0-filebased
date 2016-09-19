@@ -27,6 +27,9 @@ int main(int argc, const char *argv[]){
     Certificate *certificate;
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
+    CipherSuite priority[10], choosen;
+    uint8_t prioritylen=10,choice;
+    
     
     printf("Server avviato.\n");
     int phase = 0;
@@ -39,21 +42,34 @@ int main(int argc, const char *argv[]){
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
     printf("ClientHello read!!!\n	CipherSuite:%02X\n", client_hello->ciphersuite->code);
-    
+   
+    //SELEZIONO LA CIPHER PIU' APPROPRIATA
+    int i;
+    for (i = 0; i < 10; i++) {
+        priority[i].code=i+12;
+    }
+    printf("loaded priorities\n");
+    setPriorities(&prioritylen,priority);
+    //printf("ok settate\n");
+    choosen.code = chooseChipher(client_hello);
+    printf("scelta: %02X\n", choosen.code);
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
     
     server_hello.type = SERVER_HELLO;
-    server_hello.length = 45;
+    server_hello.length = 39;
     server_hello.version = 3;
     server_hello.random = &random;
     server_hello.sessionId = 32;
-    server_hello.ciphersuite = lista2; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
+    server_hello.ciphersuite = &choosen; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 				
     //WRAPPING
+    printf("ready to send\n");
     handshake = ClientServerHelloToHandshake(&server_hello);
+    printf("hand serverhello\n");
     record = HandshakeToRecordLayer(handshake);
+    printf("serverhello sent\n");
     
     //INVIAMO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);

@@ -44,7 +44,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 RecordLayer *readchannel();
 
 
-void setPriorities(uint8_t number,uint8_t *priority);
+void setPriorities(uint8_t *number,CipherSuite *priority);
 ClientServerHello *makeServerHello();
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
 
