@@ -61,3 +61,5 @@ void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange);
 //CERTIFICATE
 Certificate* loadCertificate(char * cert_name);
 int writeCertificate(X509* certificate);
+
+uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);

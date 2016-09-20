@@ -1,4 +1,5 @@
 #include "SSL_functions.h"
+#include <openssl/md5.h>
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -264,7 +265,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     Bytes[0]=client_server_hello->version;   														//serializing client/server_hello field into bytes data vector
     memcpy(Bytes+1 ,session, 4);
     memcpy(Bytes+5 ,timeB , 4);
-    memcpy(Bytes+9,client_server_hello->random->random_bytes,28);
+    memcpy(Bytes+9, client_server_hello->random->random_bytes,28);
     memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);       		//38= version(1)+length(1)+session(4)+random(32)
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = client_server_hello->type;   												//handshake fields initialization
@@ -389,7 +390,7 @@ Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
         case SHA1_:
             bytes_size = 20;
             break;
-        case MD5:
+        case MD5_1:
             bytes_size = 16;
         default:
             break;
@@ -475,13 +476,14 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
     random = (Random*)calloc(1,sizeof(Random));
     
+    random->gmt_unix_time = Bytes_To_Int(4, handshake->content + 5);
+    
     if (handshake->msg_type != CLIENT_HELLO && handshake->msg_type != SERVER_HELLO){
         printf("%d\n",handshake->msg_type);
         perror("HandshakeToClientServerHello: handshake does not contain a client_hello/server_hello message.\n");
         exit(1);
     }
     
-    random->gmt_unix_time=Bytes_To_Int(4,handshake->content);
     memcpy(random->random_bytes, handshake->content + 9,28);
     memcpy(ciphers, handshake->content + 37, (handshake->length-41));
         
@@ -489,6 +491,7 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     client_server_hello->version = handshake->content[0];
     client_server_hello->sessionId = Bytes_To_Int(4, handshake->content + 1);
     client_server_hello->random = random;
+
     client_server_hello->ciphersuite = ciphers;
 
     return client_server_hello;
@@ -822,7 +825,68 @@ KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
 }
 
 /* about certificates*/
+uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
+    uint8_t *md5_1, *md5_2, *md5_3, *sha_1, *sha_2, *sha_3;
+    MD5_CTX md5;
+    SHA_CTX sha;
+    uint8_t *master_secret;
+    
+    md5_1 = calloc(16, sizeof(uint8_t));
+    md5_2 = calloc(16, sizeof(uint8_t));
+    md5_3 = calloc(16, sizeof(uint8_t));
+    sha_1 = calloc(20, sizeof(uint8_t));
+    sha_2 = calloc(20, sizeof(uint8_t));
+    sha_3 = calloc(20, sizeof(uint8_t));
+    
+    SHA1_Init(&sha);
+    SHA1_Update(&sha, "A", sizeof(uint8_t));
+    SHA1_Update(&sha, pre_master_secret, 48*sizeof(uint8_t));
+    SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA1_Final(sha_1, &sha);
+    
+    SHA1_Init(&sha);
+    SHA1_Update(&sha, "BB", sizeof(uint8_t));
+    SHA1_Update(&sha, pre_master_secret, 48*sizeof(uint8_t));
+    SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA1_Final(sha_2, &sha);
+    
+    SHA1_Init(&sha);
+    SHA1_Update(&sha, "CCC", sizeof(uint8_t));
+    SHA1_Update(&sha, pre_master_secret, 48*sizeof(uint8_t));
+    SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA1_Final(sha_3, &sha);
+    
+    MD5_Init(&md5);
+    MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
+    MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
+    MD5_Final(md5_1, &md5);
 
+    MD5_Init(&md5);
+    MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
+    MD5_Update(&md5, sha_2, 20*sizeof(uint8_t));
+    MD5_Final(md5_2, &md5);
+    
+    MD5_Init(&md5);
+    MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
+    MD5_Update(&md5, sha_3, 20*sizeof(uint8_t));
+    MD5_Final(md5_3, &md5);
+    
+    master_secret = calloc(48, sizeof(uint8_t));
+    memcpy(master_secret, md5_1, 16*sizeof(uint8_t));
+    memcpy(master_secret + 16, md5_2, 16*sizeof(uint8_t));
+    memcpy(master_secret + 32, md5_3, 16*sizeof(uint8_t));
+    
+    return master_secret;
+};
 int writeCertificate(X509* certificate){
     /* Per leggere il der
     X509 *res= NULL;

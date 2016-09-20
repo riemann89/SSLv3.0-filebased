@@ -18,12 +18,13 @@ int main(int argc, const char *argv[]){
     Certificate *certificate;
     CertificateRequest *certificate_request;
     KeyExchangeAlgorithm algorithm_type;
+    Finished finished, *server_finished;
     X509 *cert_509;
     EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
     int phase;
-    uint8_t *pre_master_secret, *pre_master_secret_encrypted;
+    uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret;
     
     //INIZIALIZZAZIONI
     server_hello = NULL;
@@ -176,9 +177,18 @@ int main(int argc, const char *argv[]){
         //while(CheckCommunication() == server){};
         phase = 4;
     }
-    /*
+    
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     while(CheckCommunication() == server){};
+    
+    master_secret = calloc(48, sizeof(uint8_t));
+    master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
+    
+    printf("MASTER KEY:");
+    for (int i=0; i< 48; i++){
+        printf("%02X ", master_secret[i]);
+    }
+    printf("\n");
     
     RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
@@ -195,5 +205,5 @@ int main(int argc, const char *argv[]){
     printf("server finished read.\n");
     
     return 0;
-    */
+    
 }

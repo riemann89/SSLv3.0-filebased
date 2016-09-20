@@ -27,7 +27,7 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
-    uint8_t prioritylen=10,choice, *pre_master_secret;
+    uint8_t prioritylen=10,choice, *pre_master_secret, *master_secret;
     RSA *rsa_private_key = NULL;
     
     
@@ -139,14 +139,14 @@ int main(int argc, const char *argv[]){
                 printf("\n\n");
                 
                 //Estraggo chiave privata
-                rsa_private_key = RSA_new();
-                FILE * fp = fopen("private_keys/RSA_private_key.pem","rb"); // aggiungere un controllo
+                //rsa_private_key = RSA_new();
+                FILE * fp = fopen("certificates/RSA_server.key","rb"); // aggiungere un controllo
                 
                 if (fp == NULL){
                     printf("PUNTATORE A NULLO");
                 }
-                
-                PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
+                rsa_private_key = NULL;
+                rsa_private_key = (RSA*)PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
                 printf("questa è la chiave inizio\n:");
                 
                 printf("\n questa è la chiave fine:\n");
@@ -173,6 +173,16 @@ int main(int argc, const char *argv[]){
                 break;
             case FINISHED:
                 phase = 4;
+                master_secret = calloc(48, sizeof(uint8_t));
+                master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
+                
+                printf("MASTER KEY:");
+                for (int i=0; i< 48; i++){
+                    printf("%02X ", master_secret[i]);
+                }
+                printf("\n");
+
+                
                 client_finished = HandshakeToFinished(client_handshake);
                 break;
             default:
