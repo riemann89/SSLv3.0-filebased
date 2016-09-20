@@ -55,10 +55,8 @@ int main(int argc, const char *argv[]){
     for (i = 0; i < 10; i++) {
         priority[i].code=i+12;
     }
-    printf("loaded priorities\n");
     setPriorities(&prioritylen,priority);
     choosen.code = chooseChipher(client_hello);
-    printf("cipher choosen: %02X\n", choosen.code);
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
@@ -103,7 +101,6 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
        
     sendPacketByte(record);
-    printf("Certificate sent!!!\n");
     OpenCommunication(client);
     while(CheckCommunication() == client){}
     
@@ -229,7 +226,7 @@ int main(int argc, const char *argv[]){
     
     sendPacketByte(record);
     OpenCommunication(client);
-    printf("tutto e' compiuto..!");
+    printf("tutto e' compiuto..!\n");
 
    	
 	return 0;

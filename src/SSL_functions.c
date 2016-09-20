@@ -779,9 +779,7 @@ void setPriorities(uint8_t *number,CipherSuite *priority){
 
     FILE* PriorityList; 																														
     PriorityList = fopen("PriorityList.txt", "wb");   																																													 	
-    printf("time to write\n");
     fwrite(number,sizeof(uint8_t),1,PriorityList);
-    printf("wrote length \n");
     for(int i = 0; i<*number; i++){   																									
 
         fwrite(&(priority +i)->code,sizeof(uint8_t),1,PriorityList);
