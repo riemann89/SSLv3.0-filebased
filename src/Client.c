@@ -130,7 +130,12 @@ int main(int argc, const char *argv[]){
                 OpenCommunication(server);
                 break;
             case SERVER_DONE:
-            	printf("TODO: SERVER DONE: read\n");
+                printf("\nSERVER DONE: read\n");
+                for(int i=0; i<server_message->length - 5; i++){
+                    printf("%02X ", server_message->message[i]);
+                    
+                }
+                printf("\n\n");
                 phase = 3;
                 break;
             default:
