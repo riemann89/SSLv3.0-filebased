@@ -9,3 +9,7 @@ pino_test/main.c
 
 nbproject/
 *.DS_Store
+/bancoprova
+/Client
+/Server
+*.txt
