@@ -374,7 +374,6 @@ Handshake *ServerDoneToHandshake(){
         exit(1);
     }
     //HANDSHAKE CONSTRUCTION//
-    printf("CIAONE\n");
     handshake->msg_type = SERVER_DONE;//handshake fields initialization
     handshake->length = 4;
     handshake->content = Bytes;
