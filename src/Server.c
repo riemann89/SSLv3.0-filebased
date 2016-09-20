@@ -31,7 +31,7 @@ int main(int argc, const char *argv[]){
     RSA *rsa_private_key = NULL;
     
     
-    printf("Server avviato.\n");
+    printf("Server started.\n");
     int phase = 0;
     
     //CLIENT STEPS
@@ -40,9 +40,7 @@ int main(int argc, const char *argv[]){
     while(CheckCommunication() == client){}
     client_message = readchannel();
     
-    printf("\nRECORD RICEVUTO: ClientHello\n");
-    printf("%02X ", client_message->type);
-    printf("%04X ", client_message->length);
+    printf("\nCLIENT_HELLO: read\n");
     for(int i=0; i<client_message->length - 5; i++){
         printf("%02X ", client_message->message[i]);
         
@@ -59,9 +57,8 @@ int main(int argc, const char *argv[]){
     }
     printf("loaded priorities\n");
     setPriorities(&prioritylen,priority);
-    //printf("ok settate\n");
     choosen.code = chooseChipher(client_hello);
-    printf("scelta: %02X\n", choosen.code);
+    printf("cipher choosen: %02X\n", choosen.code);
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
@@ -74,26 +71,37 @@ int main(int argc, const char *argv[]){
     server_hello.ciphersuite = &choosen; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 				
     //WRAPPING
-    printf("ready to send\n");
+
     handshake = ClientServerHelloToHandshake(&server_hello);
-    printf("hand serverhello\n");
     record = HandshakeToRecordLayer(handshake);
-    printf("serverhello sent\n");
+    
+    printf("\nSERVER_HELLO: sent\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
     
     //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
-    printf("ServerHello sent!!!\n");
     OpenCommunication(client);
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}
     
     
-    //CERTIFICATE
+    //CERTIFICATE send the certificate for the chosen cipher
     certificate = loadCertificate("certificates/RSA_server.crt");
     handshake = CertificateToHandshake(certificate);
     record = HandshakeToRecordLayer(handshake);
-    
+      
+    printf("\nCERTIFICATE: sent\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
+       
     sendPacketByte(record);
     printf("Certificate sent!!!\n");
     OpenCommunication(client);
@@ -103,12 +111,18 @@ int main(int argc, const char *argv[]){
     
     //CERTIFICATE REQUEST
     
-    //SERVER HELLO DONE
+    //SERVER HELLO DONE end this pahse,waiting for the master key
     handshake = ServerDoneToHandshake();
     record = HandshakeToRecordLayer(handshake);
+   
+    printf("\nSERVER_DONE: sent\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
     
     sendPacketByte(record);
-    printf("ServerDone sent!!!\n");
     OpenCommunication(client);
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
@@ -123,21 +137,23 @@ int main(int argc, const char *argv[]){
         switch (client_handshake->msg_type) {
             case CERTIFICATE:
                 certificate = HandshakeToCertificate(client_handshake);
-                printf("Certificate read\n");
+                 printf("\nCERTIFICATE: recived\n");
+                    for(int i=0; i<client_message->length - 5; i++){
+                         printf("%02X ", client_message->message[i]);
+            
+                         }
+                printf("\n\n");
                 OpenCommunication(client);
                 break;
             case CLIENT_KEY_EXCHANGE:
                 client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);
                 
-                printf("\nCLIENT_KEY_EXCHANGE RICEVUTO:\n");
-                printf("%02X ", client_key_exchange->algorithm_type);
-                printf("%08X ", client_key_exchange->len_parameters);
-                for(int i=0; i<client_key_exchange->len_parameters; i++){
-                    printf("%02X ", client_key_exchange->parameters[i]);
-                    
-                }
+                printf("\nCLIENT_KEY_EXCHANGE: recived\n");
+                    for(int i=0; i<client_message->length - 5; i++){
+                    printf("%02X ", client_message->message[i]);       
+                    }
                 printf("\n\n");
-                
+                               
                 //Estraggo chiave privata
                 //rsa_private_key = RSA_new();
                 FILE * fp = fopen("certificates/RSA_server.key","rb"); // aggiungere un controllo
@@ -147,9 +163,7 @@ int main(int argc, const char *argv[]){
                 }
                 rsa_private_key = NULL;
                 rsa_private_key = (RSA*)PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
-                printf("questa è la chiave inizio\n:");
                 
-                printf("\n questa è la chiave fine:\n");
                 //Dato in chiaro
                 pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
                 
@@ -158,25 +172,33 @@ int main(int argc, const char *argv[]){
                 
                 //TODO: RSA_free(rsa_private_key);
                 
-                printf("PRE-MASTER KEY:");
+                printf("PRE-MASTER KEY:extracted\n");
                 for (int i=0; i< 48; i++){
                     printf("%02X ", pre_master_secret[i]);
                 }
-                printf("\n");
-                printf("Client Key Exchange read\n");
+                printf("\n\n");
                 OpenCommunication(client);
                 break;
             case CERTIFICATE_VERIFY:
                 certificate_verify = HandshakeToCertificateVerify(client_handshake);
-                printf("CertificateRequest read\n");
+               printf("\nCERTIFICATE_VERIFY: recived\n");
+                    for(int i=0; i<client_message->length - 5; i++){
+                    printf("%02X ", client_message->message[i]);       
+                    }
+                printf("\n\n");
                 OpenCommunication(client);
                 break;
             case FINISHED:
                 phase = 4;
+                printf("\nFINISHED: recived\n");
+                    for(int i=0; i<client_message->length - 5; i++){
+                    printf("%02X ", client_message->message[i]);       
+                    }
+                printf("\n\n");
                 master_secret = calloc(48, sizeof(uint8_t));
                 master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
                 
-                printf("MASTER KEY:");
+                printf("\nMASTER KEY:generated\n");
                 for (int i=0; i< 48; i++){
                     printf("%02X ", master_secret[i]);
                 }
@@ -198,10 +220,16 @@ int main(int argc, const char *argv[]){
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
     
-    sendPacketByte(record);
-    printf("client finished sent.\n");
-    OpenCommunication(client);
+      printf("\nFINISHED: sent\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
     
+    sendPacketByte(record);
+    OpenCommunication(client);
+    printf("tutto e' compiuto..!");
 
    	
 	return 0;
