@@ -169,11 +169,6 @@ int main(int argc, const char *argv[]){
                 
                 //TODO: RSA_free(rsa_private_key);
                 
-                printf("PRE-MASTER KEY:extracted\n");
-                for (int i=0; i< 48; i++){
-                    printf("%02X ", pre_master_secret[i]);
-                }
-                printf("\n\n");
                 OpenCommunication(client);
                 break;
             case CERTIFICATE_VERIFY:
