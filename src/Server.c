@@ -168,7 +168,15 @@ int main(int argc, const char *argv[]){
                                         pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
                 
                 //TODO: RSA_free(rsa_private_key);
+                  master_secret = calloc(48, sizeof(uint8_t));
+                master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
                 
+                printf("\nMASTER KEY:generated\n");
+                for (int i=0; i< 48; i++){
+                    printf("%02X ", master_secret[i]);
+                }
+                printf("\n");
+
                 OpenCommunication(client);
                 break;
             case CERTIFICATE_VERIFY:
@@ -187,15 +195,7 @@ int main(int argc, const char *argv[]){
                     printf("%02X ", client_message->message[i]);       
                     }
                 printf("\n\n");
-                master_secret = calloc(48, sizeof(uint8_t));
-                master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
-                
-                printf("\nMASTER KEY:generated\n");
-                for (int i=0; i< 48; i++){
-                    printf("%02X ", master_secret[i]);
-                }
-                printf("\n");
-
+              
                 
                 client_finished = HandshakeToFinished(client_handshake);
                 break;
