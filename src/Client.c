@@ -66,9 +66,7 @@ int main(int argc, const char *argv[]){
     
     //INVIAMO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
-    printf("\n!!!RECORD INVIATO: ClientHello\n");
-    printf("%02X ", record->type);
-    printf("%04X ", record->length);
+    printf("\nCLIENT HELLO: sent\n");
     for(int i=0; i<record->length - 5; i++){
         printf("%02X ", record->message[i]);
         
@@ -82,7 +80,13 @@ int main(int argc, const char *argv[]){
     server_message = readchannel();
     server_handshake = RecordToHandshake(server_message);
     server_hello = HandshakeToClientServerHello(server_handshake);//SERVER HELLO
-    printf("ServerHello read!!!\n	CipherSuite:%02X\n", server_hello->ciphersuite->code);
+    
+    printf("\nSERVER HELLO: read\n");
+    for(int i=0; i<server_message->length - 5; i++){
+        printf("%02X ", server_message->message[i]);
+        
+    }
+    printf("\n\n");
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
@@ -96,23 +100,37 @@ int main(int argc, const char *argv[]){
         switch (server_handshake->msg_type) {
             case CERTIFICATE:
                 certificate = HandshakeToCertificate(server_handshake);
-                printf("Certificato salvato.\n");
+                
+                printf("\nCERTIFICATE: read\n");
+                for(int i=0; i<server_message->length - 5; i++){
+                    printf("%02X ", server_message->message[i]);
+                    
+                }
+                printf("\n\n");
+                
                 //TODO queste variabili andrebbero estratte dal certificato e dalla cipher suite scelta
                 algorithm_type = RSA_;
                 len_parameters = 128; //TODO dipende dal certificato
-            	printf("Certificate read\n");
                 OpenCommunication(server);
                 break;
             case SERVER_KEY_EXCHANGE:
-                printf("Server Key Exchange read\n");
+                printf("TODO:SERVER KEY EXCHANGE: read\n");
                 OpenCommunication(server);
                 break;
             case CERTIFICATE_REQUEST:
                 certificate_request = HandshakeToCertificateRequest(server_handshake);
-                printf("CertificateRequest read\n");
+                
+                printf("\nCERTIFICATE REQUEST: read\n");
+                for(int i=0; i<server_message->length - 5; i++){
+                    printf("%02X ", server_message->message[i]);
+                    
+                }
+                printf("\n\n");
+                
                 OpenCommunication(server);
                 break;
             case SERVER_DONE:
+            	printf("TODO: SERVER DONE: read\n");
                 phase = 3;
                 break;
             default:
@@ -125,25 +143,18 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
+        //TODO: switch ???
         ///CERTIFICATE///
         
 		///CLIENT_KEY_EXCHANGE///
         client_key_exchange.algorithm_type = algorithm_type;
         //TODO: da dove ricavarle??
         client_key_exchange.len_parameters = len_parameters;
-
 		cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len); //converto certificato der -> X509 format
 		pubkey = X509_get_pubkey(cert_509);
-        printf("la chiave pubblica generica estratta\n");
         rsa = EVP_PKEY_get1_RSA(pubkey);
-        printf("la chiave pubblica rsa estratta\n");
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
-        printf("PRE-MASTER KEY:");
-        for (int i=0; i< 48; i++){
-            printf("%02X ", pre_master_secret[i]);
-        }
-        printf("\n");
         pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
     
         //cifro con RSA
@@ -156,23 +167,19 @@ int main(int argc, const char *argv[]){
         record = HandshakeToRecordLayer(handshake);
         
         sendPacketByte(record);
-        
-        printf("\nRECORD INVIATO:\n");
-        printf("%02X ", record->type);
-        printf("%04X ", record->length);
+        printf("\nCLIENT KEY EXCHANGE: sent.\n");
         for(int i=0; i<record->length - 5; i++){
             printf("%02X ", record->message[i]);
             
         }
         printf("\n\n");
-        
-        printf("client key exchange sent!.\n");
+
         OpenCommunication(server);
 
-    	//TODO
-        
+    	
         ///CERTIFICATE_VERIFY///
-    	//OpenCommunication(server);
+    	//TODO
+        //OpenCommunication(server);
         
         //while(CheckCommunication() == server){};
         phase = 4;
@@ -181,28 +188,36 @@ int main(int argc, const char *argv[]){
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     while(CheckCommunication() == server){};
     
+    //MASTER KEY COMPUTATION
     master_secret = calloc(48, sizeof(uint8_t));
     master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
-    
-    printf("MASTER KEY:");
-    for (int i=0; i< 48; i++){
-        printf("%02X ", master_secret[i]);
-    }
-    printf("\n");
     
     RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
         
     sendPacketByte(record);
-    printf("client finished sent.\n");
+    
+    printf("\nCLIENT FINISHED: sent.\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
+    
     OpenCommunication(server);
     while(CheckCommunication() == server){};
     
     server_message = readchannel();
     server_handshake = RecordToHandshake(server_message);
     server_finished = HandshakeToFinished(server_handshake);
-    printf("server finished read.\n");
+    
+    printf("\nSERVER FINISHED : read\n");
+    for(int i=0; i<server_message->length - 5; i++){
+        printf("%02X ", server_message->message[i]);
+        
+    }
+    printf("\n\n");
     
     return 0;
     
