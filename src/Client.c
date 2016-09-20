@@ -178,6 +178,16 @@ int main(int argc, const char *argv[]){
             
         }
         printf("\n\n");
+        
+        //MASTER KEY COMPUTATION
+        master_secret = calloc(48, sizeof(uint8_t));
+        master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
+        
+        printf("\nMASTER KEY:generated\n");
+        for (int i=0; i< 48; i++){
+            printf("%02X ", master_secret[i]);
+        }
+        printf("\n");
 
         OpenCommunication(server);
 
@@ -192,10 +202,6 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     while(CheckCommunication() == server){};
-    
-    //MASTER KEY COMPUTATION
-    master_secret = calloc(48, sizeof(uint8_t));
-    master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
     
     RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
