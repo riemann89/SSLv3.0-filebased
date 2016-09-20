@@ -16,7 +16,6 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    printf("Server avviatoaaaa.\n");
     //VARIABLE DECLARATION
     ClientServerHello server_hello, *client_hello;
     Handshake *handshake, *client_handshake;
@@ -28,7 +27,8 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
-    uint8_t prioritylen=10,choice;
+    uint8_t prioritylen=10,choice, *pre_master_secret;
+    RSA *rsa_private_key = NULL;
     
     
     printf("Server avviato.\n");
@@ -39,9 +39,18 @@ int main(int argc, const char *argv[]){
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}
     client_message = readchannel();
+    
+    printf("\nRECORD RICEVUTO: ClientHello\n");
+    printf("%02X ", client_message->type);
+    printf("%04X ", client_message->length);
+    for(int i=0; i<client_message->length - 5; i++){
+        printf("%02X ", client_message->message[i]);
+        
+    }
+    printf("\n\n");
+    
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
-    printf("ClientHello read!!!\n	CipherSuite:%02X\n", client_hello->ciphersuite->code);
    
     //SELEZIONO LA CIPHER PIU' APPROPRIATA
     int i;
@@ -71,7 +80,7 @@ int main(int argc, const char *argv[]){
     record = HandshakeToRecordLayer(handshake);
     printf("serverhello sent\n");
     
-    //INVIAMO e APRIAMO LA COMUNICAZIONE AL SERVER
+    //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
     printf("ServerHello sent!!!\n");
     OpenCommunication(client);
@@ -110,7 +119,7 @@ int main(int argc, const char *argv[]){
         
         client_message = readchannel();
         client_handshake = RecordToHandshake(client_message);
-        
+    
         switch (client_handshake->msg_type) {
             case CERTIFICATE:
                 certificate = HandshakeToCertificate(client_handshake);
@@ -119,6 +128,41 @@ int main(int argc, const char *argv[]){
                 break;
             case CLIENT_KEY_EXCHANGE:
                 client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);
+                
+                printf("\nCLIENT_KEY_EXCHANGE RICEVUTO:\n");
+                printf("%02X ", client_key_exchange->algorithm_type);
+                printf("%08X ", client_key_exchange->len_parameters);
+                for(int i=0; i<client_key_exchange->len_parameters; i++){
+                    printf("%02X ", client_key_exchange->parameters[i]);
+                    
+                }
+                printf("\n\n");
+                
+                //Estraggo chiave privata
+                rsa_private_key = RSA_new();
+                FILE * fp = fopen("private_keys/RSA_private_key.pem","rb"); // aggiungere un controllo
+                
+                if (fp == NULL){
+                    printf("PUNTATORE A NULLO");
+                }
+                
+                PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
+                printf("questa è la chiave inizio\n:");
+                
+                printf("\n questa è la chiave fine:\n");
+                //Dato in chiaro
+                pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
+                
+                RSA_private_decrypt(128, client_key_exchange->parameters,
+                                        pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
+                
+                //TODO: RSA_free(rsa_private_key);
+                
+                printf("PRE-MASTER KEY:");
+                for (int i=0; i< 48; i++){
+                    printf("%02X ", pre_master_secret[i]);
+                }
+                printf("\n");
                 printf("Client Key Exchange read\n");
                 OpenCommunication(client);
                 break;
@@ -147,9 +191,6 @@ int main(int argc, const char *argv[]){
     sendPacketByte(record);
     printf("client finished sent.\n");
     OpenCommunication(client);
-
-    
-    
     
 
    	

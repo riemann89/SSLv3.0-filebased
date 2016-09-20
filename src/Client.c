@@ -10,18 +10,13 @@
 
 int main(int argc, const char *argv[]){
     //VARIABLE DECLARATION
-    
-    Talker talker;
-    
     ClientServerHello client_hello, *server_hello;
     Handshake *handshake, *server_handshake;
     RecordLayer *record, *server_message;
     Random random;
-    ServerDone *server_done;
-    ClientKeyExchange *server_key_exchange, client_key_exchange;
-    Certificate *certificate = NULL;
+    ClientKeyExchange client_key_exchange;
+    Certificate *certificate;
     CertificateRequest *certificate_request;
-    Finished finished, *server_finished;
     KeyExchangeAlgorithm algorithm_type;
     X509 *cert_509;
     EVP_PKEY * pubkey;
@@ -31,24 +26,31 @@ int main(int argc, const char *argv[]){
     uint8_t *pre_master_secret, *pre_master_secret_encrypted;
     
     //INIZIALIZZAZIONI
-    //handshake = NULL;
-    
-    printf("client avviato\n");
-    phase = 0;
+    server_hello = NULL;
+    handshake = NULL;
+    server_handshake = NULL;
+    record = NULL;
+    server_message = NULL;
+    certificate = NULL;
+    certificate_request = NULL;
+    algorithm_type = 0;
+    cert_509 = NULL;
+    pubkey = NULL;
+    rsa = NULL;
     len_parameters = 0;
-    algorithm_type = RSA_;
+    phase = 0;
+    pre_master_secret = NULL;
+    pre_master_secret_encrypted = NULL;
+    //TODO: client_hello, random, client_key_exchange
     
-    
-    
-    //CLIENT STEPS
-    talker = client;    //initialise client
+    printf("!!!CLIENT AVVIATO!!!\n");
 	
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
+    OpenCommunication(client);
+    
     //COSTRUZIONE CLIENT HELLO
-    random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
+    random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
-    
-    
     client_hello.length = 69;
     client_hello.version = 3;
     client_hello.random = &random;
@@ -60,11 +62,18 @@ int main(int argc, const char *argv[]){
     //WRAPPING
     handshake = ClientServerHelloToHandshake(&client_hello);
     record = HandshakeToRecordLayer(handshake);
-                
+    
     //INVIAMO e APRIAMO LA COMUNICAZIONE AL SERVER
-    OpenCommunication(client);
     sendPacketByte(record);
-    printf("ClientHello sent!!!\n");
+    printf("\n!!!RECORD INVIATO: ClientHello\n");
+    printf("%02X ", record->type);
+    printf("%04X ", record->length);
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
+
     OpenCommunication(server);
     
     while(CheckCommunication() == server){}
@@ -91,7 +100,6 @@ int main(int argc, const char *argv[]){
                 algorithm_type = RSA_;
                 len_parameters = 128; //TODO dipende dal certificato
             	printf("Certificate read\n");
-                printf("MEMORIA[0]= %X\n", certificate->X509_der[0]);
                 OpenCommunication(server);
                 break;
             case SERVER_KEY_EXCHANGE:
@@ -116,12 +124,13 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
-        //CERTIFICATE
+        ///CERTIFICATE///
         
-		//CLIENT_KEY_EXCHANGE
+		///CLIENT_KEY_EXCHANGE///
         client_key_exchange.algorithm_type = algorithm_type;
         //TODO: da dove ricavarle??
         client_key_exchange.len_parameters = len_parameters;
+
 		cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len); //converto certificato der -> X509 format
 		pubkey = X509_get_pubkey(cert_509);
         printf("la chiave pubblica generica estratta\n");
@@ -135,6 +144,7 @@ int main(int argc, const char *argv[]){
         }
         printf("\n");
         pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
+    
         //cifro con RSA
         int flag = 0;
         flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
@@ -145,20 +155,31 @@ int main(int argc, const char *argv[]){
         record = HandshakeToRecordLayer(handshake);
         
         sendPacketByte(record);
+        
+        printf("\nRECORD INVIATO:\n");
+        printf("%02X ", record->type);
+        printf("%04X ", record->length);
+        for(int i=0; i<record->length - 5; i++){
+            printf("%02X ", record->message[i]);
+            
+        }
+        printf("\n\n");
+        
         printf("client key exchange sent!.\n");
         OpenCommunication(server);
 
     	//TODO
         
-        //CERTIFICATE_VERIFY
+        ///CERTIFICATE_VERIFY///
     	//OpenCommunication(server);
         
         //while(CheckCommunication() == server){};
         phase = 4;
     }
-    
+    /*
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
-        
+    while(CheckCommunication() == server){};
+    
     RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
@@ -174,5 +195,5 @@ int main(int argc, const char *argv[]){
     printf("server finished read.\n");
     
     return 0;
-    
+    */
 }

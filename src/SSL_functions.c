@@ -123,12 +123,12 @@ RecordLayer  *readchannel(){
     uint8_t *buffer;
     uint8_t record_header[5];//rivedere
     FILE* SSLchannel;
-    uint32_t packet_size;
+    uint16_t packet_size;
     RecordLayer *returning_record;
     ContentType type;
     ProtocolVersion version;
     
-    SSLchannel=fopen("SSLchannelbyte.txt", "r");
+    SSLchannel = fopen("SSLchannelbyte.txt", "rb");
     if(SSLchannel==NULL)
     {
         printf("Error unable to read the SSLchannel\n");
@@ -137,18 +137,21 @@ RecordLayer  *readchannel(){
     
     fread(record_header, sizeof(uint8_t), 5*sizeof(uint8_t), SSLchannel);
     packet_size = Bytes_To_Int(2, record_header + 3);
-    buffer = (uint8_t*)malloc((packet_size - 5)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
+    
+    //buffer = (uint8_t*)malloc((packet_size - 5)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
+    buffer = (uint8_t*)calloc(packet_size - 5, sizeof(uint8_t));
     fseek(SSLchannel, SEEK_SET, 5);
     fread(buffer,sizeof(uint8_t),(packet_size-5)*sizeof(uint8_t), SSLchannel);// load file into buffer
-    returning_record = calloc(6,sizeof(uint8_t));
+    
+    returning_record = calloc(6, sizeof(uint8_t));
     
     type = record_header[0];
     returning_record->type = type;	// assign type
     
     version.minor = record_header[1]; //loading version
     version.major = record_header[2];
-    returning_record->version= version;// assign version
-    returning_record->length = (uint16_t)packet_size;// assign length to record
+    returning_record->version = version;// assign version
+    returning_record->length = packet_size;// assign length to record
     returning_record->message= buffer;
     return returning_record;//assign pointer to message
 }
@@ -585,6 +588,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters){
     
     ClientKeyExchange *client_key_exchange;
+    uint8_t *buffer;
     
     if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
         perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
@@ -592,6 +596,7 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
     }
     
     client_key_exchange = (ClientKeyExchange *)calloc(1, sizeof(ClientKeyExchange));
+    
     if (client_key_exchange == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
@@ -601,14 +606,14 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
     
     client_key_exchange->len_parameters = len_parameters;
     
-    client_key_exchange->parameters = (uint8_t *)calloc(len_parameters, sizeof(uint8_t));
+    buffer = (uint8_t *)calloc(len_parameters, sizeof(uint8_t));
     
-    if (client_key_exchange->parameters == NULL){
+    if (buffer == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
-    
-    memcpy(handshake->content, client_key_exchange->parameters, len_parameters);
+    memcpy(buffer, handshake->content ,len_parameters);
+    client_key_exchange->parameters = buffer;
     
     return client_key_exchange;
 }//TOCHECK
@@ -749,17 +754,18 @@ Handshake *RecordToHandshake(RecordLayer *record){
     
     result = calloc(1, sizeof(Handshake));
     buffer = (uint8_t*)malloc((record->length - 9)*sizeof(uint8_t));
+    
     if(record->type != HANDSHAKE){
         printf("\n RecordToHandshake: Error record is not a handshake,  parse failed");
         exit(1);
         return NULL;
     }
+    
     memcpy(buffer,  record->message + 4, record->length - 9);
     result->length = record->length - 5;
     result->msg_type = record->message[0];
     result->content = buffer;
-    
-    FreeRecordLayer(record);
+
     return result;
     
 }
