@@ -211,8 +211,7 @@ int main(int argc, const char *argv[]){
     
     printf("\nCLIENT FINISHED: sent.\n");
     for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
-        
+        printf("%02X ", record->message[i]);       
     }
     printf("\n\n");
     

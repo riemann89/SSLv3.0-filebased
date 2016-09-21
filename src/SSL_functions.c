@@ -729,8 +729,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
         perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
         exit(1);
     }
-    recordlayer = (RecordLayer*)calloc(handshake->length +
- 5,sizeof(RecordLayer));  		 																										//record layer allocation memory i need 5 extra-bytes  
+    recordlayer = (RecordLayer*)calloc(1,sizeof(RecordLayer));																									//record layer allocation memory i need 5 extra-bytes  
     if (recordlayer == NULL) {
         perror("Failed to create recordlayer pointer - HandshakeToRecordLayer operation");
         exit(1);
@@ -747,6 +746,23 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     recordlayer->length=handshake->length+5;
     recordlayer->message=Bytes;
     return recordlayer;
+}
+
+RecordLayer *cipher_Spec_Record(){
+    
+    RecordLayer *recordlayer;
+    uint8_t *byte;
+    byte =(uint8_t*)calloc(1,sizeof(uint8_t)); 
+    recordlayer = (RecordLayer*)calloc(1, sizeof(RecordLayer));
+    
+    byte[0]=1;
+    
+    recordlayer->type= CHANGE_CIPHER_SPEC;
+    recordlayer->version= std_version;
+    recordlayer->length= 6;
+    recordlayer->message = byte;
+    
+    return recordlayer;   
 }
 
 /* RecordLayer to Handshake */
