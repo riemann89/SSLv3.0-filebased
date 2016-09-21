@@ -129,85 +129,112 @@ int main(int argc, const char *argv[]){
         while(CheckCommunication() == client){}
         
         client_message = readchannel();
-        client_handshake = RecordToHandshake(client_message);
-    
-        switch (client_handshake->msg_type) {
-            case CERTIFICATE:
-                certificate = HandshakeToCertificate(client_handshake);
-                 printf("\nCERTIFICATE: recived\n");
-                    for(int i=0; i<client_message->length - 5; i++){
-                         printf("%02X ", client_message->message[i]);
-            
-                         }
-                printf("\n\n");
-                OpenCommunication(client);
-                break;
-            case CLIENT_KEY_EXCHANGE:
-                client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);
-                
-                printf("\nCLIENT_KEY_EXCHANGE: recived\n");
-                    for(int i=0; i<client_message->length - 5; i++){
-                    printf("%02X ", client_message->message[i]);       
-                    }
-                printf("\n\n");
-                               
-                //Estraggo chiave privata
-                //rsa_private_key = RSA_new();
-                FILE * fp = fopen("certificates/RSA_server.key","rb"); // aggiungere un controllo
-                
-                if (fp == NULL){
-                    printf("PUNTATORE A NULLO");
-                }
-                rsa_private_key = NULL;
-                rsa_private_key = (RSA*)PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
-                
-                //Dato in chiaro
-                pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
-                
-                RSA_private_decrypt(128, client_key_exchange->parameters,
-                                        pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
-                
-                //TODO: RSA_free(rsa_private_key);
-                  master_secret = calloc(48, sizeof(uint8_t));
-                master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
-                
-                printf("\nMASTER KEY:generated\n");
-                for (int i=0; i< 48; i++){
-                    printf("%02X ", master_secret[i]);
-                }
-                printf("\n");
+        if(client_message->type==HANDSHAKE){
 
-                OpenCommunication(client);
-                break;
-            case CERTIFICATE_VERIFY:
-                certificate_verify = HandshakeToCertificateVerify(client_handshake);
-               printf("\nCERTIFICATE_VERIFY: recived\n");
-                    for(int i=0; i<client_message->length - 5; i++){
-                    printf("%02X ", client_message->message[i]);       
+            client_handshake = RecordToHandshake(client_message);
+            switch (client_handshake->msg_type) {
+                case CERTIFICATE:
+                    certificate = HandshakeToCertificate(client_handshake);
+                     printf("\nCERTIFICATE: recived\n");
+                        for(int i=0; i<client_message->length - 5; i++){
+                             printf("%02X ", client_message->message[i]);
+
+                             }
+                    printf("\n\n");
+                    OpenCommunication(client);
+                    break;
+                case CLIENT_KEY_EXCHANGE:
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);
+
+                    printf("\nCLIENT_KEY_EXCHANGE: recived\n");
+                        for(int i=0; i<client_message->length - 5; i++){
+                        printf("%02X ", client_message->message[i]);       
+                        }
+                    printf("\n\n");
+
+                    //Estraggo chiave privata
+                    //rsa_private_key = RSA_new();
+                    FILE * fp = fopen("certificates/RSA_server.key","rb"); // aggiungere un controllo
+
+                    if (fp == NULL){
+                        printf("PUNTATORE A NULLO");
                     }
-                printf("\n\n");
-                OpenCommunication(client);
-                break;
-            case FINISHED:
-                phase = 4;
-                printf("\nFINISHED: recived\n");
-                    for(int i=0; i<client_message->length - 5; i++){
-                    printf("%02X ", client_message->message[i]);       
+                    rsa_private_key = NULL;
+                    rsa_private_key = (RSA*)PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
+
+                    //Dato in chiaro
+                    pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
+
+                    RSA_private_decrypt(128, client_key_exchange->parameters,
+                                            pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
+
+                    //TODO: RSA_free(rsa_private_key);
+                      master_secret = calloc(48, sizeof(uint8_t));
+                    master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
+
+                    printf("\nMASTER KEY:generated\n");
+                    for (int i=0; i< 48; i++){
+                        printf("%02X ", master_secret[i]);
                     }
-                printf("\n\n");
-              
-                
-                client_finished = HandshakeToFinished(client_handshake);
-                break;
-            default:
-                printf("%02X\n", client_handshake->msg_type);
-                perror("ERROR: Unattended message in phase 3.\n");
-                exit(1);
-                break;
+                    printf("\n");
+
+                    OpenCommunication(client);
+                    break;
+                case CERTIFICATE_VERIFY:
+                    certificate_verify = HandshakeToCertificateVerify(client_handshake);
+                   printf("\nCERTIFICATE_VERIFY: recived\n");
+                        for(int i=0; i<client_message->length - 5; i++){
+                        printf("%02X ", client_message->message[i]);       
+                        }
+                    printf("\n\n");
+                    OpenCommunication(client);
+                    break;
+                case FINISHED:
+                    phase = 4;
+                    printf("\nFINISHED: recived\n");
+                        for(int i=0; i<client_message->length - 5; i++){
+                        printf("%02X ", client_message->message[i]);       
+                        }
+                    printf("\n\n");
+
+
+                    client_finished = HandshakeToFinished(client_handshake);
+                    break;
+                default:
+                    printf("%02X\n", client_handshake->msg_type);
+                    perror("ERROR: Unattended message in phase 3.\n");
+                    exit(1);
+                    break;
+            }
+        }
+        else if(client_message->type==CHANGE_CIPHER_SPEC){
+            
+            printf("\nCHANGE_CIPHER_SPEC: recived\n");
+                        for(int i=0; i<client_message->length - 5; i++){
+                        printf("%02X ", client_message->message[i]);       
+                        }
+                    printf("\n\n");
+                    
+            OpenCommunication(client);
         }
     }
     
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
+    
+    record= change_cipher_Spec_Record();
+    sendPacketByte(record);
+    
+    printf("\nCHANGE_CIPHER_SPEC: sent\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+        
+    }
+    printf("\n\n");
+    
+    OpenCommunication(client);
+    
+    while(CheckCommunication() == client){}
+    
     RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);

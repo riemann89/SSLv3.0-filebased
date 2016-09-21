@@ -202,6 +202,18 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     while(CheckCommunication() == server){};
+    record = change_cipher_Spec_Record();
+    sendPacketByte(record);
+     
+    printf("\nCHANGE_CHIPHER_SUITE: sent.\n");
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);       
+    }
+    printf("\n\n");
+    
+    OpenCommunication(server);
+    
+    while(CheckCommunication() == server){};
     
     RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
@@ -219,16 +231,26 @@ int main(int argc, const char *argv[]){
     while(CheckCommunication() == server){};
     
     server_message = readchannel();
+    printf("\nCHANGE_CIPHER_SPEC: read\n");
+                for(int i=0; i<server_message->length - 5; i++){
+                    printf("%02X ", server_message->message[i]);                    
+                }
+                printf("\n\n");
+    
+    
+    OpenCommunication(server);
+    while(CheckCommunication() == server){};
+    
+    server_message = readchannel();
     server_handshake = RecordToHandshake(server_message);
     server_finished = HandshakeToFinished(server_handshake);
-    
+
     printf("\nSERVER FINISHED : read\n");
     for(int i=0; i<server_message->length - 5; i++){
-        printf("%02X ", server_message->message[i]);
-        
+         printf("%02X ", server_message->message[i]);
     }
     printf("\n\n");
-    
+
     return 0;
     
 }

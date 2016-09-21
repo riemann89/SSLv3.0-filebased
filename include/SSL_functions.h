@@ -41,6 +41,7 @@ Handshake *RecordToHandshake(RecordLayer *record);  //TOCHECK GIUSEPPE
 
 //Record Layer Protocol
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  
+RecordLayer *change_cipher_Spec_Record();
 RecordLayer *readchannel();
 
 

@@ -748,7 +748,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     return recordlayer;
 }
 
-RecordLayer *cipher_Spec_Record(){
+RecordLayer *change_cipher_Spec_Record(){
     
     RecordLayer *recordlayer;
     uint8_t *byte;
