@@ -911,3 +911,11 @@ int writeCertificate(X509* certificate){
     return PEM_write_X509(file_cert, certificate);
 }
 int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
+EVP_PKEY* readCertificateParam (Certificate *certificate){
+    X509 *cert_509;
+    EVP_PKEY *pubkey;
+    cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len);
+    pubkey = X509_get_pubkey(cert_509);
+    
+    return pubkey;
+}

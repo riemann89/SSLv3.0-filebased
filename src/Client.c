@@ -19,7 +19,6 @@ int main(int argc, const char *argv[]){
     CertificateRequest *certificate_request;
     KeyExchangeAlgorithm algorithm_type;
     Finished finished, *server_finished;
-    X509 *cert_509;
     EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
@@ -35,7 +34,6 @@ int main(int argc, const char *argv[]){
     certificate = NULL;
     certificate_request = NULL;
     algorithm_type = 0;
-    cert_509 = NULL;
     pubkey = NULL;
     rsa = NULL;
     len_parameters = 0;
@@ -112,7 +110,6 @@ int main(int argc, const char *argv[]){
                 
                 //TODO queste variabili andrebbero estratte dal certificato e dalla cipher suite scelta
                 
-                algorithm_type = certificate-;
                 len_parameters = 128; //TODO dipende dal certificato
                 
                 OpenCommunication(server);
@@ -159,8 +156,8 @@ int main(int argc, const char *argv[]){
         client_key_exchange.algorithm_type = algorithm_type;
         //TODO: da dove ricavarle??
         client_key_exchange.len_parameters = len_parameters;
-		cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len); //converto certificato der -> X509 format
-		pubkey = X509_get_pubkey(cert_509);
+        pubkey = readCertificateParam(certificate);
+        
         rsa = EVP_PKEY_get1_RSA(pubkey);
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
