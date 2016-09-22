@@ -153,23 +153,9 @@ int main(int argc, const char *argv[]){
                         printf("%02X ", client_message->message[i]);       
                         }
                     printf("\n\n");
-
-                    //Estraggo chiave privata
-                    FILE * fp = fopen("certificates/RSA_server.key","rb"); // aggiungere un controllo
-
-                    if (fp == NULL){
-                        printf("PUNTATORE A NULLO");
-                    }
-                    rsa_private_key = NULL;
-                    rsa_private_key = (RSA*)PEM_read_RSAPrivateKey(fp, &rsa_private_key, NULL, NULL);
-
-                    //Dato in chiaro
-                    pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
-
-                    RSA_private_decrypt(128, client_key_exchange->parameters,
-                                            pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
-
-                    //TODO: RSA_free(rsa_private_key);
+					
+                    pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters);//TODO inizializzare RSA_ sopra
+                    
                     master_secret = calloc(48, sizeof(uint8_t));
                     master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
 

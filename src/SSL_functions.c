@@ -919,8 +919,6 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     
     return pubkey;
 }
-
-
 uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret){
     	int flag = 0;
     	RSA *rsa;
@@ -946,8 +944,40 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre
         
         return pre_master_secret_encrypted;
 }
+uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret){
+    uint8_t *pre_master_secret;
+    FILE *certificate;
+    RSA *rsa_private_key;
+    
+    rsa_private_key = NULL;
+    certificate = NULL;
+    pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
+    
 
-uint8_t* encryptFinished(uint8_t *finished, CiphertAlgorithm ciphet_alg, uint8_t *master_key){
+    switch(alg){
+        case RSA_:
+            certificate = fopen("certificates/RSA_server.key","rb");
+            if (certificate == NULL){
+                printf("decryptPreMaster error: memory leak - null pointer .");
+                exit(1);
+            }
+            rsa_private_key = PEM_read_RSAPrivateKey(certificate, &rsa_private_key, NULL, NULL);
+            RSA_private_decrypt(128, enc_pre_master_secret, pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
+            break;
+            
+        case DIFFIE_HELLMAN:
+            break;
+        case FORTEZZA:
+            
+        default:
+            perror("decryptPreMaster error: unknown key exchange algorithm.");
+            exit(1);
+            break;
+    }
+    return pre_master_secret;
+}
+
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CiphertAlgorithm ciphet_alg, uint8_t *master_key, int state){
     uint8_t *enc_finished;
     EVP_CIPHER_CTX *ctx;
     
@@ -964,14 +994,13 @@ uint8_t* encryptFinished(uint8_t *finished, CiphertAlgorithm ciphet_alg, uint8_t
             break;
         
         case DES40:
-            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, NULL, NULL, 1);
-            EVP_CipherUpdate(ctx, <#unsigned char *out#>, <#int *outl#>, finished->, <#int inl#>)
-            
             break;
         
-        case RC4:
-            
-            
+        case RC4_:
+            enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));
+            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, master_key, NULL, state);
+            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
+            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
             
         default:
@@ -979,11 +1008,6 @@ uint8_t* encryptFinished(uint8_t *finished, CiphertAlgorithm ciphet_alg, uint8_t
             exit(1);
             break;
     }
-    
-    
-    
-    
-    
     return enc_finished;
     
 }
