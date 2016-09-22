@@ -27,11 +27,17 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
-    uint8_t prioritylen=10,choice, *pre_master_secret, *master_secret;
+    uint8_t prioritylen=10,choice, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
+    MD5_CTX md5;
+    SHA_CTX sha;
     RSA *rsa_private_key = NULL;
+    uint32_t sender_var ,*sender;
+
     
     
     printf("Server started.\n");
+    SHA1_Init(&sha);
+    MD5_Init(&md5);
     int phase = 0;
     
     //CLIENT STEPS
@@ -42,13 +48,18 @@ int main(int argc, const char *argv[]){
     
     printf("\nCLIENT_HELLO: read\n");
     for(int i=0; i<client_message->length - 5; i++){
-        printf("%02X ", client_message->message[i]);
-        
+        printf("%02X ", client_message->message[i]);       
     }
     printf("\n\n");
     
+    SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
+    MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
+
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
+    
+    sender_var= client_hello->sessionId;
+    sender = &sender_var;
    
     //SELEZIONO LA CIPHER PIU' APPROPRIATA
     int i;
@@ -81,6 +92,10 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
+    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    
+    
     //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
     OpenCommunication(client);
@@ -102,6 +117,9 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
        
+    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    
     sendPacketByte(record);
     OpenCommunication(client);
     while(CheckCommunication() == client){}
@@ -120,6 +138,9 @@ int main(int argc, const char *argv[]){
         
     }
     printf("\n\n");
+    
+    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     sendPacketByte(record);
     OpenCommunication(client);
@@ -153,6 +174,9 @@ int main(int argc, const char *argv[]){
                         printf("%02X ", client_message->message[i]);       
                         }
                     printf("\n\n");
+                    
+                    SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
+                    MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 					
                     pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters);//TODO inizializzare RSA_ sopra
                     
@@ -174,6 +198,9 @@ int main(int argc, const char *argv[]){
                         printf("%02X ", client_message->message[i]);       
                         }
                     printf("\n\n");
+                    
+                    SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
+                    MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     OpenCommunication(client);
                     break;
                 case FINISHED:
@@ -183,7 +210,7 @@ int main(int argc, const char *argv[]){
                         printf("%02X ", client_message->message[i]);       
                         }
                     printf("\n\n");
-
+                    
 
                     client_finished = HandshakeToFinished(client_handshake);
                     break;
@@ -222,7 +249,41 @@ int main(int argc, const char *argv[]){
     
     while(CheckCommunication() == client){}
     
-    RAND_bytes(finished.hash, 36);
+    SHA1_Update(&sha,sender,sizeof(uint32_t));    
+    MD5_Update(&md5,sender,sizeof(uint32_t));
+    
+    SHA1_Update(&sha,master_secret,sizeof(uint8_t)*48);
+    MD5_Update(&md5,master_secret,sizeof(uint8_t)*48);  
+    
+    SHA1_Update(&sha,pad_1,sizeof(uint8_t)*40);  
+    MD5_Update(&md5,pad_1,sizeof(uint8_t)*48); 
+    
+    md5_1 = calloc(16, sizeof(uint8_t));
+    sha_1 = calloc(20, sizeof(uint8_t));
+    
+    SHA1_Final(sha_1,&sha);
+    MD5_Final(md5_1,&md5);
+    
+    SHA1_Init(&sha);
+    MD5_Init(&md5);
+    
+    SHA1_Update(&sha, master_secret,sizeof(uint8_t)*48);
+    SHA1_Update(&sha, pad_2,sizeof(uint8_t)*40);
+    SHA1_Update(&sha, sha_1,sizeof(uint8_t)*20);
+    
+    MD5_Update(&md5, master_secret,sizeof(uint8_t)*48);
+    MD5_Update(&md5, pad_2,sizeof(uint8_t)*48);
+    MD5_Update(&md5, sha_1,sizeof(uint8_t)*16);
+    
+    md5_fin = calloc(16, sizeof(uint8_t));
+    sha_fin = calloc(20, sizeof(uint8_t));
+    
+    SHA1_Final(sha_fin,&sha);
+    MD5_Final(md5_fin,&md5);
+    
+    memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
+    memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
+    
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
     
