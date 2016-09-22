@@ -573,7 +573,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
             break;
             
         case 16:
-            certificate_verify->algorithm_type = MD5;
+            certificate_verify->algorithm_type = MD5_1;
             break;
         default:
             perror("ERROR HandshakeToCertificateVerify: signature size not valid.");
