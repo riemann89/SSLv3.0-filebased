@@ -28,12 +28,13 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
-    uint8_t prioritylen=10,choice, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
+    uint8_t prioritylen=10, choice, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
     MD5_CTX md5;
     SHA_CTX sha;
     RSA *rsa_private_key = NULL;
     uint32_t sender_var ,*sender;
-
+    uint8_t *dec_hash, *enc_hash;
+    master_secret = NULL;
     
     
     printf("Server started.\n");
@@ -206,14 +207,26 @@ int main(int argc, const char *argv[]){
                     break;
                 case FINISHED:
                     phase = 4;
-                    printf("\nFINISHED: recived\n");
+                    printf("\nFINISHED: received\n");
                         for(int i=0; i<client_message->length - 5; i++){
                         printf("%02X ", client_message->message[i]);       
                         }
                     printf("\n\n");
                     
-
                     client_finished = HandshakeToFinished(client_handshake);
+                    dec_hash = calloc(36, sizeof(uint8_t));
+                    dec_hash = DecEncryptFinished(client_finished->hash, 36, RC4_, master_secret, 0);
+                    
+                    printf("\nFINISHED DECRYPTED\n");
+                    for(int i = 0; i< 4;i++){
+                        printf("%02X ", client_message->message[i]);
+                    }
+                    
+                    for(int i=0; i<36; i++){
+                        printf("%02X ", dec_hash[i]);
+                    }
+                    printf("\n\n");
+                    
                     break;
                 default:
                     printf("%02X\n", client_handshake->msg_type);
@@ -285,19 +298,25 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
+    enc_hash = calloc(36, sizeof(uint8_t));
+    enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
+    
+    memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
+    
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
     
-      printf("\nFINISHED: sent\n");
+    sendPacketByte(record);
+    
+    printf("\nFINISHED: sent\n");
     for(int i=0; i<record->length - 5; i++){
         printf("%02X ", record->message[i]);
         
     }
     printf("\n\n");
-    
-    sendPacketByte(record);
-    OpenCommunication(client);
     printf("tutto e' compiuto..!\n");
+    
+    OpenCommunication(client);
 
    	
 	return 0;

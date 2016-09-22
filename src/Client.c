@@ -28,7 +28,7 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
-    uint8_t *enc_hash;
+    uint8_t *enc_hash, *dec_hash;
     
     
     
@@ -296,10 +296,10 @@ int main(int argc, const char *argv[]){
     
     server_message = readchannel();
     printf("\nCHANGE_CIPHER_SPEC: read\n");
-                for(int i=0; i<server_message->length - 5; i++){
-                    printf("%02X ", server_message->message[i]);                    
-                }
-                printf("\n\n");
+    for(int i=0; i<server_message->length - 5; i++){
+    	printf("%02X ", server_message->message[i]);
+        }
+    printf("\n\n");
     
     
     OpenCommunication(server);
@@ -314,6 +314,20 @@ int main(int argc, const char *argv[]){
          printf("%02X ", server_message->message[i]);
     }
     printf("\n\n");
+    
+    dec_hash = calloc(36, sizeof(uint8_t));
+    dec_hash = DecEncryptFinished(server_finished->hash, 36, RC4_, master_secret, 0);
+    
+    printf("\nFINISHED DECRYPTED\n");
+    for(int i = 0; i< 4;i++){
+        printf("%02X ", server_message->message[i]);
+    }
+    
+    for(int i=0; i<36; i++){
+        printf("%02X ", dec_hash[i]);
+    }
+    printf("\n\n");
+
 
     return 0;
     
