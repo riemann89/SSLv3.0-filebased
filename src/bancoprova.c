@@ -17,13 +17,56 @@
 
 int main(int argc, const char *argv[]){
     
-    ClientServerHello hello;
-    CipherSuite test1, test2, test3;
-    test1.code=18;
-    test2.code=30;
-    test3.code=29;
+   
+   
     
-   printf("test1: %u\n test2: %u\ntest3: %u\n",getAlgorithm(test1),getAlgorithm(test2),getAlgorithm(test3));
+   int prioritylen = 7;
+   CipherSuite *priority;
+   
+    int i;
+    for (i = 0; i < prioritylen; i++) {
+        priority[i].code=i+12;
+    }
+   
+    setPriorities(&prioritylen, priority, "ServerConfig/Priority1.txt");
+    
+    
+    prioritylen = 9;
+      for (i = 0; i < prioritylen; i++) {
+        priority[i].code=i+18;
+    }
+   
+    setPriorities(&prioritylen, priority, "ServerConfig/Priority2.txt");
+    
+    
+    prioritylen = 5;
+      for (i = 0; i < prioritylen; i++) {
+        priority[i].code=i+2;
+    }
+   
+    setPriorities(&prioritylen, priority, "ServerConfig/Priority3.txt");
+    
+   
+     prioritylen = 7;
+      for (i = 0; i < prioritylen; i++) {
+        priority[i].code=i+21;
+    }
+   
+    setPriorities(&prioritylen, priority, "ClientConfig/Priority1.txt");
+    
+     prioritylen = 5;
+      for (i = 0; i < prioritylen; i++) {
+        priority[i].code=i+18;
+    }
+   
+    setPriorities(&prioritylen, priority, "ClientConfig/Priority2.txt");
+    
+     prioritylen = 15;
+      for (i = 0; i < prioritylen; i++) {
+        priority[i].code=i+7;
+    }
+   
+    setPriorities(&prioritylen, priority, "ClientConfig/Priority3.txt");
+    
    return 0;
-    
 }

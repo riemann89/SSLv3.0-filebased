@@ -790,13 +790,13 @@ Handshake *RecordToHandshake(RecordLayer *record){
 
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
 
-void setPriorities(uint8_t *number,CipherSuite *priority){   															
+void setPriorities(uint8_t *number,CipherSuite *priority, char *filename){   															
 
     FILE* PriorityList; 																														
-    PriorityList = fopen("PriorityList.txt", "wb");   																																													 	
+    PriorityList = fopen(filename , "wb");   																																													 	
     fwrite(number,sizeof(uint8_t),1,PriorityList);
+   
     for(int i = 0; i<*number; i++){   																									
-
         fwrite(&(priority +i)->code,sizeof(uint8_t),1,PriorityList);
     }
     fclose(PriorityList);                                                                                                                    

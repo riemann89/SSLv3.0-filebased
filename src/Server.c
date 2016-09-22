@@ -69,7 +69,7 @@ int main(int argc, const char *argv[]){
         priority[i].code=i+12;
     }
     priority[0].code = 5;
-    setPriorities(&prioritylen,priority);
+    setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
     choosen.code = chooseChipher(client_hello);
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
@@ -89,14 +89,12 @@ int main(int argc, const char *argv[]){
     
     printf("\nSERVER_HELLO: sent\n");
     for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
-        
+        printf("%02X ", record->message[i]);        
     }
     printf("\n\n");
     
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
-    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
-    
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));    
     
     //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
@@ -114,8 +112,7 @@ int main(int argc, const char *argv[]){
       
     printf("\nCERTIFICATE: sent\n");
     for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
-        
+        printf("%02X ", record->message[i]);        
     }
     printf("\n\n");
        

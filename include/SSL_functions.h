@@ -45,7 +45,7 @@ RecordLayer *change_cipher_Spec_Record();
 RecordLayer *readchannel();
 
 
-void setPriorities(uint8_t *number,CipherSuite *priority);
+void setPriorities(uint8_t *number,CipherSuite *priority, char *filename);
 uint8_t chooseChipher(ClientServerHello *client_supported_list);
 
 //TODO free functions
