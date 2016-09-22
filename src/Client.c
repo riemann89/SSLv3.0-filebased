@@ -5,6 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <openssl/rand.h>
+#include <openssl/md5.h>
 #include "SSL_functions.h"
 
 
@@ -23,7 +24,12 @@ int main(int argc, const char *argv[]){
     RSA * rsa;
     uint32_t len_parameters;
     int phase;
-    uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret;
+    uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
+    MD5_CTX md5;
+    SHA_CTX sha;
+    uint32_t sender_var ,*sender;
+    
+    
     
     //INIZIALIZZAZIONI
     server_hello = NULL;
@@ -43,7 +49,8 @@ int main(int argc, const char *argv[]){
     //TODO: client_hello, random, client_key_exchange
     
     printf("!!!CLIENT AVVIATO!!!\n");
-	
+    SHA1_Init(&sha);
+    MD5_Init(&md5);
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     OpenCommunication(client);
     
@@ -54,10 +61,12 @@ int main(int argc, const char *argv[]){
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
-
-	client_hello.sessionId = 32;
+    client_hello.sessionId = 32;
     client_hello.ciphersuite = lista; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
-				
+	
+    sender_var = client_hello.sessionId; //faccio sto giro se no con la free mando tutto in vacca
+    sender=&sender_var;  
+    
     //WRAPPING
     handshake = ClientServerHelloToHandshake(&client_hello);
     record = HandshakeToRecordLayer(handshake);
@@ -70,7 +79,11 @@ int main(int argc, const char *argv[]){
         
     }
     printf("\n\n");
-
+    
+    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    
+    
     OpenCommunication(server);
     
     while(CheckCommunication() == server){}
@@ -85,6 +98,8 @@ int main(int argc, const char *argv[]){
         
     }
     printf("\n\n");
+    SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+    MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
     
     algorithm_type = getAlgorithm(server_hello->ciphersuite[0]);
     
@@ -108,7 +123,9 @@ int main(int argc, const char *argv[]){
                 }
                 printf("\n\n");
                 
-                //TODO queste variabili andrebbero estratte dal certificato e dalla cipher suite scelta
+                SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+                MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+               
                 
                 len_parameters = 128; //TODO dipende dal certificato
                 
@@ -127,6 +144,8 @@ int main(int argc, const char *argv[]){
                     
                 }
                 printf("\n\n");
+                SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+                MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 
                 OpenCommunication(server);
                 break;
@@ -137,6 +156,10 @@ int main(int argc, const char *argv[]){
                     
                 }
                 printf("\n\n");
+                
+                SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+                MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+                
                 phase = 3;
                 break;
             default:
@@ -158,16 +181,11 @@ int main(int argc, const char *argv[]){
         client_key_exchange.len_parameters = len_parameters;
         pubkey = readCertificateParam(certificate);
         
-        //rsa = EVP_PKEY_get1_RSA(pubkey);
+        
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
         pre_master_secret_encrypted= encryptPreMaster(pubkey, algorithm_type , pre_master_secret);
-        //pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
-    	
-        //cifro con RSA
-        //int flag = 0;
-        //flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
-        //TODO: RECALL to free EVP_PKEY_free(pubkey); and cert_509,rsa, pre_master_secret
+       
         client_key_exchange.parameters = pre_master_secret_encrypted;
         
         handshake = ClientKeyExchangeToHandshake(&client_key_exchange);
@@ -180,6 +198,9 @@ int main(int argc, const char *argv[]){
             
         }
         printf("\n\n");
+        
+        SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+        MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
         
         //MASTER KEY COMPUTATION
         master_secret = calloc(48, sizeof(uint8_t));
@@ -216,7 +237,44 @@ int main(int argc, const char *argv[]){
     
     while(CheckCommunication() == server){};
     
-    RAND_bytes(finished.hash, 36);
+    //building finished
+    
+    SHA1_Update(&sha,sender,sizeof(uint32_t));    
+    MD5_Update(&md5,sender,sizeof(uint32_t));
+    
+    SHA1_Update(&sha,master_secret,sizeof(uint8_t)*48);
+    MD5_Update(&md5,master_secret,sizeof(uint8_t)*48);  
+    
+    SHA1_Update(&sha,pad_1,sizeof(uint8_t)*40);  
+    MD5_Update(&md5,pad_1,sizeof(uint8_t)*48); 
+    
+    md5_1 = calloc(16, sizeof(uint8_t));
+    sha_1 = calloc(20, sizeof(uint8_t));
+    
+    SHA1_Final(sha_1,&sha);
+    MD5_Final(md5_1,&md5);
+    
+    SHA1_Init(&sha);
+    MD5_Init(&md5);
+    
+    SHA1_Update(&sha, master_secret,sizeof(uint8_t)*48);
+    SHA1_Update(&sha, pad_2,sizeof(uint8_t)*40);
+    SHA1_Update(&sha, sha_1,sizeof(uint8_t)*20);
+    
+    MD5_Update(&md5, master_secret,sizeof(uint8_t)*48);
+    MD5_Update(&md5, pad_2,sizeof(uint8_t)*48);
+    MD5_Update(&md5, sha_1,sizeof(uint8_t)*16);
+    
+    md5_fin = calloc(16, sizeof(uint8_t));
+    sha_fin = calloc(20, sizeof(uint8_t));
+    
+    SHA1_Final(sha_fin,&sha);
+    MD5_Final(md5_fin,&md5);
+    
+    memccpy(finished.hash,md5_fin,16);
+    memccpy(finished.hash,sha_fin,20);
+       
+    //RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
         

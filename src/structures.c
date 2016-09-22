@@ -70,3 +70,22 @@ CipherSuite lista2[8]={
     {0x16},//"SSL_DHE_RSA_WITH_3DES_EDE_CBC_SHA"},
     {0x17},//"SSL_DH_anon_EXPORT_WITH_RC4_40_MD5"},
 };
+
+
+// useful constant
+extern uint8_t pad_1[48];
+extern uint8_t pad_2[48];
+
+void loadpad1(){
+    for(int i=0; i<48;i++){
+    pad_1[i]= 54;
+}    
+}
+void loadpad2(){
+    for(int i=0; i<48;i++){
+    pad_1[i]= 92;
+}    
+}
+
+loadpad1();
+laodpad2();
