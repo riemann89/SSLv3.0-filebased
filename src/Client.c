@@ -239,9 +239,6 @@ int main(int argc, const char *argv[]){
     
     //building finished
     
-    loadpad1();
-    laodpad2();
-    
     SHA1_Update(&sha,sender,sizeof(uint32_t));    
     MD5_Update(&md5,sender,sizeof(uint32_t));
     
@@ -274,9 +271,9 @@ int main(int argc, const char *argv[]){
     SHA1_Final(sha_fin,&sha);
     MD5_Final(md5_fin,&md5);
     
-    memccpy(finished.hash,md5_fin,16);
-    memccpy(finished.hash,sha_fin,20);
-       
+    memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
+    memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
+    
     //RAND_bytes(finished.hash, 36);
     handshake = FinishedToHandshake(&finished);
     record = HandshakeToRecordLayer(handshake);
