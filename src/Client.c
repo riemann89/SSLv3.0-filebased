@@ -239,6 +239,9 @@ int main(int argc, const char *argv[]){
     
     //building finished
     
+    loadpad1();
+    laodpad2();
+    
     SHA1_Update(&sha,sender,sizeof(uint32_t));    
     MD5_Update(&md5,sender,sizeof(uint32_t));
     

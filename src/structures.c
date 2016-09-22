@@ -87,5 +87,4 @@ void loadpad2(){
 }    
 }
 
-loadpad1();
-laodpad2();
+
