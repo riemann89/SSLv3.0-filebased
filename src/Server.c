@@ -55,6 +55,7 @@ int main(int argc, const char *argv[]){
     for (i = 0; i < 10; i++) {
         priority[i].code=i+12;
     }
+    priority[0].code = 5;
     setPriorities(&prioritylen,priority);
     choosen.code = chooseChipher(client_hello);
     //COSTRUZIONE SERVER HELLO

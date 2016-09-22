@@ -921,18 +921,26 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
 }
 
 
-uint8_t* encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret){
-          
+uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret){
+    	int flag = 0;
+    	RSA *rsa;
         uint8_t *pre_master_secret_encrypted;
     
-        switch (Alg){
+        switch(Alg){
             case RSA_:
-                int flag = 0;
-                RSA rsa;
-
                 rsa = EVP_PKEY_get1_RSA(pKey);
                 pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
                 flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
+                break;
+            case DIFFIE_HELLMAN:
+                printf("CIAO");
+                break;
+            case FORTEZZA:
+                printf("CIAO");
+                break;
+            default:
+                perror("EncryptPreMaster error: unknown keyexchange algorithm.");
+                exit(1);
                 break;
         }
         
