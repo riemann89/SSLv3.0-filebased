@@ -89,7 +89,8 @@ int main(int argc, const char *argv[]){
     
     
     //CERTIFICATE send the certificate for the chosen cipher
-    certificate = loadCertificate("certificates/RSA_server.crt");
+    
+    certificate = loadCertificate("certificates/RSA_server.crt"); //TODO: cambiare il prototipo, passando il type di algorithm e fare uno switch nella funzione
     handshake = CertificateToHandshake(certificate);
     record = HandshakeToRecordLayer(handshake);
       
@@ -108,7 +109,7 @@ int main(int argc, const char *argv[]){
     
     //CERTIFICATE REQUEST
     
-    //SERVER HELLO DONE end this pahse,waiting for the master key
+    //SERVER HELLO DONE
     handshake = ServerDoneToHandshake();
     record = HandshakeToRecordLayer(handshake);
    
@@ -144,7 +145,7 @@ int main(int argc, const char *argv[]){
                     OpenCommunication(client);
                     break;
                 case CLIENT_KEY_EXCHANGE:
-                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);//TODO sostituire costante RSA con variabile KeyExchangeAlgorithm e lunghezza del certificato inviato
 
                     printf("\nCLIENT_KEY_EXCHANGE: recived\n");
                         for(int i=0; i<client_message->length - 5; i++){
@@ -153,7 +154,6 @@ int main(int argc, const char *argv[]){
                     printf("\n\n");
 
                     //Estraggo chiave privata
-                    //rsa_private_key = RSA_new();
                     FILE * fp = fopen("certificates/RSA_server.key","rb"); // aggiungere un controllo
 
                     if (fp == NULL){
@@ -169,7 +169,7 @@ int main(int argc, const char *argv[]){
                                             pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
 
                     //TODO: RSA_free(rsa_private_key);
-                      master_secret = calloc(48, sizeof(uint8_t));
+                    master_secret = calloc(48, sizeof(uint8_t));
                     master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
 
                     printf("\nMASTER KEY:generated\n");

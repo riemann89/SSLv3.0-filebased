@@ -1,21 +1,17 @@
 TODO:
+- funzioni da fare:
+EVP_PKEY* readCertificateParam (Certificate)
+uint8_t* encryptPreMaster(EVP_PKEY*, KeyExchangeAlgorithm, uint8_t* premaster)
 
-DEADLINE: 31 LUGLIO
+uint8_t* encryptFinished(*Finished, TipodiCifratura, *master_key)
+uint8_t* decryptPreMaster(type, client_key_exchange); RIVEDERE
+
+RIVEDERE: impacchettamento degli update finished
+
 
 - FREE FUNCTIONS (GIU/ERMES)
 	- verifica memory leaks
-- FUNZIONI HANDSHAKET0pacchettino:
 
-- Session and Connection structs
-
-DEADLINE://
 - generare altri certificati. (GIU)
-
-- derToX509 (GIU)
-
-- Non è chiaro se fare il change_cipher_spec (????)
-
-- Client main code (DA ASSEGNARE)
-- Server main code (DA ASSEGNARE)
 
 - Sistemare i commenti (DA ASSEGNARE)

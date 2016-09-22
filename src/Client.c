@@ -88,6 +88,8 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
+    algorithm_type = getAlgorithm(server_hello->ciphersuite[0]);
+    
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
     phase = 2;
@@ -109,8 +111,10 @@ int main(int argc, const char *argv[]){
                 printf("\n\n");
                 
                 //TODO queste variabili andrebbero estratte dal certificato e dalla cipher suite scelta
-                algorithm_type = RSA_;
+                
+                algorithm_type = certificate-;
                 len_parameters = 128; //TODO dipende dal certificato
+                
                 OpenCommunication(server);
                 break;
             case SERVER_KEY_EXCHANGE:
@@ -161,7 +165,7 @@ int main(int argc, const char *argv[]){
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
         pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
-    
+    	
         //cifro con RSA
         int flag = 0;
         flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
@@ -191,7 +195,6 @@ int main(int argc, const char *argv[]){
 
         OpenCommunication(server);
 
-    	
         ///CERTIFICATE_VERIFY///
     	//TODO
         //OpenCommunication(server);
