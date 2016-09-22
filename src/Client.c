@@ -28,6 +28,7 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
+    uint8_t *enc_hash;
     
     
     
@@ -46,6 +47,7 @@ int main(int argc, const char *argv[]){
     phase = 0;
     pre_master_secret = NULL;
     pre_master_secret_encrypted = NULL;
+    master_secret = NULL;
     //TODO: client_hello, random, client_key_exchange
     
     printf("!!!CLIENT AVVIATO!!!\n");
@@ -274,8 +276,11 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
-    //RAND_bytes(finished.hash, 36);
+    enc_hash = calloc(36, sizeof(uint8_t));
+    enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
+    memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
     handshake = FinishedToHandshake(&finished);
+    
     record = HandshakeToRecordLayer(handshake);
         
     sendPacketByte(record);

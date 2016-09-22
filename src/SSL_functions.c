@@ -977,16 +977,13 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
     return pre_master_secret;
 }
 
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CiphertAlgorithm ciphet_alg, uint8_t *master_key, int state){
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgorithm cipher_alg, uint8_t *master_key, int state){
     uint8_t *enc_finished;
     EVP_CIPHER_CTX *ctx;
     
     ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee
     
-    switch (ciphet_alg) {
-            
-            
-            
+    switch (cipher_alg) {
         case CNULL:
             
             break;
