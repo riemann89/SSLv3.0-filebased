@@ -65,3 +65,4 @@ EVP_PKEY* readCertificateParam (Certificate *certificate);
 
 uint8_t* encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret);
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
+uint8_t* encryptFinished(uint8_t *finished, CiphertAlgorithm ciphet_alg, uint8_t *master_key);

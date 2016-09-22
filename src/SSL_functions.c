@@ -945,5 +945,45 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre
         }
         
         return pre_master_secret_encrypted;
+}
 
+uint8_t* encryptFinished(uint8_t *finished, CiphertAlgorithm ciphet_alg, uint8_t *master_key){
+    uint8_t *enc_finished;
+    EVP_CIPHER_CTX *ctx;
+    
+    ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee
+    
+    switch (ciphet_alg) {
+            
+            
+            
+        case CNULL:
+            
+            break;
+        case DES:
+            break;
+        
+        case DES40:
+            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, NULL, NULL, 1);
+            EVP_CipherUpdate(ctx, <#unsigned char *out#>, <#int *outl#>, finished->, <#int inl#>)
+            
+            break;
+        
+        case RC4:
+            
+            
+            break;
+            
+        default:
+            perror("encryptFinished error: unknown cipher algorithm.");
+            exit(1);
+            break;
+    }
+    
+    
+    
+    
+    
+    return enc_finished;
+    
 }
