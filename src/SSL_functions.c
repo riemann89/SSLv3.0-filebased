@@ -826,6 +826,28 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
     exit(1);
 }
 
+CipherSuite *loadCipher(char* filename){
+    
+    FILE* CipherList;
+    uint8_t *buffer,*len;
+    CipherSuite *returning;
+
+    CipherList = fopen(filename, "rb");  	 																		
+   
+    fread(len,sizeof(uint8_t),1,CipherList);
+    buffer = (uint8_t *)malloc((len[0])*sizeof(uint8_t));
+    returning = (CipherSuite *)malloc((len[0])*sizeof(CipherSuite));
+    fread(buffer, len[0]*sizeof(uint8_t), 1, CipherList);
+    fclose(CipherList);
+    
+    for(int i =0; i < len[0]; i++){
+        returning[i].code = buffer[i];
+    }
+    
+    return returning;
+    
+} 
+
 KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
     if(cipher.code>0&& cipher.code<11)
         return RSA_;
