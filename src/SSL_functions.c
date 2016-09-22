@@ -919,3 +919,23 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     
     return pubkey;
 }
+
+
+uint8_t* encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret){
+          
+        uint8_t *pre_master_secret_encrypted;
+    
+        switch (Alg){
+            case RSA_:
+                int flag = 0;
+                RSA rsa;
+
+                rsa = EVP_PKEY_get1_RSA(pKey);
+                pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
+                flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
+                break;
+        }
+        
+        return pre_master_secret_encrypted;
+
+}

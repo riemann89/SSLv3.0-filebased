@@ -158,14 +158,15 @@ int main(int argc, const char *argv[]){
         client_key_exchange.len_parameters = len_parameters;
         pubkey = readCertificateParam(certificate);
         
-        rsa = EVP_PKEY_get1_RSA(pubkey);
+        //rsa = EVP_PKEY_get1_RSA(pubkey);
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
-        pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
+        pre_master_secret_encrypted= encryptPreMaster(pubkey, algorithm_type , pre_master_secret);
+        //pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
     	
         //cifro con RSA
-        int flag = 0;
-        flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
+        //int flag = 0;
+        //flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
         //TODO: RECALL to free EVP_PKEY_free(pubkey); and cert_509,rsa, pre_master_secret
         client_key_exchange.parameters = pre_master_secret_encrypted;
         

@@ -63,4 +63,5 @@ Certificate* loadCertificate(char * cert_name);
 int writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
 
+uint8_t* encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret);
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
