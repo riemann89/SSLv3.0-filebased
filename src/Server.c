@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <openssl/rand.h>
+#include <openssl/md5.h>
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
