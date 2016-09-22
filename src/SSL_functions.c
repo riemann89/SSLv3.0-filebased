@@ -803,10 +803,10 @@ void setPriorities(uint8_t *number,CipherSuite *priority, char *filename){
 }
 
 //this function read from PryorityList.txt and the input struct ClientServerHello, comparing chiphers Priority and avaiable and choosing the best fitting in a naive way
-uint8_t chooseChipher(ClientServerHello *client_supported_list){
+uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
     FILE* PriorityList;
     uint8_t choosen;
-    PriorityList = fopen("PriorityList.txt", "rb");  	 																		
+    PriorityList = fopen(filename, "rb");  	 																		
     uint8_t *buffer;
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
     fread(buffer, 32, 1, PriorityList);
@@ -826,10 +826,11 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list){
     exit(1);
 }
 
-CipherSuite *loadCipher(char* filename){
+CipherSuite *loadCipher(char* filename, uint8_t *len){
     
+   
     FILE* CipherList;
-    uint8_t *buffer,*len;
+    uint8_t *buffer;
     CipherSuite *returning;
 
     CipherList = fopen(filename, "rb");  	 																		

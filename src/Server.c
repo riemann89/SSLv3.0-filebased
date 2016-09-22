@@ -69,8 +69,8 @@ int main(int argc, const char *argv[]){
         priority[i].code=i+12;
     }
     priority[0].code = 5;
-    setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
-    choosen.code = chooseChipher(client_hello);
+    //setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
+    choosen.code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);

@@ -28,7 +28,8 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
-    uint8_t *enc_hash, *dec_hash;
+    uint8_t *enc_hash, *dec_hash, len_hello;
+    CipherSuite *supported_ciphers;
     
     
     
@@ -44,6 +45,7 @@ int main(int argc, const char *argv[]){
     pubkey = NULL;
     rsa = NULL;
     len_parameters = 0;
+    len_hello=0;
     phase = 0;
     pre_master_secret = NULL;
     pre_master_secret_encrypted = NULL;
@@ -59,12 +61,13 @@ int main(int argc, const char *argv[]){
     //COSTRUZIONE CLIENT HELLO
     random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
-    client_hello.length = 69;
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
     client_hello.sessionId = 32;
-    client_hello.ciphersuite = lista; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
+    supported_ciphers = loadCipher("ClientConfig/Priority3.txt",&len_hello);
+    client_hello.length = 38 + len_hello;
+    client_hello.ciphersuite = supported_ciphers; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 	
     sender_var = client_hello.sessionId; //faccio sto giro se no con la free mando tutto in vacca
     sender=&sender_var;  

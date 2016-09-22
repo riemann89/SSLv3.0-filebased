@@ -46,8 +46,8 @@ RecordLayer *readchannel();
 
 
 void setPriorities(uint8_t *number,CipherSuite *priority, char *filename);
-uint8_t chooseChipher(ClientServerHello *client_supported_list);
-CipherSuite *loadCipher(char* filename);
+uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
+CipherSuite *loadCipher(char* filename , uint8_t *len);
 
 //TODO free functions
 void FreeRecordLayer(RecordLayer *recordLayer);
