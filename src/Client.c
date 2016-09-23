@@ -84,10 +84,15 @@ int main(int argc, const char *argv[]){
         
     }
     printf("\n\n");
+
+    
     
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
+    FreeRecordLayer(record);
+    FreeHandshake(handshake);
+    FreeClientServerHello(client_hello);
     
     OpenCommunication(server);
     
@@ -105,6 +110,10 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
     MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+    
+    FreeRecordLayer(server_message);
+    FreeHandshake(server_handshake);
+    FreeClientServerHello(server_hello);
     
     algorithm_type = getAlgorithm(server_hello->ciphersuite[0]);
     
@@ -131,6 +140,8 @@ int main(int argc, const char *argv[]){
                 SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                
+                 FreeRecordLayer(server_message);
+                 FreeHandshake(server_handshake);
                 
                 len_parameters = 128; //TODO dipende dal certificato
                 
@@ -152,6 +163,10 @@ int main(int argc, const char *argv[]){
                 SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 
+                FreeRecordLayer(server_message);
+                FreeHandshake(server_handshake);
+                FreeCertificateRequest(certificate_request);
+                
                 OpenCommunication(server);
                 break;
             case SERVER_DONE:
@@ -165,6 +180,9 @@ int main(int argc, const char *argv[]){
                 SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 
+                FreeRecordLayer(server_message);
+                FreeHandshake(server_handshake);
+            
                 phase = 3;
                 break;
             default:
@@ -206,7 +224,10 @@ int main(int argc, const char *argv[]){
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
-        
+                
+        FreeRecordLayer(record);
+        FreeHandshake(handshake);
+        FreeClientKeyExchange(client_key_exchange);
         //MASTER KEY COMPUTATION
         master_secret = calloc(48, sizeof(uint8_t));
         master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
@@ -238,6 +259,8 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
+    FreeRecordLayer(record);
+    //TODO Free Cipher_Spec
     OpenCommunication(server);
     
     while(CheckCommunication() == server){};
@@ -278,6 +301,7 @@ int main(int argc, const char *argv[]){
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
+
     
     enc_hash = calloc(36, sizeof(uint8_t));
     enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
@@ -293,6 +317,14 @@ int main(int argc, const char *argv[]){
         printf("%02X ", record->message[i]);       
     }
     printf("\n\n");
+    
+    FreeRecordLayer(record);
+    FreeHandshake(handshake);
+    free(sha_1);
+    free(md5_1);
+    free(sha_fin);
+    free(md5_fin);
+     //TODO free finished
     
     OpenCommunication(server);
     while(CheckCommunication() == server){};
@@ -331,6 +363,11 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
 
+    
+    FreeRecordLayer(server_message);
+    FreeHandshake(server_handshake);
+    //TODO FreeFinished(server_finished);
+    free(master_secret);
 
     return 0;
     
