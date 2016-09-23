@@ -834,9 +834,14 @@ CipherSuite *loadCipher(char* filename, uint8_t *len){
     uint8_t *buffer;
     CipherSuite *returning;
 
-    CipherList = fopen(filename, "rb");  	 																		
-   
-    fread(len,sizeof(uint8_t),1,CipherList);
+    CipherList = fopen(filename, "rb");
+    
+   	if (CipherList == NULL){
+        perror("loadCipher error: memory allocation leak.");
+        exit(1);
+    }
+    
+    fread(len, sizeof(uint8_t), 1, CipherList);
     buffer = (uint8_t *)malloc((len[0])*sizeof(uint8_t));
     returning = (CipherSuite *)malloc((len[0])*sizeof(CipherSuite));
     fread(buffer, len[0]*sizeof(uint8_t), 1, CipherList);

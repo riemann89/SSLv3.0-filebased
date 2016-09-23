@@ -65,7 +65,7 @@ int main(int argc, const char *argv[]){
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
     client_hello.sessionId = 32;
-    supported_ciphers = loadCipher("ClientConfig/Priority3.txt",&len_hello);
+    supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite = supported_ciphers; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 	

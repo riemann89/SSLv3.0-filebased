@@ -1,10 +1,8 @@
 TODO:
-
-RIVEDERE: impacchettamento degli update finished
-
-- FREE FUNCTIONS (GIU/ERMES)
-	- verifica memory leaks
-
-- generare altri certificati. (GIU)
-
+- Fare il FREE del finished.
+- FREE FUNCTIONS (GIU/ERMES).
+	- verifica memory leaks.
+- estrare la len_parameters dal certificato.
+- aggiungere altre ciphersuite (GIU).
+- MAC del finished.
 - Sistemare i commenti (DA ASSEGNARE)
