@@ -1,13 +1,6 @@
 TODO:
-- funzioni da fare:
-EVP_PKEY* readCertificateParam (Certificate)
-uint8_t* encryptPreMaster(EVP_PKEY*, KeyExchangeAlgorithm, uint8_t* premaster)
-
-uint8_t* encryptFinished(*Finished, TipodiCifratura, *master_key)
-uint8_t* decryptPreMaster(type, client_key_exchange); RIVEDERE
 
 RIVEDERE: impacchettamento degli update finished
-
 
 - FREE FUNCTIONS (GIU/ERMES)
 	- verifica memory leaks
