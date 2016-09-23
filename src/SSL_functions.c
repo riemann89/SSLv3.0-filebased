@@ -158,7 +158,6 @@ RecordLayer  *readchannel(){
 }
 
 /***************************************FREE FUNCTIONS**********************************************/
-
 void FreeRecordLayer(RecordLayer *recordLayer){
     free(recordLayer->message);
     free(recordLayer);
@@ -174,8 +173,7 @@ void FreeHandshake(Handshake *handshake){
 }
 
 void FreeClientServerHello(ClientServerHello *client_server_hello){
-    free(client_server_hello->ciphersuite);   
-    free(client_server_hello->random->random_bytes);
+    free(client_server_hello->ciphersuite);//TODO Rivedere
     free(client_server_hello->random);
     free(client_server_hello);
 }

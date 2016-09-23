@@ -92,7 +92,6 @@ int main(int argc, const char *argv[]){
     
     FreeRecordLayer(record);
     FreeHandshake(handshake);
-    FreeClientServerHello(client_hello);
     
     OpenCommunication(server);
     
@@ -113,10 +112,10 @@ int main(int argc, const char *argv[]){
     
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
-    FreeClientServerHello(server_hello);
     
     algorithm_type = getAlgorithm(server_hello->ciphersuite[0]);
     
+    //TODO FreeClientServerHello(server_hello);
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
     phase = 2;
@@ -227,7 +226,7 @@ int main(int argc, const char *argv[]){
                 
         FreeRecordLayer(record);
         FreeHandshake(handshake);
-        FreeClientKeyExchange(client_key_exchange);
+
         //MASTER KEY COMPUTATION
         master_secret = calloc(48, sizeof(uint8_t));
         master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
