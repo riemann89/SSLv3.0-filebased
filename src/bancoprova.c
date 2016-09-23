@@ -27,7 +27,7 @@ int main(int argc, const char *argv[]){
     for (i = 0; i < prioritylen; i++) {
         priority[i].code=i+12;
     }
-    priority[0]= 5;
+    priority[0].code= 5;
    
     setPriorities(&prioritylen, priority, "ServerConfig/Priority1.txt");
     
