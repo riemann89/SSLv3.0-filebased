@@ -1,5 +1,5 @@
 TODO:
-- Fare il FREE del finished.
+
 - FREE FUNCTIONS (GIU/ERMES).
 	- verifica memory leaks.
 - estrare la len_parameters dal certificato.

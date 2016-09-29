@@ -209,7 +209,8 @@ void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
 }
 
 void FreeCertificateFinished(Finished *finished){
-    free(finished);
+    // free(finished->hash);            VA LIBERATO??
+    free(finished);  
 }
 
 /********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
