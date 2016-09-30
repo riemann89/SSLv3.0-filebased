@@ -1,8 +1,25 @@
 TODO:
+******** HIGHT PRIORITY per ERMES******
+- MAC: si trova a pagina 492 della documentazione: viene utilizzata per assicurare l’integrità di un messaggio. Non considerare il fatto della compressione. Noi dobbiamo applicarla solo al finished. Quindi nel nostro caso: 
+SSLCompressed.type = HANSHAKE
+SSLCompressed.lenght = LUNGHEZZA HANDSHAKE
+SSLCompressed.fragment = pacchetto.
+Come prototipo direi:
 
-- FREE FUNCTIONS (GIU/ERMES).
-	- verifica memory leaks.
-- estrare la len_parameters dal certificato.
+uint8_t* ssl_mac(uint8_t *master_secret, Handshake *handshake_packet, long seq_num);
+
+Note:
+- restituisce un puntatore a uint8t la cui size è 16 (MD5) o 20 (SHA1).
+- seq_num nel nostro caso è sempre 0. Mettiamolo in input per eleganza.
+- aggiungi i controlli
+- i controlli li hai aggiunti?
+- ricontrolla se hai aggiunto i controlli.
+*******************************
+
+- CERTIFICATE VERIFY (RIVEDERE)
+- Verifica delle FREE (GIUSEPPE)
+- estrare la len_parameters dal certificato (GIU).
 - aggiungere altre ciphersuite (GIU).
-- MAC del finished.
+
 - Sistemare i commenti (DA ASSEGNARE)
+
