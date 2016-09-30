@@ -6,12 +6,13 @@ SSLv3.0.nbproject/
 SSLv3.0.build/
 SSLv3.0.dSYM/
 SSLv3.0.bancoprovadSYM/
-SSLv3.0.Client.ServerdSYM/
+SSLv3.0.Client.dSYM/
+SSLv3.0.Server.dSYM/
 pino_test/main.c
 /tester.c
 .DS_Store
 SSLv3.0.bancoprova/
-Client 
-Server
+/Client 
+/Server
 bancoprova
 *.txt
