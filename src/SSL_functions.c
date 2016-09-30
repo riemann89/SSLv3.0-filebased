@@ -855,13 +855,13 @@ CipherSuite *loadCipher(char* filename, uint8_t *len){
 } 
 
 KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
-    if(cipher.code>0&& cipher.code<11)
+    if(cipher.code > 0 && cipher.code < 11)
         return RSA_;
-    if(cipher.code>10&& cipher.code<28)
+    if(cipher.code > 10 && cipher.code < 28)
         return DIFFIE_HELLMAN;
-    if(cipher.code>27&& cipher.code<31)
+    if(cipher.code > 27 && cipher.code < 31)
         return FORTEZZA;
-    perror("Cipher null or not a valid ");
+    perror("Cipher null or not a valid \n");
     exit(1);
 }
 

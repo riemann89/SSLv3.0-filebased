@@ -21,28 +21,31 @@ int main(int argc, const char *argv[]){
     ClientServerHello server_hello, *client_hello;
     Handshake *handshake, *client_handshake;
     RecordLayer *record, *client_message;
-    ServerDone server_done;
     ClientKeyExchange *client_key_exchange;
     Random random;
     Certificate *certificate;
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
-    uint8_t prioritylen=10, choice, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
+    int phase;
+    char certificate_string[100];
+    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
     MD5_CTX md5;
     SHA_CTX sha;
-    RSA *rsa_private_key = NULL;
     uint32_t sender_var ,*sender;
     uint8_t *dec_hash, *enc_hash;
+
+    
+    //VARIABLE INITIALIZATION
+    ciphersuite_code = 0;
     master_secret = NULL;
-    
-    
-    printf("Server started.\n");
+    prioritylen = 10;
+    phase = 0;
     SHA1_Init(&sha);
     MD5_Init(&md5);
-    int phase = 0;
     
-    //CLIENT STEPS
+    //SERVER STARTS
+    printf("Server started.\n");
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}
@@ -71,6 +74,8 @@ int main(int argc, const char *argv[]){
     priority[0].code = 5;
     //setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
     choosen.code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
+    ciphersuite_code = choosen.code;
+    printf("%02X", ciphersuite_code);
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
@@ -80,10 +85,9 @@ int main(int argc, const char *argv[]){
     server_hello.version = 3;
     server_hello.random = &random;
     server_hello.sessionId = 32;
-    server_hello.ciphersuite = &choosen; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
+    server_hello.ciphersuite = &choosen;
 				
     //WRAPPING
-
     handshake = ClientServerHelloToHandshake(&server_hello);
     record = HandshakeToRecordLayer(handshake);
     
@@ -104,24 +108,27 @@ int main(int argc, const char *argv[]){
     while(CheckCommunication() == client){}
     
     
-    //CERTIFICATE send the certificate for the chosen cipher
-    
-    certificate = loadCertificate("certificates/RSA_server.crt"); //TODO: cambiare il prototipo, passando il type di algorithm e fare uno switch nella funzione
-    handshake = CertificateToHandshake(certificate);
-    record = HandshakeToRecordLayer(handshake);
+    //CERTIFICATE
+    if (ciphersuite_code == 0x05){ //TODO sistemare
+        //TODO fare uno switch sui vari casi che trattiamo
+        strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
+    	certificate = loadCertificate((char*)&certificate_string);
+    	handshake = CertificateToHandshake(certificate);
+    	record = HandshakeToRecordLayer(handshake);
       
-    printf("\nCERTIFICATE: sent\n");
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);        
-    }
-    printf("\n\n");
+    	printf("\nCERTIFICATE: sent\n");
+    	for(int i=0; i<record->length - 5; i++){
+        	printf("%02X ", record->message[i]);
+    	}
+    	printf("\n\n");
        
-    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
-    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    	SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+    	MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
-    sendPacketByte(record);
-    OpenCommunication(client);
-    while(CheckCommunication() == client){}
+    	sendPacketByte(record);
+    	OpenCommunication(client);
+    	while(CheckCommunication() == client){}
+    }
     
     //SERVER KEY EXCHANGE
     
@@ -157,7 +164,7 @@ int main(int argc, const char *argv[]){
             switch (client_handshake->msg_type) {
                 case CERTIFICATE:
                     certificate = HandshakeToCertificate(client_handshake);
-                     printf("\nCERTIFICATE: recived\n");
+                     printf("\nCERTIFICATE: received\n");
                         for(int i=0; i<client_message->length - 5; i++){
                              printf("%02X ", client_message->message[i]);
 

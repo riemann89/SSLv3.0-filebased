@@ -63,7 +63,7 @@ typedef enum{RSA_=0, DIFFIE_HELLMAN=1, FORTEZZA=2}KeyExchangeAlgorithm;
 
 typedef enum{SHA1_, MD5_1}SignatureAlgorithm;
 
-typedef enum{DES, DES40, CNULL, RC4_}CipherAlgorithm;
+typedef enum{DES, DES40, CNULL, RC4_}CipherAlgorithm;//TODO completare
 
 typedef struct{
     CertificateType certificate_type;
