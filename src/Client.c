@@ -164,7 +164,7 @@ int main(int argc, const char *argv[]){
                 
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
-                FreeCertificateRequest(certificate_request);
+                //FreeCertificateRequest(certificate_request);
                 
                 OpenCommunication(server);
                 break;
@@ -303,7 +303,7 @@ int main(int argc, const char *argv[]){
 
     
     enc_hash = calloc(36, sizeof(uint8_t));
-    enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
+    enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, &client_hello, server_hello, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
     memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
     handshake = FinishedToHandshake(&finished);
     
@@ -350,7 +350,7 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     dec_hash = calloc(36, sizeof(uint8_t));
-    dec_hash = DecEncryptFinished(server_finished->hash, 36, RC4_, master_secret, 0);
+    dec_hash = DecEncryptFinished(server_finished->hash, 36, RC4_, master_secret, &client_hello, server_hello, 0);
     
     printf("\nFINISHED DECRYPTED\n");
     for(int i = 0; i< 4;i++){

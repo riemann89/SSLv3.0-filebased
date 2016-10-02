@@ -928,6 +928,55 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     
     return master_secret;
 };
+uint8_t *KeysGen(int size, uint8_t *master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
+    //size is intended in bytes
+    uint8_t *key;
+    uint8_t letter = 65;
+    MD5_CTX md5;
+    SHA_CTX sha;
+    uint8_t *md5_1, *sha_1;
+    
+    md5_1 = calloc(16, sizeof(uint8_t));
+    sha_1 = calloc(20, sizeof(uint8_t));
+    
+    if (size % 16 != 0){
+        perror("ERROR KeysGen: key size not correct, it must be a multiple of 16.");
+        exit(1);
+    }
+    
+    key = (uint8_t *)calloc(size, sizeof(uint8_t));
+    
+    if (key == NULL){
+        perror("ERROR KeysGen: memory allocation leak.");
+        exit(1);
+    }
+    
+    for(int i = 0; i < (size/16); i++){
+    	SHA1_Init(&sha);
+        letter = letter + i;
+        
+        for (int j = 0; j <= i; j++) {
+        	SHA_Update(&sha, &letter, sizeof(uint8_t));
+        }
+        SHA1_Update(&sha, master_secret, 48*sizeof(uint8_t));
+        SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+        SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+        SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+        SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        
+        SHA1_Final(sha_1, &sha);
+        
+        MD5_Init(&md5);
+        MD5_Update(&md5, master_secret, 48*sizeof(uint8_t));
+        MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
+        MD5_Final(md5_1, &md5);
+        
+        memcpy(key + 16*i, md5_1, 16*sizeof(uint8_t));
+    }
+    return key;
+    
+
+}
 int writeCertificate(X509* certificate){
     /* Per leggere il der
     X509 *res= NULL;
@@ -1004,20 +1053,20 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
     }
     return pre_master_secret;
 }
-
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgorithm cipher_alg, uint8_t *master_key, int state){
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgorithm cipher_alg, uint8_t *master_key, ClientServerHello *client_hello, ClientServerHello *server_hello, int state){
     uint8_t *enc_finished;
     EVP_CIPHER_CTX *ctx;
+    uint8_t *key;
     
     ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee
-    //CNULL, RC4_, RC2_CBC_40, IDEA_CBC, DES40_CBC, DES_CBC, DES3_EDE_CBC
     switch (cipher_alg) {
         case CNULL:
             break;
             
         case RC4_:
+            key = KeysGen(16, master_key, client_hello, server_hello);
             enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));
-            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, master_key, NULL, state);
+            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, NULL, state);
             EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
             EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;

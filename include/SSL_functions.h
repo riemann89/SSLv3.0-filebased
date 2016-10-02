@@ -67,4 +67,5 @@ EVP_PKEY* readCertificateParam (Certificate *certificate);
 uint8_t *encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret);
 uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
-uint8_t *DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgorithm cipher_alg, uint8_t *master_key, int state);
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgorithm cipher_alg, uint8_t *master_key, ClientServerHello *client_hello, ClientServerHello *server_hello, int state);
+uint8_t *KeysGen(int size, uint8_t *master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
