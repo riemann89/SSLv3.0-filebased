@@ -1010,17 +1010,11 @@ uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgori
     EVP_CIPHER_CTX *ctx;
     
     ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee
-    
+    //CNULL, RC4_, RC2_CBC_40, IDEA_CBC, DES40_CBC, DES_CBC, DES3_EDE_CBC
     switch (cipher_alg) {
         case CNULL:
+            break;
             
-            break;
-        case DES:
-            break;
-        
-        case DES40:
-            break;
-        
         case RC4_:
             enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));
             EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, master_key, NULL, state);
@@ -1028,6 +1022,21 @@ uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgori
             EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
             
+        case RC2_CBC_40:
+            break;
+        
+        case IDEA_CBC:
+            break;
+        
+        case DES40_CBC:
+            break;
+        
+        case DES_CBC:
+            break;
+        
+        case DES3_EDE_CBC:
+            break;
+        
         default:
             perror("encryptFinished error: unknown cipher algorithm.");
             exit(1);
