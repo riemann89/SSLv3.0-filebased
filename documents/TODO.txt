@@ -15,7 +15,9 @@ Note:
 - i controlli li hai aggiunti?
 - ricontrolla se hai aggiunto i controlli.
 *******************************
-
+- KEYBLOCKGEN cominciare dal prototipo
+- DECENCRYPT 
+-
 - CERTIFICATE VERIFY (RIVEDERE)
 - Verifica delle FREE (GIUSEPPE)
 - estrare la len_parameters dal certificato (GIU).

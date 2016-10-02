@@ -27,6 +27,7 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
+    CipherSuite2 *cipher_suite_choosen;
     int phase;
     char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
@@ -34,6 +35,9 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
     uint8_t *dec_hash, *enc_hash;
+    uint8_t *iv = NULL;
+    uint8_t *cipher_key = NULL;
+    uint8_t *key_block;
 
     
     //VARIABLE INITIALIZATION
@@ -76,6 +80,7 @@ int main(int argc, const char *argv[]){
     choosen.code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
     ciphersuite_code = choosen.code;
     printf("%02X", ciphersuite_code);
+    
     //COSTRUZIONE SERVER HELLO
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
@@ -98,7 +103,9 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
-    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));    
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    
+    cipher_suite_choosen = CodeToCipherSuite(05);
     
     //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
@@ -219,7 +226,10 @@ int main(int argc, const char *argv[]){
                     
                     client_finished = HandshakeToFinished(client_handshake);
                     dec_hash = calloc(36, sizeof(uint8_t));
-                    dec_hash = DecEncryptFinished(client_finished->hash, 36, RC4_, master_secret, client_hello, &server_hello, 0);
+                    
+                    key_block = NULL;
+                    
+                    dec_hash = DecEncryptFinished(client_finished->hash, 36, cipher_suite_choosen, cipher_key, iv, 0);
                     
                     printf("\nFINISHED DECRYPTED\n");
                     for(int i = 0; i< 4;i++){
@@ -303,7 +313,7 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
     enc_hash = calloc(36, sizeof(uint8_t));
-    enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, client_hello, &server_hello, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
+    enc_hash = DecEncryptFinished(finished.hash, 36, cipher_suite_choosen, cipher_key ,iv, 1);
     
     memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
     

@@ -18,12 +18,46 @@ typedef enum{client, server
 // HANDSHAKE STRUCTS //
 
 typedef enum{
-    HELLO_REQUEST,CLIENT_HELLO, SERVER_HELLO, CERTIFICATE=11,SERVER_KEY_EXCHANGE, CERTIFICATE_REQUEST, SERVER_DONE,CERTIFICATE_VERIFY, CLIENT_KEY_EXCHANGE,FINISHED=20
+    HELLO_REQUEST, CLIENT_HELLO, SERVER_HELLO, CERTIFICATE = 11, SERVER_KEY_EXCHANGE, CERTIFICATE_REQUEST, SERVER_DONE, CERTIFICATE_VERIFY, CLIENT_KEY_EXCHANGE, FINISHED=20
 }HandshakeType;
+
+typedef enum{
+    KNULL, RSA_, DIFFIE_HELLMAN, KFORTEZZA
+}KeyExchangeAlgorithm;
+
+typedef enum {
+    TNULL, STREAM, BLOCK
+} CipherType;
+
+typedef enum{
+    RSA_SIGN, DSS_SIGN, RSA_FIXED_DH,
+    DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH, FORTEZZA_MISSI = 20
+}CertificateType;
+
+typedef enum{
+    CNULL, RC4, RC2, IDEA, DES, DES3, DES40, FORTEZZA
+}CipherAlgorithm;//TODO: completare
+
+typedef enum{
+    SNULL, SHA1_, MD5_1
+}SignatureAlgorithm;
 
 typedef struct{
     uint8_t code;
+    //uint8_t key_size;
+    //uint8_t iv_size;
+    //CipherAlgorithm cipher_algorithm;
 }CipherSuite;
+
+typedef struct{
+    KeyExchangeAlgorithm key_exchange_algorithm;
+    CipherType cipher_type;
+    CipherAlgorithm cipher_algorithm;
+    uint8_t iv_size;
+    uint8_t key_material;
+    SignatureAlgorithm signature_algorithm;
+    _Bool exportable;
+}CipherSuite2;
 
 typedef struct {
     HandshakeType msg_type;
@@ -53,17 +87,6 @@ typedef struct{
     uint8_t *X509_der;
     uint32_t len;
 }Certificate;
-
-typedef enum{
-    RSA_SIGN, DSS_SIGN, RSA_FIXED_DH,
-    DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH,FORTEZZA_MISSI=20
-}CertificateType;
-
-typedef enum{RSA_=0, DIFFIE_HELLMAN=1, FORTEZZA=2}KeyExchangeAlgorithm;
-
-typedef enum{SHA1_, MD5_1}SignatureAlgorithm;
-
-typedef enum{CNULL, RC4_, RC2_CBC_40, IDEA_CBC, DES40_CBC, DES_CBC, DES3_EDE_CBC}CipherAlgorithm;//TODO completare
 
 typedef struct{
     CertificateType certificate_type;

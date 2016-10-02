@@ -822,7 +822,7 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
             
         }
     }
-    printf("\nError, uncompatibles chiphers");   		
+    printf("\nError, uncompatibles chiphers\n");
     exit(1);
 }
 
@@ -860,12 +860,238 @@ KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
     if(cipher.code > 10 && cipher.code < 28)
         return DIFFIE_HELLMAN;
     if(cipher.code > 27 && cipher.code < 31)
-        return FORTEZZA;
+        return KFORTEZZA;
     perror("Cipher null or not a valid \n");
     exit(1);
 }
 
-/* about certificates*/
+/*************************************** OTHERS ******************************************************/
+CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
+    //INIZIALIZZARE CipherSuite
+    
+    CipherSuite2 *cipher_suite;
+    
+    cipher_suite = (CipherSuite2*)calloc(1, sizeof(CipherSuite2));
+    
+    switch (ciphersuite_code) {
+        case 0x00:
+            cipher_suite->key_exchange_algorithm = KNULL;
+            cipher_suite->cipher_type = TNULL;
+            cipher_suite->cipher_algorithm = CNULL;
+            cipher_suite->iv_size = 0;
+            cipher_suite->key_material = 0;
+            cipher_suite->signature_algorithm = SNULL;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x01:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = TNULL;
+            cipher_suite->cipher_algorithm = CNULL;
+            cipher_suite->iv_size = 0;
+            cipher_suite->key_material = 0;
+            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x02:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = TNULL;
+            cipher_suite->cipher_algorithm = CNULL;
+            cipher_suite->iv_size = 0;
+            cipher_suite->key_material = 0;
+            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x03:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = STREAM;
+            cipher_suite->cipher_algorithm = RC4;
+            cipher_suite->iv_size = 0;
+            cipher_suite->key_material = 5;
+            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->exportable = true;
+            break;
+            
+        case 0x04:
+            cipher_suite->key_exchange_algorithm = RSA_;
+        	cipher_suite->cipher_type = STREAM;
+            cipher_suite->cipher_algorithm = RC4;
+            cipher_suite->iv_size = 0;
+            cipher_suite->key_material = 16;
+            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x05:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = STREAM;
+            cipher_suite->cipher_algorithm = RC4;
+            cipher_suite->iv_size = 0;
+            cipher_suite->key_material = 16;
+            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x06:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = RC2;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 5;
+            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->exportable = true;
+            break;
+            
+        case 0x07:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = IDEA;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 16;
+            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x08:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES40;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 5;
+            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->exportable = true;
+            break;
+            
+        case 0x09:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 8;
+            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x0A:
+            cipher_suite->key_exchange_algorithm = RSA_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES3;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 24;
+            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            break;
+            
+        case 0x0B:
+            break;
+            
+        case 0x0C:
+            break;
+            
+        case 0x0D:
+            break;
+        
+        case 0x0E:
+            break;
+            
+        case 0x0F:
+            break;
+            
+        case 0x10:
+            break;
+            
+        case 0x11:
+            break;
+            
+        case 0x12:
+            break;
+            
+        case 0x13:
+            break;
+            
+        case 0x14:
+            break;
+            
+        case 0x15:
+            break;
+            
+        case 0x16:
+            break;
+            
+        case 0x17:
+            break;
+            
+        case 0x18:
+            break;
+            
+        case 0x19:
+            break;
+            
+        case 0x1A:
+            break;
+            
+        case 0x1B:
+            break;
+            
+        case 0x1C:
+            break;
+            
+        case 0x1D:
+            break;
+        
+        case 0x1E:
+            break;
+            
+        default:
+            perror("CodeToCipherSuite Error: code not valid");
+            exit(1);
+            break;
+    }
+    return cipher_suite;
+}
+
+/*************************************** CERTIFICATES ******************************************************/
+int writeCertificate(X509* certificate){
+    /* Per leggere il der
+    X509 *res= NULL;
+    d2i_X509(&res, &buf, *len);
+     */
+    FILE* file_cert;
+    
+    file_cert=fopen("cert_out.crt", "w+");
+    return PEM_write_X509(file_cert, certificate);
+}
+int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
+EVP_PKEY* readCertificateParam (Certificate *certificate){
+    X509 *cert_509;
+    EVP_PKEY *pubkey;
+    cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len);
+    pubkey = X509_get_pubkey(cert_509);
+    
+    return pubkey;
+}
+
+/*************************************** KEYS GENERATION ******************************************************/
+//Return size (in bytes) of keyblock
+int KeyBlockSize(CipherSuite ciphersuite){
+    
+    switch (ciphersuite.code) {
+        case 0x00:
+            return 0;
+            break;
+        
+        case 0x05:
+            return 10;
+            break;
+            
+        default:
+            break;
+    }
+    return 0;
+}
+
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
     uint8_t *md5_1, *md5_2, *md5_3, *sha_1, *sha_2, *sha_3;
     MD5_CTX md5;
@@ -910,7 +1136,7 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
     MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
     MD5_Final(md5_1, &md5);
-
+    
     MD5_Init(&md5);
     MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
     MD5_Update(&md5, sha_2, 20*sizeof(uint8_t));
@@ -927,36 +1153,48 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     memcpy(master_secret + 32, md5_3, 16*sizeof(uint8_t));
     
     return master_secret;
-};
-uint8_t *KeysGen(int size, uint8_t *master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
+}
+
+uint8_t *KeyBlockGen(int size, uint8_t *master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
     //size is intended in bytes
-    uint8_t *key;
+    uint8_t *key_block;
     uint8_t letter = 65;
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t *md5_1, *sha_1;
     
-    md5_1 = calloc(16, sizeof(uint8_t));
-    sha_1 = calloc(20, sizeof(uint8_t));
-    
     if (size % 16 != 0){
-        perror("ERROR KeysGen: key size not correct, it must be a multiple of 16.");
+        perror("ERROR KeysGen: size error.");
         exit(1);
     }
     
-    key = (uint8_t *)calloc(size, sizeof(uint8_t));
+    md5_1 = (uint8_t *)calloc(16, sizeof(uint8_t));
     
-    if (key == NULL){
+    if (md5_1 == NULL){
         perror("ERROR KeysGen: memory allocation leak.");
         exit(1);
     }
     
-    for(int i = 0; i < (size/16); i++){
-    	SHA1_Init(&sha);
+    sha_1 = (uint8_t *)calloc(20, sizeof(uint8_t));
+    
+    if (sha_1 == NULL){
+        perror("ERROR KeysGen: memory allocation leak.");
+        exit(1);
+    }
+    
+    key_block = (uint8_t *)calloc(size, sizeof(uint8_t));
+    
+    if (key_block == NULL){
+        perror("ERROR KeysGen: memory allocation leak.");
+        exit(1);
+    }
+    
+    for(int i = 0; i < size/16 ; i++){
+        SHA1_Init(&sha);
         letter = letter + i;
         
-        for (int j = 0; j <= i; j++) {
-        	SHA_Update(&sha, &letter, sizeof(uint8_t));
+        for (int j = 0; j < i + 1; j++) {
+            SHA_Update(&sha, &letter, sizeof(uint8_t));
         }
         SHA1_Update(&sha, master_secret, 48*sizeof(uint8_t));
         SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -971,31 +1209,15 @@ uint8_t *KeysGen(int size, uint8_t *master_secret, ClientServerHello *client_hel
         MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
         MD5_Final(md5_1, &md5);
         
-        memcpy(key + 16*i, md5_1, 16*sizeof(uint8_t));
+        memcpy(key_block + 16*i, md5_1, 16*sizeof(uint8_t));
     }
-    return key;
+    return key_block;
     
+    
+}
 
-}
-int writeCertificate(X509* certificate){
-    /* Per leggere il der
-    X509 *res= NULL;
-    d2i_X509(&res, &buf, *len);
-     */
-    FILE* file_cert;
-    
-    file_cert=fopen("cert_out.crt", "w+");
-    return PEM_write_X509(file_cert, certificate);
-}
-int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
-EVP_PKEY* readCertificateParam (Certificate *certificate){
-    X509 *cert_509;
-    EVP_PKEY *pubkey;
-    cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len);
-    pubkey = X509_get_pubkey(cert_509);
-    
-    return pubkey;
-}
+/*************************************** ENCRYPTION ******************************************************/
+//Asymmetric
 uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret){
     	int flag = 0;
     	RSA *rsa;
@@ -1010,7 +1232,7 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre
             case DIFFIE_HELLMAN:
                 printf("CIAO");
                 break;
-            case FORTEZZA:
+            case KFORTEZZA:
                 printf("CIAO");
                 break;
             default:
@@ -1044,8 +1266,8 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
             
         case DIFFIE_HELLMAN:
             break;
-        case FORTEZZA:
-            
+        case KFORTEZZA:
+            break;
         default:
             perror("decryptPreMaster error: unknown key exchange algorithm.");
             exit(1);
@@ -1053,37 +1275,61 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
     }
     return pre_master_secret;
 }
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgorithm cipher_alg, uint8_t *master_key, ClientServerHello *client_hello, ClientServerHello *server_hello, int state){
+
+//Symmetric TODO: da sistemare
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t *key, uint8_t *iv, int state){
     uint8_t *enc_finished;
     EVP_CIPHER_CTX *ctx;
-    uint8_t *key;
     
-    ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee
-    switch (cipher_alg) {
+    ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee, iv di tutti
+    
+    enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));//TODO la size non è corretta per i block cipher
+    
+    if (enc_finished == NULL){
+        perror("DecEncryptFinished: allocation memory leak.");
+        exit(1);
+    }
+    
+    //TODO sistemare i case
+    switch (cipher_suite->cipher_algorithm) {
         case CNULL:
             break;
             
-        case RC4_:
-            key = KeysGen(16, master_key, client_hello, server_hello);
-            enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));
-            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, NULL, state);
+        case RC4:
+            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
             EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
             EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
             
-        case RC2_CBC_40:
+        case RC2://TODO to check
+            
+            EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
+            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
+            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
         
-        case IDEA_CBC:
+        case IDEA:
+            EVP_CipherInit_ex(ctx, EVP_idea_cbc(), NULL, key, iv, state);
+            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
+            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
         
-        case DES40_CBC:
+        case DES40:
+            EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
+            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
+            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
         
-        case DES_CBC:
+        case DES:
+            EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
+            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
+            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
         
-        case DES3_EDE_CBC:
+        case DES3:
+            EVP_CipherInit_ex(ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
+            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
+            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
             break;
         
         default:
@@ -1094,3 +1340,18 @@ uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherAlgori
     return enc_finished;
     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

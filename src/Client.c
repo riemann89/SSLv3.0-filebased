@@ -30,6 +30,7 @@ int main(int argc, const char *argv[]){
     uint32_t sender_var ,*sender;
     uint8_t *enc_hash, *dec_hash, len_hello;
     CipherSuite *supported_ciphers;
+    CipherSuite2 *cipher_suite_choosen;
     
     
     
@@ -45,27 +46,28 @@ int main(int argc, const char *argv[]){
     pubkey = NULL;
     rsa = NULL;
     len_parameters = 0;
-    len_hello=0;
+    len_hello = 0;
     phase = 0;
     pre_master_secret = NULL;
     pre_master_secret_encrypted = NULL;
     master_secret = NULL;
+    SHA1_Init(&sha);
+    MD5_Init(&md5);
     //TODO: client_hello, random, client_key_exchange
     
     printf("!!!CLIENT AVVIATO!!!\n");
-    SHA1_Init(&sha);
-    MD5_Init(&md5);
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     OpenCommunication(client);
     
     //COSTRUZIONE CLIENT HELLO
+    
     random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
     client_hello.sessionId = 32;
-    supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
+    supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello); //deve restituire una lista di codici.
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite = supported_ciphers; //TODO: dobbiamo fare in modo da caricarle da file -> rivedere pure la lenght
 	
@@ -114,7 +116,7 @@ int main(int argc, const char *argv[]){
     FreeHandshake(server_handshake);
     
     algorithm_type = getAlgorithm(server_hello->ciphersuite[0]);
-    
+    cipher_suite_choosen = CodeToCipherSuite(05);
     //TODO FreeClientServerHello(server_hello);
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
@@ -300,10 +302,15 @@ int main(int argc, const char *argv[]){
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
-
+	
+    uint8_t *iv = NULL;
+    uint8_t *cipher_key = NULL;
+    uint8_t *key_block;
+    
+    key_block = NULL;
     
     enc_hash = calloc(36, sizeof(uint8_t));
-    enc_hash = DecEncryptFinished(finished.hash, 36, RC4_, master_secret, &client_hello, server_hello, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
+    enc_hash = DecEncryptFinished(finished.hash, 36, cipher_suite_choosen, cipher_key, iv , 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
     memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
     handshake = FinishedToHandshake(&finished);
     
@@ -349,8 +356,9 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
+    
     dec_hash = calloc(36, sizeof(uint8_t));
-    dec_hash = DecEncryptFinished(server_finished->hash, 36, RC4_, master_secret, &client_hello, server_hello, 0);
+    dec_hash = DecEncryptFinished(server_finished->hash, 36, cipher_suite_choosen, cipher_key, iv, 0);
     
     printf("\nFINISHED DECRYPTED\n");
     for(int i = 0; i< 4;i++){
