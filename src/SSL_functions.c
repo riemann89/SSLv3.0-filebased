@@ -1075,21 +1075,39 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
 
 /*************************************** KEYS GENERATION ******************************************************/
 //Return size (in bytes) of keyblock
-int KeyBlockSize(CipherSuite ciphersuite){
+int KeyBlockSize(CipherSuite2 *ciphersuite){
+    int key_block_size, hash_size, key_material, iv_size;
     
-    switch (ciphersuite.code) {
-        case 0x00:
-            return 0;
+    key_block_size = 0;
+    hash_size = 0;
+    key_material = 0;
+    iv_size = 0;
+    
+    //hash size
+    switch (ciphersuite->signature_algorithm) {
+        case SNULL:
+            hash_size = 0;
+        case SHA1_:
+            hash_size = 20;
             break;
-        
-        case 0x05:
-            return 10;
+        case MD5_1:
+            hash_size = 15;
             break;
-            
         default:
+            perror("KeyBlock size error: signature algorithm unknown");
             break;
     }
-    return 0;
+    
+    //key material
+    key_material = ciphersuite->key_material;
+    
+    //iv size
+    iv_size = ciphersuite->iv_size;
+    
+    key_block_size = 2*hash_size + 2*key_material + 2*iv_size;
+    
+    return key_block_size;
+
 }
 
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
