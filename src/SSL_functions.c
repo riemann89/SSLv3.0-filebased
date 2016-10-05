@@ -1403,6 +1403,68 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
 }
 
 
+uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret){
+    
+    MD5_CTX md5,md52;
+    SHA_CTX sha, sha2;
+    
+    if(cipher.signature_algorithm==SHA1_){
+        
+        uint8_t *sha_fin;
+        sha_fin = calloc(20, sizeof(uint8_t));
+        
+        SHA1_Init(&sha);
+        SHA1_Init(&sha2);
+        SHA1_Update(&sha,macWriteSecret, 16*sizeof(uint8_t));
+        SHA1_Update(&sha,pad_1, sizeof(pad_1));
+        //SHA1_Update(&sha,seq_num, ??);        non ho idea di dove prenderlp idem per MD5
+        SHA1_Update(&sha, &cipher.cipher_type ,sizeof(uint8_t));
+        SHA1_Update(&sha, hand->length - 4, sizeof(uint32_t));
+        SHA1_Update(&sha,hand->content, (hand->length - 4)*sizeof(uint8_t));
+        SHA1_Final(sha_fin,&sha);
+        
+        SHA1_Update(&sha2,macWriteSecret, 16*sizeof(uint8_t));
+        SHA1_Update(&sha2,pad_2, sizeof(pad_2));
+        SHA1_Update(&sha2, sha_fin,20*sizeof(uint8_t));
+        
+        SHA1_Final(sha_fin,&sha2);
+            
+        return sha_fin;
+        
+    }
+    else if(cipher.signature_algorithm==MD5_1){
+        
+        MD5_Init(&md5);
+        MD5_Init(&md5);
+               
+        uint8_t *md5_fin;
+        md5_fin = calloc(16, sizeof(uint8_t));
+        
+        MD5_Init(&md5);
+        MD5_Init(&md52);
+        MD5_Update(&md5,macWriteSecret, 16*sizeof(uint8_t));
+        MD5_Update(&md5,pad_1, sizeof(pad_1));
+        //SHA1_Update(&sha,seq_num, ??);        non ho idea di dove prenderlp idem per MD5
+        MD5_Update(&md5, &cipher.cipher_type ,sizeof(uint8_t));
+        MD5_Update(&md5, hand->length - 4, sizeof(uint32_t));
+        MD5_Update(&md5,hand->content, (hand->length - 4)*sizeof(uint8_t));
+        MD5_Final(md5_fin,&md5);
+        
+        MD5_Update(&md52,macWriteSecret, 16*sizeof(uint8_t));
+        MD5_Update(&md52,pad_2, sizeof(pad_2));
+        MD5_Update(&md52, sha_fin,16*sizeof(uint8_t));
+        
+        MD5_Final(md5_fin,&md52);
+            
+        return md5_fin;
+    }
+    else{
+        perror("signature algorithm not valid");
+        return NULL;
+    }
+}
+
+
 
 
 

@@ -76,5 +76,5 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientS
 uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
 
-
+uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret);
 
