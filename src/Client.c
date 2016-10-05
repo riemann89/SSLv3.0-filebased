@@ -23,12 +23,12 @@ int main(int argc, const char *argv[]){
     EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
-    int phase;
-    uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
+    int phase, key_block_size;
+    uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
-    uint8_t *enc_hash, *dec_hash, len_hello;
+    uint8_t *enc_hash, *dec_hash, len_hello, *key_block;
     CipherSuite *supported_ciphers;
     CipherSuite2 *cipher_suite_choosen;
     
@@ -48,9 +48,13 @@ int main(int argc, const char *argv[]){
     len_parameters = 0;
     len_hello = 0;
     phase = 0;
+    key_block_size = 0;
     pre_master_secret = NULL;
     pre_master_secret_encrypted = NULL;
     master_secret = NULL;
+    key_block = NULL;
+    iv = NULL;
+    cipher_key = NULL;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     //TODO: client_hello, random, client_key_exchange
@@ -238,7 +242,18 @@ int main(int argc, const char *argv[]){
             printf("%02X ", master_secret[i]);
         }
         printf("\n");
-
+        
+        //KEYBLOCK GENERATION
+        key_block_size = KeyBlockSize(cipher_suite_choosen);
+        printf("key block size: %d\n", key_block_size);
+        key_block = KeyBlockGen(key_block_size, master_secret, &client_hello, server_hello);
+		
+        printf("\nKEY BLOCK\n");
+        for (int i=0; i< key_block_size; i++){
+            printf("%02X ", key_block[i]);
+        }
+        printf("\n");
+        
         OpenCommunication(server);
 
         ///CERTIFICATE_VERIFY///
@@ -302,12 +317,6 @@ int main(int argc, const char *argv[]){
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
-	
-    uint8_t *iv = NULL;
-    uint8_t *cipher_key = NULL;
-    uint8_t *key_block;
-    
-    key_block = NULL;
     
     enc_hash = calloc(36, sizeof(uint8_t));
     enc_hash = DecEncryptFinished(finished.hash, 36, cipher_suite_choosen, cipher_key, iv , 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.

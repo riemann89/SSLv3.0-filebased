@@ -56,6 +56,7 @@ typedef struct{
     uint8_t iv_size;
     uint8_t key_material;
     SignatureAlgorithm signature_algorithm;
+    uint8_t signature_size;
     _Bool exportable;
 }CipherSuite2;
 

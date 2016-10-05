@@ -24,3 +24,7 @@ Client
 .DS_Store
 
 bancoprova.dSYM/Contents/Resources/DWARF/bancoprova
+
+Client.dSYM/Contents/Resources/DWARF/Client
+
+Server.dSYM/Contents/Resources/DWARF/Server

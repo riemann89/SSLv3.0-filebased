@@ -1,5 +1,5 @@
 TODO:
-******** HIGHT PRIORITY per ERMES******
+******** HIGHT PRIORITY******
 - MAC: si trova a pagina 492 della documentazione: viene utilizzata per assicurare l’integrità di un messaggio. Non considerare il fatto della compressione. Noi dobbiamo applicarla solo al finished. Quindi nel nostro caso: 
 SSLCompressed.type = HANSHAKE
 SSLCompressed.lenght = LUNGHEZZA HANDSHAKE
@@ -11,13 +11,13 @@ uint8_t* ssl_mac(uint8_t *master_secret, Handshake *handshake_packet, long seq_n
 Note:
 - restituisce un puntatore a uint8t la cui size è 16 (MD5) o 20 (SHA1).
 - seq_num nel nostro caso è sempre 0. Mettiamolo in input per eleganza.
-- aggiungi i controlli
-- i controlli li hai aggiunti?
-- ricontrolla se hai aggiunto i controlli.
 *******************************
-- KEYBLOCKGEN cominciare dal prototipo
-- DECENCRYPT 
--
+
+- scrivere la base function
+- riscrivere master key gen usando la base function
+- riscrivere la key block usando la base function
+- sistemare la encryption usando il keyblock che contiene tutte le chiavi già calcolate per i vari casi. 
+
 - CERTIFICATE VERIFY (RIVEDERE)
 - Verifica delle FREE (GIUSEPPE)
 - estrare la len_parameters dal certificato (GIU).

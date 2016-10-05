@@ -882,6 +882,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 0;
             cipher_suite->signature_algorithm = SNULL;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 0;
             break;
             
         case 0x01:
@@ -892,6 +893,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 0;
             cipher_suite->signature_algorithm = MD5_1;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 16;
             break;
             
         case 0x02:
@@ -902,6 +904,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 0;
             cipher_suite->signature_algorithm = SHA1_;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 20;
             break;
             
         case 0x03:
@@ -912,6 +915,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 5;
             cipher_suite->signature_algorithm = MD5_1;
             cipher_suite->exportable = true;
+            cipher_suite->signature_size = 16;
             break;
             
         case 0x04:
@@ -922,6 +926,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 16;
             cipher_suite->signature_algorithm = MD5_1;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 16;
             break;
             
         case 0x05:
@@ -932,6 +937,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 16;
             cipher_suite->signature_algorithm = SHA1_;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 20;
             break;
             
         case 0x06:
@@ -942,6 +948,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 5;
             cipher_suite->signature_algorithm = MD5_1;
             cipher_suite->exportable = true;
+            cipher_suite->signature_size = 16;
             break;
             
         case 0x07:
@@ -952,6 +959,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 16;
             cipher_suite->signature_algorithm = SHA1_;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 20;
             break;
             
         case 0x08:
@@ -962,6 +970,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 5;
             cipher_suite->signature_algorithm = SHA1_;
             cipher_suite->exportable = true;
+            cipher_suite->signature_size = 20;
             break;
             
         case 0x09:
@@ -972,6 +981,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 8;
             cipher_suite->signature_algorithm = SHA1_;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 20;
             break;
             
         case 0x0A:
@@ -982,6 +992,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->key_material = 24;
             cipher_suite->signature_algorithm = SHA1_;
             cipher_suite->exportable = false;
+            cipher_suite->signature_size = 20;
             break;
             
         case 0x0B:
@@ -1051,6 +1062,7 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
     }
     return cipher_suite;
 }
+uint8_t *base_function(int numer_of_MD5, uint8_t* principal_argument, ClientServerHello *client_hello, ClientServerHello *server_hello){}
 
 /*************************************** CERTIFICATES ******************************************************/
 int writeCertificate(X509* certificate){
@@ -1106,7 +1118,7 @@ int KeyBlockSize(CipherSuite2 *ciphersuite){
     
     key_block_size = 2*hash_size + 2*key_material + 2*iv_size;
     
-    return key_block_size;
+    return key_block_size + (key_block_size % 16); //key block size normalization
 
 }
 
@@ -1173,7 +1185,7 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     return master_secret;
 }
 
-uint8_t *KeyBlockGen(int size, uint8_t *master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
+uint8_t *KeyBlockGen(int key_block_size, uint8_t *master_secret, CipherSuite2 cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello){
     //size is intended in bytes
     uint8_t *key_block;
     uint8_t letter = 65;
@@ -1181,10 +1193,7 @@ uint8_t *KeyBlockGen(int size, uint8_t *master_secret, ClientServerHello *client
     SHA_CTX sha;
     uint8_t *md5_1, *sha_1;
     
-    if (size % 16 != 0){
-        perror("ERROR KeysGen: size error.");
-        exit(1);
-    }
+	
     
     md5_1 = (uint8_t *)calloc(16, sizeof(uint8_t));
     
@@ -1200,14 +1209,14 @@ uint8_t *KeyBlockGen(int size, uint8_t *master_secret, ClientServerHello *client
         exit(1);
     }
     
-    key_block = (uint8_t *)calloc(size, sizeof(uint8_t));
+    key_block = (uint8_t *)calloc(key_block_size, sizeof(uint8_t));
     
     if (key_block == NULL){
         perror("ERROR KeysGen: memory allocation leak.");
         exit(1);
     }
     
-    for(int i = 0; i < size/16 ; i++){
+    for(int i = 0; i < key_block_size/16 ; i++){
         SHA1_Init(&sha);
         letter = letter + i;
         
@@ -1295,16 +1304,17 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
 }
 
 //Symmetric TODO: da sistemare
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t *key, uint8_t *iv, int state){
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker talker, int state){
     uint8_t *enc_finished;
     EVP_CIPHER_CTX *ctx;
+    uint8_t *key, *iv;
     
     ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee, iv di tutti
     
     enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));//TODO la size non è corretta per i block cipher
     
     if (enc_finished == NULL){
-        perror("DecEncryptFinished: allocation memory leak.");
+        perror("DecEncryptFinished error: allocation memory leak.");
         exit(1);
     }
     

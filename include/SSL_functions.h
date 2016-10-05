@@ -64,12 +64,18 @@ Certificate* loadCertificate(char * cert_name);
 int writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
 
+
 uint8_t *encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret);
 uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
+
+uint8_t *base_function(int numer_of_MD5, uint8_t* principal_argument, ClientServerHello *client_hello, ClientServerHello *server_hello);
+
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
-uint8_t *KeyBlockGen(int size, uint8_t *master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t *key, uint8_t *iv, int state);
+
+uint8_t *KeyGen(int key_block_size, uint8_t *master_secret, CipherSuite2 cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
+uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker talker, int state);
 int KeyBlockSize(CipherSuite2 *ciphersuite);
 CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
+
 
 

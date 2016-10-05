@@ -28,7 +28,7 @@ int main(int argc, const char *argv[]){
     Finished *client_finished, finished;
     CipherSuite priority[10], choosen;
     CipherSuite2 *cipher_suite_choosen;
-    int phase;
+    int phase, key_block_size;
     char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
     MD5_CTX md5;
@@ -36,7 +36,7 @@ int main(int argc, const char *argv[]){
     uint32_t sender_var ,*sender;
     uint8_t *dec_hash, *enc_hash;
     uint8_t *iv = NULL;
-    uint8_t *cipher_key = NULL;
+    uint8_t *cipher_key;
     uint8_t *key_block;
 
     
@@ -45,6 +45,7 @@ int main(int argc, const char *argv[]){
     master_secret = NULL;
     prioritylen = 10;
     phase = 0;
+    cipher_key = NULL;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
@@ -201,6 +202,18 @@ int main(int argc, const char *argv[]){
                         printf("%02X ", master_secret[i]);
                     }
                     printf("\n");
+                    
+                    //KEYBLOCK GENERATION
+                    key_block_size = KeyBlockSize(cipher_suite_choosen);
+                    printf("key block size: %d\n", key_block_size);
+                    key_block = KeyBlockGen(key_block_size, master_secret, client_hello, &server_hello);
+                    
+                    printf("\nKEY BLOCK\n");
+                    for (int i=0; i< key_block_size; i++){
+                        printf("%02X ", key_block[i]);
+                    }
+                    printf("\n");
+
 
                     OpenCommunication(client);
                     break;
