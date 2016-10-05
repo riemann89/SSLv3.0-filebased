@@ -244,9 +244,9 @@ int main(int argc, const char *argv[]){
         printf("\n");
         
         //KEYBLOCK GENERATION
-        key_block_size = KeyBlockSize(cipher_suite_choosen);
+        key_block_size = 2*(cipher_suite_choosen->signature_size + cipher_suite_choosen->key_material + cipher_suite_choosen->iv_size);
         printf("key block size: %d\n", key_block_size);
-        key_block = KeyBlockGen(key_block_size, master_secret, &client_hello, server_hello);
+        key_block = KeyBlockGen(master_secret, cipher_suite_choosen, &client_hello, server_hello);
 		
         printf("\nKEY BLOCK\n");
         for (int i=0; i< key_block_size; i++){
@@ -318,8 +318,10 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
+    //TODO: va cifrato tutto l'handshake ???
+    
     enc_hash = calloc(36, sizeof(uint8_t));
-    enc_hash = DecEncryptFinished(finished.hash, 36, cipher_suite_choosen, cipher_key, iv , 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
+    enc_hash = DecEncryptPacket(finished.hash, 36, cipher_suite_choosen, key_block, client, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
     memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
     handshake = FinishedToHandshake(&finished);
     
@@ -367,7 +369,7 @@ int main(int argc, const char *argv[]){
     
     
     dec_hash = calloc(36, sizeof(uint8_t));
-    dec_hash = DecEncryptFinished(server_finished->hash, 36, cipher_suite_choosen, cipher_key, iv, 0);
+    dec_hash = DecEncryptPacket(server_finished->hash, 36, cipher_suite_choosen, key_block, server ,0);
     
     printf("\nFINISHED DECRYPTED\n");
     for(int i = 0; i< 4;i++){

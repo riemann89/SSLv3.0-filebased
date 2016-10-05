@@ -619,6 +619,7 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
     
     return client_key_exchange;
 }//TOCHECK
+
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature){
     
     ServerKeyExchange *server_key_exchange;
@@ -1061,8 +1062,64 @@ CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
             break;
     }
     return cipher_suite;
+	}
+
+uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello){
+    uint8_t *buffer;
+    uint8_t letter;
+    MD5_CTX md5;
+    SHA_CTX sha;
+    uint8_t *md5_1, *sha_1;
+    
+    letter = 65;
+    
+    buffer = calloc(16*numer_of_MD5, sizeof(uint8_t));
+    
+    if (buffer == NULL){
+        perror("ERROR base_function: memory allocation leak.");
+        exit(1);
+    }
+    
+    sha_1 = calloc(20, sizeof(uint8_t));
+    
+    if (sha_1 == NULL){
+        perror("ERROR base_function: memory allocation leak.");
+        exit(1);
+    }
+    
+    md5_1 = calloc(16, sizeof(uint8_t));
+    
+    if (md5_1 == NULL){
+        perror("ERROR base_function: memory allocation leak.");
+        exit(1);
+    }
+    
+    for(int i = 0; i < numer_of_MD5 ; i++){
+        SHA1_Init(&sha);
+        letter = letter + i;
+        
+        for (int j = 0; j < i + 1; j++) {
+            SHA_Update(&sha, &letter, sizeof(uint8_t));
+        }
+        
+        SHA1_Update(&sha, principal_argument, principal_argument_size*sizeof(uint8_t));
+        SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+        SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+        SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+        SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        
+        SHA1_Final(sha_1, &sha);
+        
+        MD5_Init(&md5);
+        MD5_Update(&md5, principal_argument, principal_argument_size*sizeof(uint8_t));
+        MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
+        MD5_Final(md5_1, &md5);
+        
+        memcpy(buffer + 16*i, md5_1, 16*sizeof(uint8_t));
+    }
+    return buffer;
+    
 }
-uint8_t *base_function(int numer_of_MD5, uint8_t* principal_argument, ClientServerHello *client_hello, ClientServerHello *server_hello){}
 
 /*************************************** CERTIFICATES ******************************************************/
 int writeCertificate(X509* certificate){
@@ -1076,10 +1133,20 @@ int writeCertificate(X509* certificate){
     return PEM_write_X509(file_cert, certificate);
 }
 int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
+
 EVP_PKEY* readCertificateParam (Certificate *certificate){
+    
     X509 *cert_509;
     EVP_PKEY *pubkey;
+    
+    cert_509 = NULL;
+    
     cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len);
+    
+    if(cert_509 == NULL){
+        perror("readCertificateParam Error: memory allocation leak.");
+    }
+    
     pubkey = X509_get_pubkey(cert_509);
     
     return pubkey;
@@ -1087,157 +1154,95 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
 
 /*************************************** KEYS GENERATION ******************************************************/
 //Return size (in bytes) of keyblock
-int KeyBlockSize(CipherSuite2 *ciphersuite){
-    int key_block_size, hash_size, key_material, iv_size;
-    
-    key_block_size = 0;
-    hash_size = 0;
-    key_material = 0;
-    iv_size = 0;
-    
-    //hash size
-    switch (ciphersuite->signature_algorithm) {
-        case SNULL:
-            hash_size = 0;
-        case SHA1_:
-            hash_size = 20;
-            break;
-        case MD5_1:
-            hash_size = 15;
-            break;
-        default:
-            perror("KeyBlock size error: signature algorithm unknown");
-            break;
-    }
-    
-    //key material
-    key_material = ciphersuite->key_material;
-    
-    //iv size
-    iv_size = ciphersuite->iv_size;
-    
-    key_block_size = 2*hash_size + 2*key_material + 2*iv_size;
-    
-    return key_block_size + (key_block_size % 16); //key block size normalization
-
-}
 
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
-    uint8_t *md5_1, *md5_2, *md5_3, *sha_1, *sha_2, *sha_3;
-    MD5_CTX md5;
-    SHA_CTX sha;
     uint8_t *master_secret;
     
-    md5_1 = calloc(16, sizeof(uint8_t));
-    md5_2 = calloc(16, sizeof(uint8_t));
-    md5_3 = calloc(16, sizeof(uint8_t));
-    sha_1 = calloc(20, sizeof(uint8_t));
-    sha_2 = calloc(20, sizeof(uint8_t));
-    sha_3 = calloc(20, sizeof(uint8_t));
+    master_secret = BaseFunction(3, pre_master_secret, 48, client_hello, server_hello);
     
-    SHA1_Init(&sha);
-    SHA1_Update(&sha, "A", sizeof(uint8_t));
-    SHA1_Update(&sha, pre_master_secret, 48*sizeof(uint8_t));
-    SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA1_Final(sha_1, &sha);
-    
-    SHA1_Init(&sha);
-    SHA1_Update(&sha, "BB", sizeof(uint8_t));
-    SHA1_Update(&sha, pre_master_secret, 48*sizeof(uint8_t));
-    SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA1_Final(sha_2, &sha);
-    
-    SHA1_Init(&sha);
-    SHA1_Update(&sha, "CCC", sizeof(uint8_t));
-    SHA1_Update(&sha, pre_master_secret, 48*sizeof(uint8_t));
-    SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA1_Final(sha_3, &sha);
-    
-    MD5_Init(&md5);
-    MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
-    MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
-    MD5_Final(md5_1, &md5);
-    
-    MD5_Init(&md5);
-    MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
-    MD5_Update(&md5, sha_2, 20*sizeof(uint8_t));
-    MD5_Final(md5_2, &md5);
-    
-    MD5_Init(&md5);
-    MD5_Update(&md5, pre_master_secret, 48*sizeof(uint8_t));
-    MD5_Update(&md5, sha_3, 20*sizeof(uint8_t));
-    MD5_Final(md5_3, &md5);
-    
-    master_secret = calloc(48, sizeof(uint8_t));
-    memcpy(master_secret, md5_1, 16*sizeof(uint8_t));
-    memcpy(master_secret + 16, md5_2, 16*sizeof(uint8_t));
-    memcpy(master_secret + 32, md5_3, 16*sizeof(uint8_t));
+    if (master_secret == NULL) {
+        perror("MasterSecretGen Error: memory allocation leak.");
+        exit(1);
+    }
     
     return master_secret;
 }
-
-uint8_t *KeyBlockGen(int key_block_size, uint8_t *master_secret, CipherSuite2 cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello){
-    //size is intended in bytes
-    uint8_t *key_block;
-    uint8_t letter = 65;
+uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello){
+    
+    uint8_t *key_block, *final_client_write_key, *final_server_write_key, *client_write_iv, *server_write_iv;
     MD5_CTX md5;
-    SHA_CTX sha;
-    uint8_t *md5_1, *sha_1;
+    int key_block_size, key_block_size_temp;
     
-	
+    key_block = NULL;
+    final_client_write_key = NULL;
+    final_server_write_key = NULL;
+    key_block_size = 0;
+    key_block_size_temp = 0;
     
-    md5_1 = (uint8_t *)calloc(16, sizeof(uint8_t));
-    
-    if (md5_1 == NULL){
-        perror("ERROR KeysGen: memory allocation leak.");
-        exit(1);
+    if (cipher_suite->exportable == false) {
+        key_block_size = 2*(cipher_suite->signature_size + cipher_suite->key_material + cipher_suite->iv_size);
+        key_block_size = key_block_size + key_block_size % 16; //made a multiple of 16
+        key_block = BaseFunction(key_block_size/16, master_secret, 48, client_hello, server_hello);
     }
-    
-    sha_1 = (uint8_t *)calloc(20, sizeof(uint8_t));
-    
-    if (sha_1 == NULL){
-        perror("ERROR KeysGen: memory allocation leak.");
-        exit(1);
-    }
-    
-    key_block = (uint8_t *)calloc(key_block_size, sizeof(uint8_t));
-    
-    if (key_block == NULL){
-        perror("ERROR KeysGen: memory allocation leak.");
-        exit(1);
-    }
-    
-    for(int i = 0; i < key_block_size/16 ; i++){
-        SHA1_Init(&sha);
-        letter = letter + i;
+    else{
+        //KeyBlock temp
+        key_block_size_temp = 2*(cipher_suite->signature_size + cipher_suite->key_material);
+        key_block_size_temp = key_block_size_temp + key_block_size_temp % 16; //made a multiple of 16
+        key_block = BaseFunction(key_block_size_temp, master_secret, 48, client_hello, server_hello);
         
-        for (int j = 0; j < i + 1; j++) {
-            SHA_Update(&sha, &letter, sizeof(uint8_t));
-        }
-        SHA1_Update(&sha, master_secret, 48*sizeof(uint8_t));
-        SHA1_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-        SHA1_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-        SHA1_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-        SHA1_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        //final write key
+        //client
+        final_client_write_key = calloc(16, sizeof(uint8_t));
         
-        SHA1_Final(sha_1, &sha);
+    	MD5_Init(&md5);
+        MD5_Update(&md5, key_block + 2*(cipher_suite->signature_size), cipher_suite->key_material);
+        MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Final(final_client_write_key, &md5);
+        
+        //server
+        final_server_write_key = calloc(16, sizeof(uint8_t));
         
         MD5_Init(&md5);
-        MD5_Update(&md5, master_secret, 48*sizeof(uint8_t));
-        MD5_Update(&md5, sha_1, 20*sizeof(uint8_t));
-        MD5_Final(md5_1, &md5);
+        MD5_Update(&md5, key_block + 2*(cipher_suite->signature_size) + cipher_suite->key_material, cipher_suite->key_material);
+        MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Final(final_server_write_key, &md5);
         
-        memcpy(key_block + 16*i, md5_1, 16*sizeof(uint8_t));
+        //iv bytes
+        client_write_iv = calloc(16, sizeof(uint8_t));
+        
+        MD5_Init(&md5);
+        MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Final(final_client_write_key, &md5);
+        
+        //server
+        server_write_iv = calloc(16, sizeof(uint8_t));
+        
+        MD5_Init(&md5);
+        MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+        MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+        MD5_Final(final_server_write_key, &md5);
+        
+        //construct final keyblock
+        memcpy(key_block + 2*(cipher_suite->signature_size), final_client_write_key, 16);
+        memcpy(key_block + 2*(cipher_suite->signature_size) + 16, final_server_write_key, 16);
+        memcpy(key_block + 2*(cipher_suite->signature_size) + 32, final_client_write_key, 16);
+        memcpy(key_block + 2*(cipher_suite->signature_size) + 48, final_server_write_key, 16);
     }
+    
+    
+    
+	
     return key_block;
     
     
@@ -1304,68 +1309,96 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
 }
 
 //Symmetric TODO: da sistemare
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker talker, int state){
-    uint8_t *enc_finished;
+uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
+    uint8_t *enc_packet;
     EVP_CIPHER_CTX *ctx;
     uint8_t *key, *iv;
+    uint8_t shift1, shift2;
+    
+    shift1 = 0;
+    shift2 = 0;
     
     ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee, iv di tutti
     
-    enc_finished = calloc(finished_lenght*sizeof(uint8_t), sizeof(uint8_t));//TODO la size non è corretta per i block cipher
+    if (cipher_suite->exportable) {
+    }
+    else{
+        if (key_talker == server) {
+            shift1 = cipher_suite->key_material;
+            shift2 = cipher_suite->iv_size;
+        }
+        key = key_block + 2*cipher_suite->signature_algorithm + shift1;
+        iv = key + 2*cipher_suite->key_material + shift2;
+    }
     
-    if (enc_finished == NULL){
-        perror("DecEncryptFinished error: allocation memory leak.");
+    enc_packet = calloc(length*sizeof(uint8_t), sizeof(uint8_t));//TODO la size non è corretta per i block cipher
+    
+    if (enc_packet == NULL){
+        perror("DecEncryptPacket error: allocation memory leak.");
         exit(1);
     }
     
     //TODO sistemare i case
     switch (cipher_suite->cipher_algorithm) {
         case CNULL:
+            //TODO da gestire
             break;
             
         case RC4:
-            EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
-            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
+            switch (cipher_suite->key_material) {
+                case 5:
+                    EVP_CipherInit_ex(ctx, EVP_rc4_40(), NULL, key, iv, state);
+                    break;
+                case 16:
+                    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
+                    break;
+                    
+                default:
+                    perror("DecEncryptPacket error: RC4 size not corrected.\n");
+                    exit(1);
+                    break;
+            }
+            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
+            EVP_CipherFinal(ctx, enc_packet, &length);
             break;
             
-        case RC2://TODO to check
-            
+        case RC2://TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
-            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
+            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
+            EVP_CipherFinal(ctx, enc_packet, &length);
             break;
         
-        case IDEA:
+        case IDEA: //TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_idea_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
-            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
+            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
+            EVP_CipherFinal(ctx, enc_packet, &length);
             break;
         
-        case DES40:
+        case DES40: //TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
-            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
+            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
+            EVP_CipherFinal(ctx, enc_packet, &length);
             break;
         
-        case DES:
+        case DES: //TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
-            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
+            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
+            EVP_CipherFinal(ctx, enc_packet, &length);
             break;
         
-        case DES3:
+        case DES3: //TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_finished, &finished_lenght, finished, finished_lenght);
-            EVP_CipherFinal(ctx, enc_finished, &finished_lenght);
+            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
+            EVP_CipherFinal(ctx, enc_packet, &length);
             break;
         
         default:
-            perror("encryptFinished error: unknown cipher algorithm.");
+            printf("QUI\n");
+            perror("DecEncryptPacket error: unknown cipher algorithm.");
             exit(1);
             break;
     }
-    return enc_finished;
+    return enc_packet;
     
 }
 

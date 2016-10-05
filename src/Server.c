@@ -35,9 +35,8 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
     uint8_t *dec_hash, *enc_hash;
-    uint8_t *iv = NULL;
     uint8_t *cipher_key;
-    uint8_t *key_block;
+    uint8_t *key_block = NULL;
 
     
     //VARIABLE INITIALIZATION
@@ -107,7 +106,7 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     cipher_suite_choosen = CodeToCipherSuite(05);
-    
+    printf("%d\n",cipher_suite_choosen->cipher_algorithm);
     //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
     sendPacketByte(record);
     OpenCommunication(client);
@@ -119,8 +118,8 @@ int main(int argc, const char *argv[]){
     //CERTIFICATE
     if (ciphersuite_code == 0x05){ //TODO sistemare
         //TODO fare uno switch sui vari casi che trattiamo
-        strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
-    	certificate = loadCertificate((char*)&certificate_string);
+        //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
+    	certificate = loadCertificate("certificates/RSA_server.crt");
     	handshake = CertificateToHandshake(certificate);
     	record = HandshakeToRecordLayer(handshake);
       
@@ -181,7 +180,7 @@ int main(int argc, const char *argv[]){
                     OpenCommunication(client);
                     break;
                 case CLIENT_KEY_EXCHANGE:
-                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, RSA_, 128);//TODO sostituire costante RSA con variabile KeyExchangeAlgorithm e lunghezza del certificato inviato
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, cipher_suite_choosen->key_exchange_algorithm, 128);//TODO 128 va letto dal certificato ed è la lunghezza della chiave in byte.
 
                     printf("\nCLIENT_KEY_EXCHANGE: recived\n");
                         for(int i=0; i<client_message->length - 5; i++){
@@ -204,16 +203,15 @@ int main(int argc, const char *argv[]){
                     printf("\n");
                     
                     //KEYBLOCK GENERATION
-                    key_block_size = KeyBlockSize(cipher_suite_choosen);
+                    key_block_size = 2*(cipher_suite_choosen->signature_size + cipher_suite_choosen->key_material + cipher_suite_choosen->iv_size);
                     printf("key block size: %d\n", key_block_size);
-                    key_block = KeyBlockGen(key_block_size, master_secret, client_hello, &server_hello);
+                    key_block = KeyBlockGen(master_secret, cipher_suite_choosen, client_hello, &server_hello);
                     
                     printf("\nKEY BLOCK\n");
                     for (int i=0; i< key_block_size; i++){
                         printf("%02X ", key_block[i]);
                     }
                     printf("\n");
-
 
                     OpenCommunication(client);
                     break;
@@ -240,9 +238,7 @@ int main(int argc, const char *argv[]){
                     client_finished = HandshakeToFinished(client_handshake);
                     dec_hash = calloc(36, sizeof(uint8_t));
                     
-                    key_block = NULL;
-                    
-                    dec_hash = DecEncryptFinished(client_finished->hash, 36, cipher_suite_choosen, cipher_key, iv, 0);
+                    dec_hash = DecEncryptPacket(client_finished->hash, 36, cipher_suite_choosen, key_block, client ,0);
                     
                     printf("\nFINISHED DECRYPTED\n");
                     for(int i = 0; i< 4;i++){
@@ -264,7 +260,7 @@ int main(int argc, const char *argv[]){
         }
         else if(client_message->type==CHANGE_CIPHER_SPEC){
             
-            printf("\nCHANGE_CIPHER_SPEC: recived\n");
+            printf("\nCHANGE_CIPHER_SPEC: received\n");
                         for(int i=0; i<client_message->length - 5; i++){
                         printf("%02X ", client_message->message[i]);       
                         }
@@ -326,7 +322,8 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
     enc_hash = calloc(36, sizeof(uint8_t));
-    enc_hash = DecEncryptFinished(finished.hash, 36, cipher_suite_choosen, cipher_key ,iv, 1);
+    printf("cipher:%d\n", cipher_suite_choosen->cipher_algorithm);
+    enc_hash = DecEncryptPacket(finished.hash, 36, cipher_suite_choosen, key_block, server, 1);
     
     memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
     

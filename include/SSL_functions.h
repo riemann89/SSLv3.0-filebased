@@ -44,7 +44,6 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 RecordLayer *change_cipher_Spec_Record();
 RecordLayer *readchannel();
 
-
 void setPriorities(uint8_t *number,CipherSuite *priority, char *filename);
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 CipherSuite *loadCipher(char* filename , uint8_t *len);
@@ -68,13 +67,13 @@ EVP_PKEY* readCertificateParam (Certificate *certificate);
 uint8_t *encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret);
 uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
 
-uint8_t *base_function(int numer_of_MD5, uint8_t* principal_argument, ClientServerHello *client_hello, ClientServerHello *server_hello);
+uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
-uint8_t *KeyGen(int key_block_size, uint8_t *master_secret, CipherSuite2 cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
-uint8_t* DecEncryptFinished(uint8_t *finished, int finished_lenght, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker talker, int state);
-int KeyBlockSize(CipherSuite2 *ciphersuite);
+uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
+
+uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
 
 

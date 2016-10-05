@@ -6,16 +6,17 @@ SSLCompressed.lenght = LUNGHEZZA HANDSHAKE
 SSLCompressed.fragment = pacchetto.
 Come prototipo direi:
 
-uint8_t* ssl_mac(uint8_t *master_secret, Handshake *handshake_packet, long seq_num);
+uint8_t* ssl_mac(uint8_t *mac_write_secret, Handshake *handshake_packet, long seq_num);
 
 Note:
 - restituisce un puntatore a uint8t la cui size è 16 (MD5) o 20 (SHA1).
 - seq_num nel nostro caso è sempre 0. Mettiamolo in input per eleganza.
 *******************************
 
-- scrivere la base function
-- riscrivere master key gen usando la base function
-- riscrivere la key block usando la base function
+- scrivere la base function -> OK
+- riscrivere master key gen usando la base function -> OK
+- rivedere la size block compute -> ok
+- riscrivere la key block usando la base function 
 - sistemare la encryption usando il keyblock che contiene tutte le chiavi già calcolate per i vari casi. 
 
 - CERTIFICATE VERIFY (RIVEDERE)
