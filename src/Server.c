@@ -76,7 +76,7 @@ int main(int argc, const char *argv[]){
         priority[i].code=i+12;
     }
     priority[0].code = 5;
-    //setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
+    setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
     choosen.code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
     ciphersuite_code = choosen.code;
     printf("%02X", ciphersuite_code);
@@ -184,7 +184,7 @@ int main(int argc, const char *argv[]){
 
                     printf("\nCLIENT_KEY_EXCHANGE: recived\n");
                         for(int i=0; i<client_message->length - 5; i++){
-                        printf("%02X ", client_message->message[i]);       
+                        printf("%02X ", client_message->message[i]);
                         }
                     printf("\n\n");
                     
@@ -272,7 +272,7 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     
-    record= change_cipher_Spec_Record();
+    record = ChangeCipherSpecRecord();
     sendPacketByte(record);
     
     printf("\nCHANGE_CIPHER_SPEC: sent\n");

@@ -42,22 +42,21 @@ int main(int argc, const char *argv[]){
     server_message = NULL;
     certificate = NULL;
     certificate_request = NULL;
-    algorithm_type = 0;
     pubkey = NULL;
     rsa = NULL;
-    len_parameters = 0;
-    len_hello = 0;
-    phase = 0;
-    key_block_size = 0;
     pre_master_secret = NULL;
     pre_master_secret_encrypted = NULL;
     master_secret = NULL;
     key_block = NULL;
     iv = NULL;
     cipher_key = NULL;
+    algorithm_type = 0;
+    len_parameters = 0;
+    len_hello = 0;
+    phase = 0;
+    key_block_size = 0;
     SHA1_Init(&sha);
     MD5_Init(&md5);
-    //TODO: client_hello, random, client_key_exchange
     
     printf("!!!CLIENT AVVIATO!!!\n");
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
@@ -204,11 +203,12 @@ int main(int argc, const char *argv[]){
         ///CERTIFICATE///
         
 		///CLIENT_KEY_EXCHANGE///
-        client_key_exchange.algorithm_type = algorithm_type;
+        client_key_exchange.algorithm_type = cipher_suite_choosen->key_exchange_algorithm;
         //TODO: da dove ricavarle??
-        client_key_exchange.len_parameters = len_parameters;
+
         pubkey = readCertificateParam(certificate);
-        
+        printf("SIZE PUBKEY: %d/n", EVP_PKEY_size(pubkey));
+        client_key_exchange.len_parameters = len_parameters;
         
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
@@ -266,7 +266,7 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     while(CheckCommunication() == server){};
-    record = change_cipher_Spec_Record();
+    record = ChangeCipherSpecRecord();
     sendPacketByte(record);
      
     printf("\nCHANGE_CHIPHER_SUITE: sent.\n");

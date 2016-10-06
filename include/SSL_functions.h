@@ -9,48 +9,58 @@
 #include "openssl/x509.h"
 #include "openssl/pem.h"
 
-//Connection
+/* CONNECTION */
+
 void OpenCommunication(Talker talker);
 Talker CheckCommunication();
 void sendPacketByte(RecordLayer *record_layer);
+RecordLayer *readchannel();
 
-//PACKET MANAGER
-//message->handshake
+/* PACKET MANAGING */
+
+//message -> handshake
 Handshake *HelloRequestToHandshake();
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello);
 Handshake *CertificateToHandshake(Certificate *certificate);
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request);
 Handshake *ServerDoneToHandshake();
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify);
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange); //va adattato per il server_client_exchange eventualmente
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange); //TODO: va adattato per il server_client_exchange eventualmente
 Handshake *FinishedToHandshake(Finished *finished);
 
-/* Handshake to message types */
-HelloRequest *HandshakeToHelloRequest(Handshake *handshake);//TODO
-ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);//TODO
-Certificate *HandshakeToCertificate(Handshake *handshake); //tested
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters);//TODO
-CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);//TODO
-ServerDone *HandshakeToServerdone(Handshake *handshake);//TODO
-CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);//TODO
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature);//TODO
-Finished *HandshakeToFinished(Handshake *handshake);//TODO
+// hanshake -> message
+HelloRequest *HandshakeToHelloRequest(Handshake *handshake);
+ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);
+Certificate *HandshakeToCertificate(Handshake *handshake);
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters);
+CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);
+ServerDone *HandshakeToServerdone(Handshake *handshake);
+CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature);
+Finished *HandshakeToFinished(Handshake *handshake);
 
-//record->handshake
-Handshake *RecordToHandshake(RecordLayer *record);  //TOCHECK GIUSEPPE
+// record -> handshake
+Handshake *RecordToHandshake(RecordLayer *record);
 
-//Record Layer Protocol
-RecordLayer *HandshakeToRecordLayer(Handshake *handshake);  
-RecordLayer *change_cipher_Spec_Record();
-RecordLayer *readchannel();
+//handshake -> record
+RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 
-void setPriorities(uint8_t *number,CipherSuite *priority, char *filename);
-uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
+//change cipher spec protocol
+RecordLayer *ChangeCipherSpecRecord();
+
+/* CIPHERSUITE */
+void setPriorities(uint8_t *number, CipherSuite *priority, char *filename);
 CipherSuite *loadCipher(char* filename , uint8_t *len);
+CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
+uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 
-//TODO free functions
+
+/* FREE FUNCTIONS */
+
 void FreeRecordLayer(RecordLayer *recordLayer);
+
 void FreeHandshake(Handshake *handshake);
+
 void FreeClientServerHello(ClientServerHello *client_server_hello);
 void FreeCertificate(Certificate *certificate);
 void FreeCertificateVerify(CertificateVerify *certificate_verify);
@@ -58,14 +68,13 @@ void FreeServerHelloDone(ServerDone *server_done);
 void FreeCertificateFinished(Finished *finished);
 void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange);
 
-//CERTIFICATE
+/* CERTIFICATE */
+
 Certificate* loadCertificate(char * cert_name);
 int writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
 
-
-uint8_t *encryptPreMaster(EVP_PKEY*pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret);
-uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
+/* KEY BLOCK*/
 
 uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
@@ -73,8 +82,14 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
 
 uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
+/* ENCRYPTION */
+
+//asymmetric
+uint8_t *encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret);
+uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
+
+//symmetric
 uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
-CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
 
 uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret);
 

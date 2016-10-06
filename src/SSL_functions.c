@@ -385,13 +385,18 @@ Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
     uint8_t *Bytes;
     int bytes_size;
     
+    bytes_size = 0;
+    Bytes = NULL;
+    
     switch (certificate_verify->algorithm_type) {
         case SHA1_:
             bytes_size = 20;
             break;
         case MD5_1:
             bytes_size = 16;
+            break;
         default:
+            perror("CertificateVerifyToHandshake error: algorithm type not recognized.");
             break;
     }
     
@@ -749,7 +754,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     return recordlayer;
 }
 
-RecordLayer *change_cipher_Spec_Record(){
+RecordLayer *ChangeCipherSpecRecord(){
     
     RecordLayer *recordlayer;
     uint8_t *byte;
@@ -791,7 +796,7 @@ Handshake *RecordToHandshake(RecordLayer *record){
 
 //in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
 
-void setPriorities(uint8_t *number,CipherSuite *priority, char *filename){   															
+void setPriorities(uint8_t *number, CipherSuite *priority, char *filename){   															
 
     FILE* PriorityList; 																														
     PriorityList = fopen(filename , "wb");   																																													 	
@@ -1132,7 +1137,7 @@ int writeCertificate(X509* certificate){
     file_cert=fopen("cert_out.crt", "w+");
     return PEM_write_X509(file_cert, certificate);
 }
-int readCertificate(){return 0;} //TODO ricostruisco il file del certificato da cui leggo i parametri che mi servono.
+int readCertificate(){return 0;}
 
 EVP_PKEY* readCertificateParam (Certificate *certificate){
     
@@ -1148,7 +1153,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     }
     
     pubkey = X509_get_pubkey(cert_509);
-    
+    EVP_PKEY_id(pubkey);
     return pubkey;
 }
 
@@ -1250,12 +1255,15 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientS
 
 /*************************************** ENCRYPTION ******************************************************/
 //Asymmetric
-uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm Alg, uint8_t* pre_master_secret){
-    	int flag = 0;
-    	RSA *rsa;
-        uint8_t *pre_master_secret_encrypted;
+uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret){
+    int flag = 0;
+    RSA *rsa;
+    uint8_t *pre_master_secret_encrypted;
     
-        switch(Alg){
+    rsa = NULL;
+    pre_master_secret_encrypted = NULL;
+    
+        switch(algorithm){
             case RSA_:
                 rsa = EVP_PKEY_get1_RSA(pKey);
                 pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
@@ -1347,7 +1355,8 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
         case RC4:
             switch (cipher_suite->key_material) {
                 case 5:
-                    EVP_CipherInit_ex(ctx, EVP_rc4_40(), NULL, key, iv, state);
+                    EVP_CIPHER_CTX_set_key_length(ctx, 40);
+                    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
                     break;
                 case 16:
                     EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
@@ -1360,40 +1369,46 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
             }
             EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
             EVP_CipherFinal(ctx, enc_packet, &length);
+            EVP_CIPHER_CTX_free(ctx);
             break;
             
-        case RC2://TODO da sistemare
+        case RC2:
             EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
             EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
             EVP_CipherFinal(ctx, enc_packet, &length);
+            EVP_CIPHER_CTX_free(ctx);
             break;
         
-        case IDEA: //TODO da sistemare
+        case IDEA:
             EVP_CipherInit_ex(ctx, EVP_idea_cbc(), NULL, key, iv, state);
             EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
             EVP_CipherFinal(ctx, enc_packet, &length);
+            EVP_CIPHER_CTX_free(ctx);
             break;
         
-        case DES40: //TODO da sistemare
+        case DES40:
+            EVP_CIPHER_CTX_set_key_length(ctx, 40);
             EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
             EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
             EVP_CipherFinal(ctx, enc_packet, &length);
+            EVP_CIPHER_CTX_free(ctx);
             break;
         
-        case DES: //TODO da sistemare
+        case DES:
             EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
             EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
             EVP_CipherFinal(ctx, enc_packet, &length);
+            EVP_CIPHER_CTX_free(ctx);
             break;
         
         case DES3: //TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
             EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
             EVP_CipherFinal(ctx, enc_packet, &length);
+            EVP_CIPHER_CTX_free(ctx);
             break;
         
         default:
-            printf("QUI\n");
             perror("DecEncryptPacket error: unknown cipher algorithm.");
             exit(1);
             break;

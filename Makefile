@@ -5,19 +5,19 @@ OPENSSL := -I/usr/local/ssl/include -L/usr/local/ssl/lib -lssl -lcrypto -ldl
 all: server client banco
 	
 server:SSL_utilities
-	$(CC) $(CFLAGS)  src/Server.c build/* -o Server $(OPENSSL)
+	$(CC) $(CFLAGS) $(OPENSSL) src/Server.c build/* -o Server 
 
 client: SSL_utilities
-	$(CC) $(CFLAGS)  src/Client.c build/* -o Client $(OPENSSL)
+	$(CC) $(CFLAGS)  $(OPENSSL) src/Client.c build/* -o Client 
 
 banco: SSL_utilities
-	$(CC) $(CFLAGS)  src/bancoprova.c build/* -o bancoprova $(OPENSSL)
+	$(CC) $(CFLAGS)  $(OPENSSL) src/bancoprova.c build/* -o bancoprova 
 
 SSL_utilities:
 	mkdir -p build
-	$(CC) $(CFLAGS)  -c src/structures.c -o build/structures.o $(OPENSSL)
-	$(CC) $(CFLAGS)  -c src/SSL_functions.c build/structures.o -o build/SSL_functions.o $(OPENSSL)
-	$(CC) $(CFLAGS)  -c src/Utilities.c -o build/Utilities.o $(OPENSSL)
+	$(CC) $(CFLAGS)  $(OPENSSL) -c src/structures.c -o build/structures.o 
+	$(CC) $(CFLAGS)  $(OPENSSL) -c src/SSL_functions.c build/structures.o -o build/SSL_functions.o 
+	$(CC) $(CFLAGS)  $(OPENSSL) -c src/Utilities.c -o build/Utilities.o 
 
 clean:
 	rm -r build
