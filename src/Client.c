@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]){
     Certificate *certificate;
     CertificateRequest *certificate_request;
     KeyExchangeAlgorithm algorithm_type;
-    Finished finished, *server_finished;
+    Finished finished;
     EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
@@ -28,7 +28,7 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
-    uint8_t *enc_hash, *dec_hash, len_hello, *key_block;
+    uint8_t len_hello, *key_block;
     CipherSuite *supported_ciphers;
     CipherSuite2 *cipher_suite_choosen;
     
@@ -220,6 +220,7 @@ int main(int argc, const char *argv[]){
         record = HandshakeToRecordLayer(handshake);
         
         sendPacketByte(record);
+        OpenCommunication(server);
         printf("\nCLIENT KEY EXCHANGE: sent.\n");
         for(int i=0; i<record->length - 5; i++){
             printf("%02X ", record->message[i]);
@@ -254,7 +255,7 @@ int main(int argc, const char *argv[]){
         }
         printf("\n");
         
-        OpenCommunication(server);
+
 
         ///CERTIFICATE_VERIFY///
     	//TODO
@@ -289,8 +290,8 @@ int main(int argc, const char *argv[]){
     SHA1_Update(&sha,master_secret,sizeof(uint8_t)*48);
     MD5_Update(&md5,master_secret,sizeof(uint8_t)*48);  
     
-    SHA1_Update(&sha,pad_1,sizeof(uint8_t)*40);  
-    MD5_Update(&md5,pad_1,sizeof(uint8_t)*48); 
+    SHA1_Update(&sha, pad_1, sizeof(uint8_t)*40);
+    MD5_Update(&md5, pad_1, sizeof(uint8_t)*48);
     
     md5_1 = calloc(16, sizeof(uint8_t));
     sha_1 = calloc(20, sizeof(uint8_t));
@@ -312,31 +313,42 @@ int main(int argc, const char *argv[]){
     md5_fin = calloc(16, sizeof(uint8_t));
     sha_fin = calloc(20, sizeof(uint8_t));
     
-    SHA1_Final(sha_fin,&sha);
-    MD5_Final(md5_fin,&md5);
+    SHA1_Final(sha_fin, &sha);
+    MD5_Final(md5_fin, &md5);
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
-    //TODO: va cifrato tutto l'handshake ???
-    
-    enc_hash = calloc(36, sizeof(uint8_t));
-    enc_hash = DecEncryptPacket(finished.hash, 36, cipher_suite_choosen, key_block, client, 1);//TODO: è sempre 36 ? se si posso eliminare la variabile.
-    memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
+    /* MAC and ENCRYPTION*/
+    RecordLayer *temp = NULL;
     handshake = FinishedToHandshake(&finished);
+    temp = HandshakeToRecordLayer(handshake);
+    // MANCA IL MAC
+
+    uint8_t *enc_message_len = NULL;
+    uint8_t *enc_message = NULL;
+    enc_message_len = calloc(1, sizeof(uint8_t));
     
-    record = HandshakeToRecordLayer(handshake);
+    enc_message = DecEncryptPacket(temp->message, temp->length, enc_message_len, cipher_suite_choosen, key_block, client, 1);
+    *enc_message_len = 45;
+    // assembling encrypted packet
+    RecordLayer record2;
+    
+	record2.length = *enc_message_len + 5; //TODO
+    record2.type = HANDSHAKE;
+    record2.version = std_version;
+    record2.message = enc_message;
         
-    sendPacketByte(record);
+    sendPacketByte(&record2);
     
     printf("\nCLIENT FINISHED: sent.\n");
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);       
+    for(int i=0; i<record2.length - 5; i++){
+        printf("%02X ", record2.message[i]);
     }
     printf("\n\n");
     
-    FreeRecordLayer(record);
-    FreeHandshake(handshake);
+    //FreeRecordLayer(record);
+    //FreeHandshake(handshake);
     free(sha_1);
     free(md5_1);
     free(sha_fin);
@@ -358,8 +370,6 @@ int main(int argc, const char *argv[]){
     while(CheckCommunication() == server){};
     
     server_message = readchannel();
-    server_handshake = RecordToHandshake(server_message);
-    server_finished = HandshakeToFinished(server_handshake);
 
     printf("\nSERVER FINISHED : read\n");
     for(int i=0; i<server_message->length - 5; i++){
@@ -368,16 +378,17 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     
-    dec_hash = calloc(36, sizeof(uint8_t));
-    dec_hash = DecEncryptPacket(server_finished->hash, 36, cipher_suite_choosen, key_block, server ,0);
+    uint8_t dec_message_len = 40;
+    uint8_t *dec_message = NULL;
+    
+    dec_message = calloc(40, sizeof(uint8_t));
+    
+    dec_message = DecEncryptPacket(server_message->message, server_message->length, &dec_message_len, cipher_suite_choosen, key_block, server, 0);
+    
     
     printf("\nFINISHED DECRYPTED\n");
-    for(int i = 0; i< 4;i++){
-        printf("%02X ", server_message->message[i]);
-    }
-    
-    for(int i=0; i<36; i++){
-        printf("%02X ", dec_hash[i]);
+    for(int i=0; i < dec_message_len; i++){
+        printf("%02X ", dec_message[i]);
     }
     printf("\n\n");
 

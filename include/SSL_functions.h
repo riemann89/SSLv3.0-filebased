@@ -69,7 +69,6 @@ void FreeCertificateFinished(Finished *finished);
 void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange);
 
 /* CERTIFICATE */
-
 Certificate* loadCertificate(char * cert_name);
 int writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
@@ -89,7 +88,8 @@ uint8_t *encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
 uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
 
 //symmetric
-uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
+uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, uint8_t *enc_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 
-uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret);
+/* AUTHENTICATION */
+uint8_t* MAC(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret);
 

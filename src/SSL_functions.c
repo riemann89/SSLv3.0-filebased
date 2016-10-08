@@ -741,13 +741,13 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
         exit(1);
     }
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    int_To_Bytes(handshake->length ,length24); 			  				  												//int of 4 bytes to int of 3 bytes and reversed
+    int_To_Bytes(handshake->length ,length24); 			  				  												
     len=handshake->length;							
-    Bytes[0]=handshake->msg_type;																									//serializing handshake and store it into Bytes
-    memcpy(Bytes+1 ,length24+1,3);                										 											// length24 + 1 cause i need only the last 3 bytes
-    memcpy(Bytes+ 4 ,handshake->content,len-4); 																			// +4 since 4=type(1)+length(3)		
+    Bytes[0]=handshake->msg_type;
+    memcpy(Bytes+1 ,length24+1,3);
+    memcpy(Bytes+ 4 ,handshake->content,len-4);
 	//RECORDLAYER CONSTRUCTION//
-    recordlayer->type=HANDSHAKE;																									//recordlayer fields initialization
+    recordlayer->type=HANDSHAKE;
     recordlayer->version=std_version;
     recordlayer->length=handshake->length+5;
     recordlayer->message=Bytes;
@@ -1316,8 +1316,8 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
     return pre_master_secret;
 }
 
-//Symmetric TODO: da sistemare
-uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
+//Symmetric TODO: TO CHECK
+uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, uint8_t *enc_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
     uint8_t *enc_packet;
     EVP_CIPHER_CTX *ctx;
     uint8_t *key, *iv;
@@ -1326,27 +1326,25 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
     shift1 = 0;
     shift2 = 0;
     
-    ctx = EVP_CIPHER_CTX_new(); //TODO: remember to freeeee, iv di tutti
+    enc_packet_len = calloc(1, sizeof(uint8_t));
+    
+    ctx = EVP_CIPHER_CTX_new();
+   	EVP_CIPHER_CTX_init(ctx);//TODO: remember to freeeee, iv di tutti
     
     if (cipher_suite->exportable) {
+    	//TODO RIVEDERE
+        
     }
     else{
         if (key_talker == server) {
             shift1 = cipher_suite->key_material;
             shift2 = cipher_suite->iv_size;
         }
-        key = key_block + 2*cipher_suite->signature_algorithm + shift1;
-        iv = key + 2*cipher_suite->key_material + shift2;
+        key = key_block + (2*cipher_suite->signature_size + shift1);
+        iv = key + (2*cipher_suite->key_material + shift2);
     }
+
     
-    enc_packet = calloc(length*sizeof(uint8_t), sizeof(uint8_t));//TODO la size non è corretta per i block cipher
-    
-    if (enc_packet == NULL){
-        perror("DecEncryptPacket error: allocation memory leak.");
-        exit(1);
-    }
-    
-    //TODO sistemare i case
     switch (cipher_suite->cipher_algorithm) {
         case CNULL:
             //TODO da gestire
@@ -1355,10 +1353,11 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
         case RC4:
             switch (cipher_suite->key_material) {
                 case 5:
+                    EVP_CipherInit(ctx, EVP_rc4(), key, iv, state);
                     EVP_CIPHER_CTX_set_key_length(ctx, 40);
-                    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
                     break;
                 case 16:
+                    //beta
                     EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
                     break;
                     
@@ -1367,45 +1366,28 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
                     exit(1);
                     break;
             }
-            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
-            EVP_CipherFinal(ctx, enc_packet, &length);
-            EVP_CIPHER_CTX_free(ctx);
             break;
             
         case RC2:
-            EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
-            EVP_CipherFinal(ctx, enc_packet, &length);
-            EVP_CIPHER_CTX_free(ctx);
+            EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, NULL, state);
             break;
         
         case IDEA:
             EVP_CipherInit_ex(ctx, EVP_idea_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
-            EVP_CipherFinal(ctx, enc_packet, &length);
-            EVP_CIPHER_CTX_free(ctx);
             break;
         
         case DES40:
-            EVP_CIPHER_CTX_set_key_length(ctx, 40);
             EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
-            EVP_CipherFinal(ctx, enc_packet, &length);
-            EVP_CIPHER_CTX_free(ctx);
+            EVP_CIPHER_CTX_set_key_length(ctx, 40);
             break;
         
         case DES:
             EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
-            EVP_CipherFinal(ctx, enc_packet, &length);
-            EVP_CIPHER_CTX_free(ctx);
             break;
         
         case DES3: //TODO da sistemare
             EVP_CipherInit_ex(ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
-            EVP_CipherUpdate(ctx, enc_packet, &length, packet, length);
-            EVP_CipherFinal(ctx, enc_packet, &length);
-            EVP_CIPHER_CTX_free(ctx);
+
             break;
         
         default:
@@ -1413,15 +1395,45 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int length, CipherSuite2 *cipher_suit
             exit(1);
             break;
     }
+    
+    if (cipher_suite->cipher_type == BLOCK){
+        if (packet_len % EVP_CIPHER_CTX_block_size(ctx) == 0) {
+            *enc_packet_len = packet_len;
+        }
+        else if(packet_len < EVP_CIPHER_CTX_block_size(ctx)){
+            *enc_packet_len = EVP_CIPHER_CTX_block_size(ctx) - packet_len;
+        }
+        else{
+            *enc_packet_len = packet_len + packet_len % EVP_CIPHER_CTX_block_size(ctx);
+        }
+    }
+    else{
+        *enc_packet_len = packet_len;
+    }
+
+    enc_packet = calloc(enc_packet_len[0], sizeof(uint8_t));
+    
+    if (enc_packet == NULL){
+        perror("DecEncryptPacket error: allocation memory leak.");
+        exit(1);
+    }
+    
+    EVP_CipherUpdate(ctx, enc_packet, enc_packet_len, packet, packet_len);
+    EVP_CipherFinal_ex(ctx, enc_packet, enc_packet_len);//IL FINAL MI AZZERA LA LUNGHEZZA. PERCHééé???!?!??!??!
+    EVP_CIPHER_CTX_free(ctx);
+    //TODO: vanno sistemati i parametri delle cifrature
     return enc_packet;
     
 }
 
 
-uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret){
+uint8_t* MAC(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret){
     
     MD5_CTX md5,md52;
     SHA_CTX sha, sha2;
+    uint64_t seq_num = 1;
+    uint32_t len = hand->length - 4;
+    
     
     if(cipher.signature_algorithm==SHA1_){
         
@@ -1430,12 +1442,12 @@ uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t
         
         SHA1_Init(&sha);
         SHA1_Init(&sha2);
-        SHA1_Update(&sha,macWriteSecret, 16*sizeof(uint8_t));
+        SHA1_Update(&sha, macWriteSecret, 16*sizeof(uint8_t));
         SHA1_Update(&sha,pad_1, sizeof(pad_1));
-        //SHA1_Update(&sha,seq_num, ??);        non ho idea di dove prenderlp idem per MD5
-        SHA1_Update(&sha, &cipher.cipher_type ,sizeof(uint8_t));
-        SHA1_Update(&sha, hand->length - 4, sizeof(uint32_t));
-        SHA1_Update(&sha,hand->content, (hand->length - 4)*sizeof(uint8_t));
+        SHA1_Update(&sha, &seq_num, sizeof(uint64_t));
+        SHA1_Update(&sha, &hand->msg_type , sizeof(uint8_t));
+        SHA1_Update(&sha, &len, sizeof(uint32_t));
+        SHA1_Update(&sha, hand->content, (hand->length - 4)*sizeof(uint8_t));
         SHA1_Final(sha_fin,&sha);
         
         SHA1_Update(&sha2,macWriteSecret, 16*sizeof(uint8_t));
@@ -1451,31 +1463,31 @@ uint8_t* messageAuthenticationCode(CipherSuite2 cipher, Handshake *hand, uint8_t
         
         MD5_Init(&md5);
         MD5_Init(&md5);
-               
         uint8_t *md5_fin;
         md5_fin = calloc(16, sizeof(uint8_t));
         
+        
         MD5_Init(&md5);
         MD5_Init(&md52);
-        MD5_Update(&md5,macWriteSecret, 16*sizeof(uint8_t));
+        MD5_Update(&md5, macWriteSecret, 16*sizeof(uint8_t));
         MD5_Update(&md5,pad_1, sizeof(pad_1));
-        //SHA1_Update(&sha,seq_num, ??);        non ho idea di dove prenderlp idem per MD5
-        MD5_Update(&md5, &cipher.cipher_type ,sizeof(uint8_t));
-        MD5_Update(&md5, hand->length - 4, sizeof(uint32_t));
+        MD5_Update(&md5, &seq_num, sizeof(uint64_t));
+        MD5_Update(&md5, &hand->msg_type ,sizeof(uint8_t));
+        MD5_Update(&md5, &len, sizeof(uint32_t));
         MD5_Update(&md5,hand->content, (hand->length - 4)*sizeof(uint8_t));
         MD5_Final(md5_fin,&md5);
         
         MD5_Update(&md52,macWriteSecret, 16*sizeof(uint8_t));
         MD5_Update(&md52,pad_2, sizeof(pad_2));
-        MD5_Update(&md52, sha_fin,16*sizeof(uint8_t));
+        MD5_Update(&md52, md5_fin, 16*sizeof(uint8_t));
         
-        MD5_Final(md5_fin,&md52);
+        MD5_Final(md5_fin, &md52);
             
         return md5_fin;
     }
     else{
-        perror("signature algorithm not valid");
-        return NULL;
+        perror("MAC Error: signature algorithm not valid.");
+        exit(1);
     }
 }
 

@@ -5,8 +5,12 @@
 
 - Sistemare i commenti (DA ASSEGNARE)
 
+-capire perché mi azzera la lunghezza
+-devo gestire gli export
+
 -encryptPreMaster //cambiare il nome
 - mancano delle free?
 - partizionare il file delle function?
 - il padding pare lo faccia in automatico.
 - getAlgorithm si può rimuovere
+- It is a fatal error if a finished message is not preceeded by a   change cipher spec message at the appropriate point in the handshake.

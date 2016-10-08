@@ -20,21 +20,20 @@ int main(int argc, const char *argv[]){
     //VARIABLE DECLARATION
     ClientServerHello server_hello, *client_hello;
     Handshake *handshake, *client_handshake;
-    RecordLayer *record, *client_message;
+    RecordLayer *record, *client_message, *temp;
     ClientKeyExchange *client_key_exchange;
     Random random;
     Certificate *certificate;
     CertificateVerify *certificate_verify;
-    Finished *client_finished, finished;
+    Finished finished;
     CipherSuite priority[10], choosen;
     CipherSuite2 *cipher_suite_choosen;
     int phase, key_block_size;
     char certificate_string[100];
-    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin,*md5_fin;
+    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
-    uint8_t *dec_hash, *enc_hash;
     uint8_t *cipher_key;
     uint8_t *key_block = NULL;
 
@@ -165,6 +164,7 @@ int main(int argc, const char *argv[]){
         while(CheckCommunication() == client){}
         
         client_message = readchannel();
+        //TODO: l'IF si può rimuovere
         if(client_message->type==HANDSHAKE){
 
             client_handshake = RecordToHandshake(client_message);
@@ -212,8 +212,9 @@ int main(int argc, const char *argv[]){
                         printf("%02X ", key_block[i]);
                     }
                     printf("\n");
-
+                    phase = 4;//TODO: se usa il verify non funziona
                     OpenCommunication(client);
+
                     break;
                 case CERTIFICATE_VERIFY:
                     certificate_verify = HandshakeToCertificateVerify(client_handshake);
@@ -227,50 +228,47 @@ int main(int argc, const char *argv[]){
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     OpenCommunication(client);
                     break;
-                case FINISHED:
-                    phase = 4;
-                    printf("\nFINISHED: received\n");
-                        for(int i=0; i<client_message->length - 5; i++){
-                        printf("%02X ", client_message->message[i]);       
-                        }
-                    printf("\n\n");
-                    
-                    client_finished = HandshakeToFinished(client_handshake);
-                    dec_hash = calloc(36, sizeof(uint8_t));
-                    
-                    dec_hash = DecEncryptPacket(client_finished->hash, 36, cipher_suite_choosen, key_block, client ,0);
-                    
-                    printf("\nFINISHED DECRYPTED\n");
-                    for(int i = 0; i< 4;i++){
-                        printf("%02X ", client_message->message[i]);
-                    }
-                    
-                    for(int i=0; i<36; i++){
-                        printf("%02X ", dec_hash[i]);
-                    }
-                    printf("\n\n");
-                    
-                    break;
-                default:
+            	default:
                     printf("%02X\n", client_handshake->msg_type);
                     perror("ERROR: Unattended message in phase 3.\n");
                     exit(1);
                     break;
             }
         }
-        else if(client_message->type==CHANGE_CIPHER_SPEC){
-            
-            printf("\nCHANGE_CIPHER_SPEC: received\n");
-                        for(int i=0; i<client_message->length - 5; i++){
-                        printf("%02X ", client_message->message[i]);       
-                        }
-                    printf("\n\n");
-                    
-            OpenCommunication(client);
-        }
     }
-    
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
+    
+    while(CheckCommunication() == client)
+    client_message = readchannel();
+    printf("\nCHANGE_CIPHER_SPEC: received\n");
+    for(int i=0; i<client_message->length - 5; i++){
+        printf("%02X ", client_message->message[i]);
+    }
+    printf("\n\n");
+    
+    OpenCommunication(client);
+    while(CheckCommunication() == client){}
+    
+    client_message = readchannel();
+    printf("\nFINISHED: received\n");
+    for(int i=0; i<client_message->length - 5; i++){
+        printf("%02X ", client_message->message[i]);
+    }
+    printf("\n\n");
+    
+	uint8_t dec_message_len = 40;
+    uint8_t *dec_message = NULL;
+    
+    dec_message = calloc(40, sizeof(uint8_t));
+    
+    dec_message = DecEncryptPacket(client_message->message, client_message->length, &dec_message_len, cipher_suite_choosen, key_block, client, 0);
+    
+    printf("\nFINISHED DECRYPTED\n");
+    for(int i=0; i < dec_message_len; i++){
+        printf("%02X ", dec_message[i]);
+    }
+    printf("\n\n");
+
     
     record = ChangeCipherSpecRecord();
     sendPacketByte(record);
@@ -286,7 +284,7 @@ int main(int argc, const char *argv[]){
     
     while(CheckCommunication() == client){}
     
-    SHA1_Update(&sha,sender,sizeof(uint32_t));    
+    SHA1_Update(&sha,sender,sizeof(uint32_t));
     MD5_Update(&md5,sender,sizeof(uint32_t));
     
     SHA1_Update(&sha,master_secret,sizeof(uint8_t)*48);
@@ -321,14 +319,28 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
-    enc_hash = calloc(36, sizeof(uint8_t));
-    printf("cipher:%d\n", cipher_suite_choosen->cipher_algorithm);
-    enc_hash = DecEncryptPacket(finished.hash, 36, cipher_suite_choosen, key_block, server, 1);
-    
-    memcpy(finished.hash, enc_hash, 36*sizeof(uint8_t));
+    /* MAC and ENCRYPTION*/
     
     handshake = FinishedToHandshake(&finished);
-    record = HandshakeToRecordLayer(handshake);
+    /* MAC and ENCRYPTION*/
+    temp = HandshakeToRecordLayer(handshake);
+    
+    // MANCA IL MAC
+    uint8_t *enc_message_len = NULL;
+    
+    enc_message_len = calloc(1, sizeof(uint16_t));
+    
+    enc_message = DecEncryptPacket(temp->message, temp->length, enc_message_len, cipher_suite_choosen, key_block, server, 1);
+    
+    *enc_message_len = 45; //TODO: va fixato perchè me lo azzera
+    
+    // assembling encrypted packet
+    record = calloc(1, sizeof(RecordLayer));
+    record->length = *enc_message_len + 5; //TODO
+    printf("lunghezza: %d\n", record->length);
+    record->type = HANDSHAKE;
+    record->version = std_version;
+    record->message = enc_message;
     
     sendPacketByte(record);
     
