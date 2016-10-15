@@ -10,7 +10,8 @@
  */
 
 /**
- * Ciao ciao ciao
+ * Gives to talker the right to write on the main channel,
+ * It writes an ID on the file token.txt
  * @param talker
  */
 void OpenCommunication(Talker talker){
@@ -32,8 +33,9 @@ void OpenCommunication(Talker talker){
     fclose(token);
 }
 
-/*
- It checks who between server/client can communicate. It returns the authorized user that can communicate over the channel.
+/**
+ * It checks who between server/client can communicate.
+ * @return the authorized user that can communicate over the channel.
  */
 Talker CheckCommunication(){
     
@@ -55,8 +57,12 @@ Talker CheckCommunication(){
     return authorized_talker;
 }
 
-/*
- This function load a certificate from a file and return an array of bites where are contained certificate information in DER format
+
+/**
+ * This function loads a certificate from a file and return an array of bites 
+ * where are contained certificate information in DER format
+ * @param cert_name
+ * @return pointer to certificate structure
  */
 Certificate* loadCertificate(char * cert_name){
     
@@ -84,8 +90,9 @@ Certificate* loadCertificate(char * cert_name){
     return certificate;
 }
 
-/*
- It writes each fields of the record_layer struct, pointed by the input, over SSLchannel.txt file.
+/**
+ * writes a record on SSLchannel.txt file
+ * @param record_layer
  */
 void sendPacketByte(RecordLayer *record_layer){
 	
@@ -118,8 +125,11 @@ void sendPacketByte(RecordLayer *record_layer){
     fclose(SSLchannel);
 }
 
-/* funzione per leggere il file*/
 
+/**
+ * Read the file SSLchannelbyte.txt and parse it into a record layer structure
+ * @return record parsed from channel
+ */
 RecordLayer  *readchannel(){
     uint8_t *buffer;
     uint8_t record_header[5];//rivedere
@@ -158,56 +168,100 @@ RecordLayer  *readchannel(){
 }
 
 /***************************************FREE FUNCTIONS**********************************************/
+/**
+ * free memory allocated by recordLayer
+ * @param recordLayer
+ */
 void FreeRecordLayer(RecordLayer *recordLayer){
     free(recordLayer->message);
     free(recordLayer);
 }
 
+/**
+ * free memory allocated by hello_request
+ * @param hello_request
+ */
 void FreeHelloRequest(HelloRequest *hello_request){
     free(hello_request);
 }
 
+/**
+ * free memory allocated by handshake
+ * @param handshake
+ */
 void FreeHandshake(Handshake *handshake){
     free(handshake->content);
     free(handshake);
 }
 
+/**
+ * free memory allocated by client_server_hello
+ * @param client_server_hello
+ */
 void FreeClientServerHello(ClientServerHello *client_server_hello){
     free(client_server_hello->ciphersuite);//TODO Rivedere
     free(client_server_hello->random);
     free(client_server_hello);
 }
 
+/**
+ * free memory allocated by certificate
+ * @param certificate
+ */
 void FreeCertificate(Certificate *certificate){
     free(certificate->X509_der);
     free(certificate);
 }
 
+/**
+ * free memory allocated by certificat_request
+ * @param certificate_request
+ */
 void FreeCertificateRequest(CertificateRequest *certificate_request){
     free(certificate_request->certificate_authorities);
     free(certificate_request);
 }
 
+/**
+ * free memory allocated by server_done
+ * @param server_done
+ */
 void FreeServerDone(ServerDone *server_done){
     free(server_done);
 }
 
+/**
+ * free memory allocated by certificate_verify
+ * @param certificate_verify
+ */
 void FreeCertificateVerify(CertificateVerify *certificate_verify){
     free(certificate_verify->signature);
     free(certificate_verify);
 }
 
+/**
+ * free memory allocated by client_key_exchange
+ * @param client_key_exchange
+ */
 void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
     free(client_key_exchange->parameters);
     free(client_key_exchange);
 }
 
+/**
+ * free memory allocated by server_key_exchange
+ * @param server_key_exchange
+ */
 void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
     free(server_key_exchange->parameters);
     free(server_key_exchange->signature);
     free(server_key_exchange);
 }
 
+/**
+ * free memory allocated by finished
+ * @param finished
+ */
 void FreeCertificateFinished(Finished *finished){
     // free(finished->hash);            VA LIBERATO??
     free(finished);  
@@ -215,6 +269,11 @@ void FreeCertificateFinished(Finished *finished){
 
 /********************FUNCTION TO CONSTRUCT HANDSHAKE PROTOCOL MESSAGE TYPES*************************/
 /* Message types to Handshake */
+
+/**
+ * creates a handshake wich contains a hellorequest
+ * @return handshake
+ */
 Handshake *HelloRequestToHandshake(){
     //VARIABLE DECLARATION//
     Handshake *handshake;
@@ -234,6 +293,11 @@ Handshake *HelloRequestToHandshake(){
     return handshake;
 }
 
+/**
+ * Serialize client_server_hello into handshake 
+ * @param ClientServerHello client_server_hello
+ * @return Handshake handshake
+ */
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //VARIABLE DECLARATION//
     CipherSuite *cipher;
@@ -274,6 +338,11 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     return handshake;
 }
 
+/**
+ * Serialize certificate into handshake
+ * @param Certificate certificate
+ * @return Handshake handshake
+ */
 Handshake *CertificateToHandshake(Certificate *certificate){
     //VARIABLE DECLARATION//
     Handshake *handshake; 																		 	//returning variable
@@ -300,6 +369,11 @@ Handshake *CertificateToHandshake(Certificate *certificate){
     return handshake;
 }
 
+/**
+ * Serialize client_key_exchange into handshake
+ * @param ClientKeyExchange client_key_exchange
+ * @return Handshake handshake
+ */
 Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -330,6 +404,11 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     return handshake;
 }
 
+/**
+ * 
+ * @param certificate_request
+ * @return 
+ */
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request){
     //VARIABLE DECLARATION//
     Handshake *handshake;
