@@ -12,7 +12,7 @@
 /**
  * Gives to talker the right to write on the main channel,
  * It writes an ID on the file token.txt
- * @param talker
+ * @param Talker talker
  */
 void OpenCommunication(Talker talker){
     //VARIABLE DECLARATION//
@@ -34,8 +34,8 @@ void OpenCommunication(Talker talker){
 }
 
 /**
- * It checks who between server/client can communicate.
- * @return the authorized user that can communicate over the channel.
+ * It checks who between server/client can communicate. Return the rightful talker.
+ * @return Talker authorized_talker
  */
 Talker CheckCommunication(){
     
@@ -61,8 +61,8 @@ Talker CheckCommunication(){
 /**
  * This function loads a certificate from a file and return an array of bites 
  * where are contained certificate information in DER format
- * @param cert_name
- * @return pointer to certificate structure
+ * @param char *cert_name
+ * @return Certificate *certificate
  */
 Certificate* loadCertificate(char * cert_name){
     
@@ -92,7 +92,7 @@ Certificate* loadCertificate(char * cert_name){
 
 /**
  * writes a record on SSLchannel.txt file
- * @param record_layer
+ * @param RecordLayer *record_layer
  */
 void sendPacketByte(RecordLayer *record_layer){
 	
@@ -128,7 +128,7 @@ void sendPacketByte(RecordLayer *record_layer){
 
 /**
  * Read the file SSLchannelbyte.txt and parse it into a record layer structure
- * @return record parsed from channel
+ * @return RecordLayer *returning_record
  */
 RecordLayer  *readchannel(){
     uint8_t *buffer;
@@ -170,7 +170,7 @@ RecordLayer  *readchannel(){
 /***************************************FREE FUNCTIONS**********************************************/
 /**
  * free memory allocated by recordLayer
- * @param recordLayer
+ * @param *recordLayer
  */
 void FreeRecordLayer(RecordLayer *recordLayer){
     free(recordLayer->message);
@@ -179,7 +179,7 @@ void FreeRecordLayer(RecordLayer *recordLayer){
 
 /**
  * free memory allocated by hello_request
- * @param hello_request
+ * @param *hello_request
  */
 void FreeHelloRequest(HelloRequest *hello_request){
     free(hello_request);
@@ -187,7 +187,7 @@ void FreeHelloRequest(HelloRequest *hello_request){
 
 /**
  * free memory allocated by handshake
- * @param handshake
+ * @param *handshake
  */
 void FreeHandshake(Handshake *handshake){
     free(handshake->content);
@@ -196,7 +196,7 @@ void FreeHandshake(Handshake *handshake){
 
 /**
  * free memory allocated by client_server_hello
- * @param client_server_hello
+ * @param *client_server_hello
  */
 void FreeClientServerHello(ClientServerHello *client_server_hello){
     free(client_server_hello->ciphersuite);//TODO Rivedere
@@ -206,7 +206,7 @@ void FreeClientServerHello(ClientServerHello *client_server_hello){
 
 /**
  * free memory allocated by certificate
- * @param certificate
+ * @param *certificate
  */
 void FreeCertificate(Certificate *certificate){
     free(certificate->X509_der);
@@ -215,7 +215,7 @@ void FreeCertificate(Certificate *certificate){
 
 /**
  * free memory allocated by certificat_request
- * @param certificate_request
+ * @param *certificate_request
  */
 void FreeCertificateRequest(CertificateRequest *certificate_request){
     free(certificate_request->certificate_authorities);
@@ -224,7 +224,7 @@ void FreeCertificateRequest(CertificateRequest *certificate_request){
 
 /**
  * free memory allocated by server_done
- * @param server_done
+ * @param *server_done
  */
 void FreeServerDone(ServerDone *server_done){
     free(server_done);
@@ -232,7 +232,7 @@ void FreeServerDone(ServerDone *server_done){
 
 /**
  * free memory allocated by certificate_verify
- * @param certificate_verify
+ * @param *certificate_verify
  */
 void FreeCertificateVerify(CertificateVerify *certificate_verify){
     free(certificate_verify->signature);
@@ -241,7 +241,7 @@ void FreeCertificateVerify(CertificateVerify *certificate_verify){
 
 /**
  * free memory allocated by client_key_exchange
- * @param client_key_exchange
+ * @param *client_key_exchange
  */
 void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
     free(client_key_exchange->parameters);
@@ -250,7 +250,7 @@ void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
 
 /**
  * free memory allocated by server_key_exchange
- * @param server_key_exchange
+ * @param *server_key_exchange
  */
 void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
     free(server_key_exchange->parameters);
@@ -260,7 +260,7 @@ void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
 
 /**
  * free memory allocated by finished
- * @param finished
+ * @param *finished
  */
 void FreeCertificateFinished(Finished *finished){
     // free(finished->hash);            VA LIBERATO??
@@ -295,8 +295,8 @@ Handshake *HelloRequestToHandshake(){
 
 /**
  * Serialize client_server_hello into handshake 
- * @param ClientServerHello client_server_hello
- * @return Handshake handshake
+ * @param ClientServerHello *client_server_hello
+ * @return Handshake *handshake
  */
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //VARIABLE DECLARATION//
@@ -340,8 +340,8 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
 
 /**
  * Serialize certificate into handshake
- * @param Certificate certificate
- * @return Handshake handshake
+ * @param Certificate *certificate
+ * @return Handshake *handshake
  */
 Handshake *CertificateToHandshake(Certificate *certificate){
     //VARIABLE DECLARATION//
@@ -371,8 +371,8 @@ Handshake *CertificateToHandshake(Certificate *certificate){
 
 /**
  * Serialize client_key_exchange into handshake
- * @param ClientKeyExchange client_key_exchange
- * @return Handshake handshake
+ * @param ClientKeyExchange *client_key_exchange
+ * @return Handshake *handshake
  */
 Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     Handshake *handshake;
@@ -405,9 +405,9 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
 }
 
 /**
- * 
- * @param certificate_request
- * @return 
+ * Serialize certificate_request into handshake
+ * @param CertificateRequest *certificate_request
+ * @return Handshake *handshake
  */
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request){
     //VARIABLE DECLARATION//
@@ -459,6 +459,11 @@ Handshake *ServerDoneToHandshake(){
     return handshake;
 }
 
+/**
+ * Serialize certificate_verify into handshake
+ * @param CertificateVerify *certificate_verify
+ * @return Handshake *handshake
+ */
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -502,6 +507,11 @@ Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
     return handshake;
 }
 
+/**
+ * Serialize finished into handshake
+ * @param Finished *finished
+ * @return Handshake *handshake
+ */
 Handshake *FinishedToHandshake(Finished *finished){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -531,6 +541,11 @@ Handshake *FinishedToHandshake(Finished *finished){
 
 /********************FUNCTION TO CONSTRUCT PACKET FROM HANDSHAKE*************************/
 
+/**
+ * Parse handshake into hellorequest
+ * @param Handshake *handshake
+ * @return HelloRequest *hello_request
+ */
 HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
     HelloRequest *hello_request;
     
@@ -551,6 +566,11 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
     return hello_request;
     }
 
+/**
+ *  Parse handshake into client_server_hello
+ * @param Handshake handshake
+ * @return ClientServerHello client_server_hello
+ */
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
     CipherSuite *ciphers;
@@ -580,6 +600,11 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     return client_server_hello;
 }//RIVEDERE da completare
 
+/**
+ *  Parse handshake into certificate
+ * @param Handshake *handshake
+ * @return Certificate *certificate
+ */
 Certificate *HandshakeToCertificate(Handshake *handshake){
     Certificate *certificate;
     uint8_t *buffer;
@@ -609,6 +634,11 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     return certificate;
 }
 
+/**
+ *  Parse handshake into server_done
+ * @param Handshake *handshake
+ * @return ServerDone *server_done
+ */
 ServerDone *HandshakeToServerdone(Handshake *handshake){
     ServerDone *server_done;
     
@@ -628,6 +658,11 @@ ServerDone *HandshakeToServerdone(Handshake *handshake){
 
 };//TOCHECK
 
+/**
+ *  Parse handshake into certificate_verify
+ * @param Handshake *handshake
+ * @return CertificateVerify certificate_verify
+ */
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     CertificateVerify *certificate_verify;
     uint8_t *signature;
@@ -670,7 +705,13 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     return certificate_verify;
     
 }//TOCHECK
-
+/**
+ *  Parse handshake into client_key_exchange
+ * @param Handshake *handshake
+ * @param KeyExchangeAlgorithm algorithm_type
+ * @param uint32_t len_parameters
+ * @return ClientKeyExchange *client_key_exchange
+ */
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters){
     
     ClientKeyExchange *client_key_exchange;
@@ -704,6 +745,15 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
     return client_key_exchange;
 }//TOCHECK
 
+/**
+ *  Parse handshake into server_key_exchange
+ * @param Handshake *handshake
+ * @param KeyExchangeAlgorithm algorithm_type
+ * @param SignatureAlgorithm signature_type
+ * @param uint32_t len_parameters
+ * @param uint32_t len_signature
+ * @return ServerKeyExchange *server_key_exchange
+ */
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature){
     
     ServerKeyExchange *server_key_exchange;
@@ -746,6 +796,11 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchang
     return server_key_exchange;
 }//TOCHECK
 
+/**
+ *  Parse handshake into finished
+ * @param Handshake *handshake
+ * @return Finished *finished
+ */
 Finished *HandshakeToFinished(Handshake *handshake){
     Finished *finished;
    
@@ -767,6 +822,11 @@ Finished *HandshakeToFinished(Handshake *handshake){
 
 }//TOCHECK
 
+/**
+ *  Parse handshake into certificate_request
+ * @param Handshake *handshake
+ * @return CertificateRequest *certificate_request
+ */
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
  CertificateRequest *certificate_request;
  uint8_t *buffer;
@@ -801,7 +861,11 @@ CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
 
 /***************************************HANDSHAKE TO/FROM RECORDLAYER******************************************************/
 
-/* Handshake to RecordLayer */
+/**
+ * Serialize handshake into record_layer
+ * @param Handshake *handshake
+ * @return RecordLayer *recordlayer
+ */
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //VARIABLE DECLARATION//
     uint8_t *Bytes;
