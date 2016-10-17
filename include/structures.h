@@ -85,7 +85,7 @@ typedef struct{
 }HelloRequest;
 
 typedef struct{
-    uint8_t *X509_der;
+    const uint8_t *X509_der;
     uint32_t len;
 }Certificate;
 

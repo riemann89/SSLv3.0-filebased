@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]){
     CipherSuite priority[10], choosen;
     CipherSuite2 *cipher_suite_choosen;
     int phase, key_block_size;
-    char certificate_string[100];
+    //char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
     MD5_CTX md5;
     SHA_CTX sha;
@@ -256,7 +256,7 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-	uint8_t dec_message_len = 40;
+	int dec_message_len = 40;
     uint8_t *dec_message = NULL;
     
     dec_message = calloc(40, sizeof(uint8_t));
@@ -326,9 +326,9 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     
     // MANCA IL MAC
-    uint8_t *enc_message_len = NULL;
+    int *enc_message_len = NULL;
     
-    enc_message_len = calloc(1, sizeof(uint16_t));
+    enc_message_len = calloc(1, sizeof(int));
     
     enc_message = DecEncryptPacket(temp->message, temp->length, enc_message_len, cipher_suite_choosen, key_block, server, 1);
     

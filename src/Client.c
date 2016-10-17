@@ -325,9 +325,9 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     // MANCA IL MAC
 
-    uint8_t *enc_message_len = NULL;
+    int *enc_message_len = NULL;
     uint8_t *enc_message = NULL;
-    enc_message_len = calloc(1, sizeof(uint8_t));
+    //enc_message_len = calloc(1, sizeof(int)); //TODO perchè alloco qui???
     
     enc_message = DecEncryptPacket(temp->message, temp->length, enc_message_len, cipher_suite_choosen, key_block, client, 1);
     *enc_message_len = 45;
@@ -378,7 +378,7 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     
-    uint8_t dec_message_len = 40;
+    int dec_message_len = 40;
     uint8_t *dec_message = NULL;
     
     dec_message = calloc(40, sizeof(uint8_t));

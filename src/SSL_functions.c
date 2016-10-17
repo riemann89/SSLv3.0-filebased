@@ -209,7 +209,7 @@ void FreeClientServerHello(ClientServerHello *client_server_hello){
  * @param *certificate
  */
 void FreeCertificate(Certificate *certificate){
-    free(certificate->X509_der);
+    free((uint8_t *)certificate->X509_der);
     free(certificate);
 }
 
@@ -1439,10 +1439,12 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
     switch(alg){
         case RSA_:
             certificate = fopen("certificates/RSA_server.key","rb");
+            
             if (certificate == NULL){
                 printf("decryptPreMaster error: memory leak - null pointer .");
                 exit(1);
             }
+            
             rsa_private_key = PEM_read_RSAPrivateKey(certificate, &rsa_private_key, NULL, NULL);
             RSA_private_decrypt(128, enc_pre_master_secret, pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
             break;
@@ -1460,7 +1462,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
 }
 
 //Symmetric TODO: TO CHECK
-uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, uint8_t *enc_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
+uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, int *enc_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
     uint8_t *enc_packet;
     EVP_CIPHER_CTX *ctx;
     uint8_t *key, *iv;
@@ -1469,7 +1471,7 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, uint8_t *enc_packet_l
     shift1 = 0;
     shift2 = 0;
     
-    enc_packet_len = calloc(1, sizeof(uint8_t));
+    enc_packet_len = calloc(1, sizeof(int));
     
     ctx = EVP_CIPHER_CTX_new();
    	EVP_CIPHER_CTX_init(ctx);//TODO: remember to freeeee, iv di tutti

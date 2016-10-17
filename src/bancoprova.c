@@ -20,8 +20,8 @@ int main(int argc, const char *argv[]){
    
    
     
-   int prioritylen = 7;
-   CipherSuite *priority;
+   uint8_t prioritylen = 7;
+   CipherSuite *priority = NULL;
    
     int i;
     for (i = 0; i < prioritylen; i++) {
