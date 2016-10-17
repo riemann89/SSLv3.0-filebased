@@ -1471,8 +1471,6 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, int *enc_packet_len, 
     shift1 = 0;
     shift2 = 0;
     
-    enc_packet_len = calloc(1, sizeof(int));
-    
     ctx = EVP_CIPHER_CTX_new();
    	EVP_CIPHER_CTX_init(ctx);//TODO: remember to freeeee, iv di tutti
     

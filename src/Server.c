@@ -263,6 +263,8 @@ int main(int argc, const char *argv[]){
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length, &dec_message_len, cipher_suite_choosen, key_block, client, 0);
     
+    dec_message_len = 40; //TODO
+    
     printf("\nFINISHED DECRYPTED\n");
     for(int i=0; i < dec_message_len; i++){
         printf("%02X ", dec_message[i]);

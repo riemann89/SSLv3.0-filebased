@@ -324,17 +324,17 @@ int main(int argc, const char *argv[]){
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
     // MANCA IL MAC
-
-    int *enc_message_len = NULL;
+	
+    int enc_message_len = 0;
     uint8_t *enc_message = NULL;
-    //enc_message_len = calloc(1, sizeof(int)); //TODO perchè alloco qui???
     
-    enc_message = DecEncryptPacket(temp->message, temp->length, enc_message_len, cipher_suite_choosen, key_block, client, 1);
-    *enc_message_len = 45;
+    enc_message = DecEncryptPacket(temp->message, temp->length, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
+    printf("AAAAAAAA %d", enc_message_len);
+    enc_message_len = 45;
     // assembling encrypted packet
     RecordLayer record2;
     
-	record2.length = *enc_message_len + 5; //TODO
+	record2.length = enc_message_len + 5; //TODO
     record2.type = HANDSHAKE;
     record2.version = std_version;
     record2.message = enc_message;
@@ -377,7 +377,6 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    
     int dec_message_len = 40;
     uint8_t *dec_message = NULL;
     
@@ -385,7 +384,7 @@ int main(int argc, const char *argv[]){
     
     dec_message = DecEncryptPacket(server_message->message, server_message->length, &dec_message_len, cipher_suite_choosen, key_block, server, 0);
     
-    
+    dec_message_len = 40; //TODO da fixare
     printf("\nFINISHED DECRYPTED\n");
     for(int i=0; i < dec_message_len; i++){
         printf("%02X ", dec_message[i]);
@@ -393,8 +392,8 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
 
     
-    FreeRecordLayer(server_message);
-    FreeHandshake(server_handshake);
+    //FreeRecordLayer(server_message);
+    //FreeHandshake(server_handshake);
     //TODO FreeFinished(server_finished);
     free(master_secret);
 
