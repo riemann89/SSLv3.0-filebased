@@ -88,7 +88,7 @@ uint8_t *encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
 uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
 
 //symmetric
-uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, int *enc_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
+uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 
 /* AUTHENTICATION */
 uint8_t* MAC(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret);

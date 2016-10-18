@@ -17,7 +17,7 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    //VARIABLE DECLARATION
+    //Declaration
     ClientServerHello server_hello, *client_hello;
     Handshake *handshake, *client_handshake;
     RecordLayer *record, *client_message, *temp;
@@ -35,22 +35,25 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
     uint8_t *cipher_key;
-    uint8_t *key_block = NULL;
+    uint8_t *key_block;
 
     
-    //VARIABLE INITIALIZATION
-    ciphersuite_code = 0;
+    //Initialization
     master_secret = NULL;
+    cipher_key = NULL;
+    key_block = NULL;
+    ciphersuite_code = 0; //TODO come mai questi valori?
     prioritylen = 10;
     phase = 0;
-    cipher_key = NULL;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
-    //SERVER STARTS
-    printf("Server started.\n");
+
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
+    
+    printf("!!!SERVER AVVIATO!!!\n");
+    
     while(CheckCommunication() == client){}
     client_message = readchannel();
     
@@ -60,19 +63,21 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
+    //TODO: inserire controllo sul pacchetto
+    
     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
     
-    sender_var= client_hello->sessionId;
+    sender_var= client_hello->sessionId; //TODO: errore ID (vedi /Documents/TODO.txt)
     sender = &sender_var;
    
-    //SELEZIONO LA CIPHER PIU' APPROPRIATA
+    //Cipher choosing TODO: rivedere
     int i;
     for (i = 0; i < 10; i++) {
-        priority[i].code=i+12;
+        priority[i].code = i+12;
     }
     priority[0].code = 5;
     setPriorities(&prioritylen,priority, "ServerConfig/Priority1.txt");
@@ -80,7 +85,7 @@ int main(int argc, const char *argv[]){
     ciphersuite_code = choosen.code;
     printf("%02X", ciphersuite_code);
     
-    //COSTRUZIONE SERVER HELLO
+    //Construction Server Hello
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
     
@@ -91,7 +96,7 @@ int main(int argc, const char *argv[]){
     server_hello.sessionId = 32;
     server_hello.ciphersuite = &choosen;
 				
-    //WRAPPING
+    //Wrapping
     handshake = ClientServerHelloToHandshake(&server_hello);
     record = HandshakeToRecordLayer(handshake);
     
@@ -106,7 +111,8 @@ int main(int argc, const char *argv[]){
     
     cipher_suite_choosen = CodeToCipherSuite(05);
     printf("%d\n",cipher_suite_choosen->cipher_algorithm);
-    //INVIAMO IL SERVERHELLO e APRIAMO LA COMUNICAZIONE AL SERVER
+    
+    //Sending server hello and open the communication to the client.
     sendPacketByte(record);
     OpenCommunication(client);
     
@@ -256,12 +262,12 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-	int dec_message_len = 40;
+	int dec_message_len = 0;
     uint8_t *dec_message = NULL;
     
-    dec_message = calloc(40, sizeof(uint8_t));
+    printf("%d/n", client_message->length);
     
-    dec_message = DecEncryptPacket(client_message->message, client_message->length, &dec_message_len, cipher_suite_choosen, key_block, client, 0);
+    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, cipher_suite_choosen, key_block, client, 0);
     
     dec_message_len = 40; //TODO
     
@@ -328,18 +334,13 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     
     // MANCA IL MAC
-    int *enc_message_len = NULL;
+    int enc_message_len = 0;
     
-    enc_message_len = calloc(1, sizeof(int));
-    
-    enc_message = DecEncryptPacket(temp->message, temp->length, enc_message_len, cipher_suite_choosen, key_block, server, 1);
-    
-    *enc_message_len = 45; //TODO: va fixato perchè me lo azzera
+    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, server, 1);
     
     // assembling encrypted packet
     record = calloc(1, sizeof(RecordLayer));
-    record->length = *enc_message_len + 5; //TODO
-    printf("lunghezza: %d\n", record->length);
+    record->length = enc_message_len + 5; //TODO
     record->type = HANDSHAKE;
     record->version = std_version;
     record->message = enc_message;

@@ -1,3 +1,24 @@
+COSE DA SISTEMARE:
+Nel Client:
+- randomizzare la sessionId del client hello.
+- sistemare la questione della lettura delle cipher supportate: tutto va adattato con CipherSuite2.
+- estrarre la cipher_suite choosen dal server hello
+
+
+- TODO nel codice.
+
+Nel Server:
+- errore nello sha: dovrebbe fare l’ID del server non del client.
+- TODO nel codice.
+
+Nell SSLfunctions:
+
+Structure:
+(clienthelloserver)Sostituire ciphesuite(ciphersuite) con ciphersuite_code(uint8_t) ->
+ricordarsi di sistemare la funzione handshake->record e record->handshake.
+
+
+
 -capire perché mi azzera la lunghezza
 -devo gestire gli export
 

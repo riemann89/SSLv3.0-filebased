@@ -1462,18 +1462,20 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
 }
 
 //Symmetric TODO: TO CHECK
-uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, int *enc_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
-    uint8_t *enc_packet;
+uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
+    uint8_t *out_packet;
     EVP_CIPHER_CTX *ctx;
     uint8_t *key, *iv;
     uint8_t shift1, shift2;
     
+    
     shift1 = 0;
     shift2 = 0;
+    key = NULL;
+    iv = NULL;
+    out_packet = NULL;
     
     ctx = EVP_CIPHER_CTX_new();
-   	EVP_CIPHER_CTX_init(ctx);//TODO: remember to freeeee, iv di tutti
-    
     if (cipher_suite->exportable) {
     	//TODO RIVEDERE
         
@@ -1496,7 +1498,7 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, int *enc_packet_len, 
         case RC4:
             switch (cipher_suite->key_material) {
                 case 5:
-                    EVP_CipherInit(ctx, EVP_rc4(), key, iv, state);
+                    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
                     EVP_CIPHER_CTX_set_key_length(ctx, 40);
                     break;
                 case 16:
@@ -1538,34 +1540,18 @@ uint8_t* DecEncryptPacket(uint8_t *packet, int packet_len, int *enc_packet_len, 
             exit(1);
             break;
     }
+    int tmp_len;
     
-    if (cipher_suite->cipher_type == BLOCK){
-        if (packet_len % EVP_CIPHER_CTX_block_size(ctx) == 0) {
-            *enc_packet_len = packet_len;
-        }
-        else if(packet_len < EVP_CIPHER_CTX_block_size(ctx)){
-            *enc_packet_len = EVP_CIPHER_CTX_block_size(ctx) - packet_len;
-        }
-        else{
-            *enc_packet_len = packet_len + packet_len % EVP_CIPHER_CTX_block_size(ctx);
-        }
-    }
-    else{
-        *enc_packet_len = packet_len;
-    }
-
-    enc_packet = calloc(enc_packet_len[0], sizeof(uint8_t));
+    out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCO IL MAX
     
-    if (enc_packet == NULL){
-        perror("DecEncryptPacket error: allocation memory leak.");
-        exit(1);
-    }
-    
-    EVP_CipherUpdate(ctx, enc_packet, enc_packet_len, packet, packet_len);
-    EVP_CipherFinal_ex(ctx, enc_packet, enc_packet_len);//IL FINAL MI AZZERA LA LUNGHEZZA. PERCHééé???!?!??!??!
+    EVP_CipherUpdate(ctx, out_packet, out_packet_len, in_packet, in_packet_len);
+    EVP_CipherFinal_ex(ctx, out_packet, &tmp_len); //TODO non si capisce a che serve sta tmp_len
+    *out_packet_len = tmp_len + *out_packet_len;
+    printf("OUT:%d\n", *out_packet_len);
+    printf("TEMP:%d\n", tmp_len);
     EVP_CIPHER_CTX_free(ctx);
-    //TODO: vanno sistemati i parametri delle cifrature
-    return enc_packet;
+    
+    return out_packet;
     
 }
 
