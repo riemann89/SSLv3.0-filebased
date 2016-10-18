@@ -1,4 +1,6 @@
 COSE DA SISTEMARE:
+- stampare anche i record layer.
+
 Nel Client:
 - randomizzare la sessionId del client hello.
 - sistemare la questione della lettura delle cipher supportate: tutto va adattato con CipherSuite2.
@@ -18,8 +20,6 @@ Structure:
 ricordarsi di sistemare la funzione handshake->record e record->handshake.
 
 
-
--capire perché mi azzera la lunghezza
 -devo gestire gli export
 
 -encryptPreMaster //cambiare il nome
@@ -27,7 +27,8 @@ ricordarsi di sistemare la funzione handshake->record e record->handshake.
 - partizionare il file delle function?
 - il padding pare lo faccia in automatico.
 - getAlgorithm si può rimuovere
-- It is a fatal error if a finished message is not preceeded by a   change cipher spec message at the appropriate point in the handshake.
+- It is a fatal error if a finished message is not preceeded by a
+   change cipher spec message at the appropriate point in the handshake.
 -controllare il makefile
 
 - CERTIFICATE VERIFY 
@@ -35,4 +36,4 @@ ricordarsi di sistemare la funzione handshake->record e record->handshake.
 - estrare la len_parameters dal certificato
 - aggiungere altre ciphersuite .
 
-- Sistemare i commenti (DA ASSEGNARE)
+- Sistemare i commenti (DA ASSEGNARE)

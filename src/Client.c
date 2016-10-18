@@ -89,7 +89,6 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
 
-    
     SHA1_Update(&sha, record->message, sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5, record->message, sizeof(uint8_t)*(record->length-5));
     
@@ -144,11 +143,11 @@ int main(int argc, const char *argv[]){
                 
                 SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
-               
+                
+                pubkey = readCertificateParam(certificate);
+                
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
-                
-                len_parameters = 128; //TODO dipende dal certificato
                 
                 OpenCommunication(server);
                 break;
@@ -204,20 +203,14 @@ int main(int argc, const char *argv[]){
         ///CERTIFICATE///
         
 		///CLIENT_KEY_EXCHANGE///
-        client_key_exchange.algorithm_type = cipher_suite_choosen->key_exchange_algorithm;
-        //TODO: da dove ricavarle??
-
-        pubkey = readCertificateParam(certificate);
-        printf("SIZE PUBKEY: %d/n", EVP_PKEY_size(pubkey));
-        client_key_exchange.len_parameters = len_parameters;
         
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
-        pre_master_secret_encrypted= encryptPreMaster(pubkey, algorithm_type , pre_master_secret);
-       
+        int out_size = 0;
+        pre_master_secret_encrypted= encryptPreMaster(pubkey, algorithm_type , pre_master_secret, 48, &out_size);
         client_key_exchange.parameters = pre_master_secret_encrypted;
-        
-        handshake = ClientKeyExchangeToHandshake(&client_key_exchange);
+        client_key_exchange.len_parameters = out_size;
+        handshake = ClientKeyExchangeToHandshake(&client_key_exchange, cipher_suite_choosen);
         record = HandshakeToRecordLayer(handshake);
         
         sendPacketByte(record);

@@ -25,18 +25,19 @@ Handshake *CertificateToHandshake(Certificate *certificate);
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request);
 Handshake *ServerDoneToHandshake();
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify);
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange); //TODO: va adattato per il server_client_exchange eventualmente
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite);
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite);
 Handshake *FinishedToHandshake(Finished *finished);
 
 // hanshake -> message
 HelloRequest *HandshakeToHelloRequest(Handshake *handshake);
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake);
 Certificate *HandshakeToCertificate(Handshake *handshake);
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters);
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);
 ServerDone *HandshakeToServerdone(Handshake *handshake);
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature);
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite);
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite);
 Finished *HandshakeToFinished(Handshake *handshake);
 
 // record -> handshake
@@ -66,7 +67,8 @@ void FreeCertificate(Certificate *certificate);
 void FreeCertificateVerify(CertificateVerify *certificate_verify);
 void FreeServerHelloDone(ServerDone *server_done);
 void FreeCertificateFinished(Finished *finished);
-void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange);
+void FreeClientKeyExchange(ClientKeyExchange *client_server_key_exchange);
+void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange);
 
 /* CERTIFICATE */
 Certificate* loadCertificate(char * cert_name);
@@ -84,8 +86,8 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientS
 /* ENCRYPTION */
 
 //asymmetric
-uint8_t *encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret);
-uint8_t *decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret);
+uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size);
+uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size);
 
 //symmetric
 uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);

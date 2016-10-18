@@ -240,22 +240,22 @@ void FreeCertificateVerify(CertificateVerify *certificate_verify){
 }
 
 /**
- * free memory allocated by client_key_exchange
+ * free memory allocated by server_key_exchange
  * @param *client_key_exchange
  */
-void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
-    free(client_key_exchange->parameters);
-    free(client_key_exchange);
+void FreeClientKeyExchange(ClientKeyExchange *client_server_key_exchange){
+    free(client_server_key_exchange->parameters);
+    free(client_server_key_exchange);
 }
 
 /**
  * free memory allocated by server_key_exchange
  * @param *server_key_exchange
  */
-void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
-    free(server_key_exchange->parameters);
-    free(server_key_exchange->signature);
-    free(server_key_exchange);
+void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange){
+    free(client_server_key_exchange->parameters);
+    free(client_server_key_exchange->signature);
+    free(client_server_key_exchange);
 }
 
 /**
@@ -374,14 +374,12 @@ Handshake *CertificateToHandshake(Certificate *certificate){
  * @param ClientKeyExchange *client_key_exchange
  * @return Handshake *handshake
  */
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite){
     Handshake *handshake;
     uint8_t *Bytes;
-    uint32_t len_parameters;
+
     
-    len_parameters = client_key_exchange->len_parameters;
-    
-    Bytes = (uint8_t*)calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
         exit(1);
@@ -394,15 +392,43 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     }
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes, client_key_exchange->parameters, len_parameters);
+    memcpy(Bytes, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = CLIENT_KEY_EXCHANGE;
-    handshake->length = 4 + len_parameters;
+    handshake->length = 4 + client_server_key_exchange->len_parameters;
     handshake->content = Bytes;
     
     return handshake;
 }
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite){
+    Handshake *handshake;
+    uint8_t *Bytes;
+    
+    
+    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + cipher_suite->signature_size, sizeof(uint8_t));
+    if (Bytes == NULL) {
+        perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
+        exit(1);
+    }
+    
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    if (handshake == NULL) {
+        perror("Failed to create handshake pointer - ClientKeyToHandshake operation");
+        exit(1);
+    }
+    
+    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    memcpy(Bytes, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
+    memcpy(Bytes + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->signature_size);
+    
+    //HANDSHAKE CONSTRUCTION//
+    handshake->msg_type = CLIENT_KEY_EXCHANGE;
+    handshake->length = 4 + client_server_key_exchange->len_parameters + cipher_suite->signature_size;
+    handshake->content = Bytes;
+    
+    return handshake;
+}//TOCHECK
 
 /**
  * Serialize certificate_request into handshake
@@ -705,45 +731,6 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
     return certificate_verify;
     
 }//TOCHECK
-/**
- *  Parse handshake into client_key_exchange
- * @param Handshake *handshake
- * @param KeyExchangeAlgorithm algorithm_type
- * @param uint32_t len_parameters
- * @return ClientKeyExchange *client_key_exchange
- */
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, uint32_t len_parameters){
-    
-    ClientKeyExchange *client_key_exchange;
-    uint8_t *buffer;
-    
-    if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
-        perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
-        exit(1);
-    }
-    
-    client_key_exchange = (ClientKeyExchange *)calloc(1, sizeof(ClientKeyExchange));
-    
-    if (client_key_exchange == NULL){
-        perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
-        exit(1);
-    }
-    
-    client_key_exchange->algorithm_type = algorithm_type;
-    
-    client_key_exchange->len_parameters = len_parameters;
-    
-    buffer = (uint8_t *)calloc(len_parameters, sizeof(uint8_t));
-    
-    if (buffer == NULL){
-        perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
-        exit(1);
-    }
-    memcpy(buffer, handshake->content ,len_parameters);
-    client_key_exchange->parameters = buffer;
-    
-    return client_key_exchange;
-}//TOCHECK
 
 /**
  *  Parse handshake into server_key_exchange
@@ -754,46 +741,74 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, KeyExchang
  * @param uint32_t len_signature
  * @return ServerKeyExchange *server_key_exchange
  */
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, KeyExchangeAlgorithm algorithm_type, SignatureAlgorithm signature_type, uint32_t len_parameters, uint32_t len_signature){
+
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
     
-    ServerKeyExchange *server_key_exchange;
+    ClientKeyExchange *client_server_key_exchange;
     
     if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
         perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
         exit(1);
     }
     
-    server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
-    if (server_key_exchange == NULL){
+    client_server_key_exchange = (ClientKeyExchange *)calloc(1, sizeof(ClientKeyExchange));
+    if (client_server_key_exchange == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
-    server_key_exchange->algorithm_type = algorithm_type;
-    server_key_exchange->signature_type = signature_type;
     
-    server_key_exchange->len_parameters = len_parameters;
-    server_key_exchange->len_signature = len_signature;
+    client_server_key_exchange->len_parameters = handshake->length - 4;
     
-    server_key_exchange->parameters = (uint8_t *)calloc(len_parameters, sizeof(uint8_t));
+    client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
     
-    if (server_key_exchange->parameters == NULL){
+    if (client_server_key_exchange->parameters == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
-    server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
     
-    if (server_key_exchange->signature == NULL){
+    memcpy(client_server_key_exchange->parameters, handshake->content, client_server_key_exchange->len_parameters);
+    
+    return client_server_key_exchange;
+}
+
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
+    
+    ServerKeyExchange *client_server_key_exchange;
+    
+    if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
+        perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
+        exit(1);
+    }
+    
+    client_server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
+    if (client_server_key_exchange == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
-    memcpy(handshake->content, server_key_exchange->parameters, len_parameters);
     
-    memcpy(handshake->content + len_parameters, server_key_exchange->signature, len_signature);
+    client_server_key_exchange->len_parameters = handshake->length - 5 - cipher_suite->signature_size;
     
-    return server_key_exchange;
+    client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
+    
+    if (client_server_key_exchange->parameters == NULL){
+        perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
+        exit(1);
+    }
+    
+    client_server_key_exchange->signature = (uint8_t *)calloc(cipher_suite->signature_size, sizeof(uint8_t));
+    
+    if (client_server_key_exchange->signature == NULL){
+        perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
+        exit(1);
+    }
+    
+    memcpy(handshake->content, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
+    memcpy(handshake->content + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->signature_size);
+    
+    return client_server_key_exchange;
 }//TOCHECK
 
 /**
@@ -1398,8 +1413,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientS
 
 /*************************************** ENCRYPTION ******************************************************/
 //Asymmetric
-uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret){
-    int flag = 0;
+uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size){
     RSA *rsa;
     uint8_t *pre_master_secret_encrypted;
     
@@ -1410,7 +1424,7 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
             case RSA_:
                 rsa = EVP_PKEY_get1_RSA(pKey);
                 pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
-                flag = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
+                *out_size = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
                 break;
             case DIFFIE_HELLMAN:
                 printf("CIAO");
@@ -1426,7 +1440,7 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
         
         return pre_master_secret_encrypted;
 }
-uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret){
+uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size){
     uint8_t *pre_master_secret;
     FILE *certificate;
     RSA *rsa_private_key;
@@ -1446,7 +1460,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
             }
             
             rsa_private_key = PEM_read_RSAPrivateKey(certificate, &rsa_private_key, NULL, NULL);
-            RSA_private_decrypt(128, enc_pre_master_secret, pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
+            *out_size = RSA_private_decrypt(in_size, enc_pre_master_secret, pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
             break;
             
         case DIFFIE_HELLMAN:

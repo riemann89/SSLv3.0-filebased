@@ -115,7 +115,8 @@ typedef struct {
     uint8_t major, minor;
 }ProtocolVersion;
 
-typedef enum{CHANGE_CIPHER_SPEC=20, ALERT, HANDSHAKE, APPLICATION_DATA
+typedef enum{
+    CHANGE_CIPHER_SPEC=20, ALERT, HANDSHAKE, APPLICATION_DATA
 } ContentType;
 
 typedef struct {
@@ -128,18 +129,14 @@ typedef struct {
 //Structs for ServerKeyExchange
 
 typedef struct{
-    KeyExchangeAlgorithm algorithm_type;
     uint8_t *parameters;
     uint32_t len_parameters;
 }ClientKeyExchange;
 
 typedef struct{
-    KeyExchangeAlgorithm algorithm_type;
-    SignatureAlgorithm signature_type;
     uint8_t *parameters;
     uint8_t *signature;
     uint32_t len_parameters;
-    uint32_t len_signature;
 }ServerKeyExchange;
 
 //Extern variables

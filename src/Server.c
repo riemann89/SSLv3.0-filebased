@@ -28,7 +28,7 @@ int main(int argc, const char *argv[]){
     Finished finished;
     CipherSuite priority[10], choosen;
     CipherSuite2 *cipher_suite_choosen;
-    int phase, key_block_size;
+    int phase, key_block_size, len_parameters;
     //char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
     MD5_CTX md5;
@@ -45,10 +45,9 @@ int main(int argc, const char *argv[]){
     ciphersuite_code = 0; //TODO come mai questi valori?
     prioritylen = 10;
     phase = 0;
+    
     SHA1_Init(&sha);
     MD5_Init(&md5);
-    
-
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     
@@ -186,7 +185,10 @@ int main(int argc, const char *argv[]){
                     OpenCommunication(client);
                     break;
                 case CLIENT_KEY_EXCHANGE:
-                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, cipher_suite_choosen->key_exchange_algorithm, 128);//TODO 128 va letto dal certificato ed è la lunghezza della chiave in byte.
+                    printf("%d\n", client_handshake->length);
+                    len_parameters = client_handshake->length - 4;
+                    printf("%d\n",len_parameters);
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, cipher_suite_choosen);//TODO 128 va letto dal certificato ed è la lunghezza della chiave in byte.
 
                     printf("\nCLIENT_KEY_EXCHANGE: recived\n");
                         for(int i=0; i<client_message->length - 5; i++){
@@ -197,7 +199,8 @@ int main(int argc, const char *argv[]){
                     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 					
-                    pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters);//TODO inizializzare RSA_ sopra
+                    int out_size = 0;
+                    pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters, len_parameters ,&out_size);//TODO inizializzare RSA_ sopra
                     
                     master_secret = calloc(48, sizeof(uint8_t));
                     master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
