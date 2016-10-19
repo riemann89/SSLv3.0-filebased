@@ -952,21 +952,35 @@ Handshake *RecordToHandshake(RecordLayer *record){
     
 }
 
-//in this toy we set the priorities of the server in the file "PriorityList.txt", so that we are able to choose the best cipher supported according to that file, on this pourpose chiphersuites  are saved in decrescent order of  priority
-
-void setPriorities(uint8_t *number, CipherSuite *priority, char *filename){   															
+/**
+ * write on the file named *filename the list of chiphersuite *priority coded as uint8_t which length is *number,
+ * the list *priority should be sorted in decrescent order of priority.
+ * @param uint8_t *number
+ * @param uint8_t *priority
+ * @param char *filename
+ */
+void setPriorities(uint8_t *number, uint8_t *priority, char *filename){   															
 
     FILE* PriorityList; 																														
     PriorityList = fopen(filename , "wb");   																																													 	
     fwrite(number,sizeof(uint8_t),1,PriorityList);
    
     for(int i = 0; i<*number; i++){   																									
-        fwrite(&(priority +i)->code,sizeof(uint8_t),1,PriorityList);
+        fwrite(&(priority +i),sizeof(uint8_t),1,PriorityList);
     }
     fclose(PriorityList);                                                                                                                    
 }
 
 //this function read from PryorityList.txt and the input struct ClientServerHello, comparing chiphers Priority and avaiable and choosing the best fitting in a naive way
+
+/**
+ * compare the client_supported_list of ciphersuite containded in ClientHello with the ones contained in the *filename,
+ * which is the file whose content is the list of chipher supported by server.
+ * Both list should be set in decrescent order of priority to choose the best possible one.  
+ * @param ClientServerHello *client_supported_list
+ * @param char *filename
+ * @return uint8_t chosenChipher
+ */
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
     FILE* PriorityList;
     uint8_t choosen;
@@ -979,7 +993,7 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
         //printf("%d, %02X \n", i, buffer[i]);
         for(int j=0;j<client_supported_list->length -38 ;j++){ 
            //printf("    %d: %02X\n",j,client_supported_list->ciphersuite[j].code);
-            if(buffer[i]==client_supported_list->ciphersuite[j].code){  
+            if(buffer[i]==client_supported_list->ciphersuite_code[j]){  
                 choosen = buffer[i];
                 return choosen; 																									
             }
@@ -990,12 +1004,18 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
     exit(1);
 }
 
-CipherSuite *loadCipher(char* filename, uint8_t *len){
-    
-   
+/**
+ * read from file a list of code of chiphersuites, the file should have a format 
+ * first byte = number of the contained ciphersuite codes ,
+ * following bytes = chiphersuite codes
+ * @param char *filename
+ * @param uint8_t *len
+ * @return uint8_t *buffer 
+ */
+uint8_t *loadCipher(char* filename, uint8_t *len){
+       
     FILE* CipherList;
     uint8_t *buffer;
-    CipherSuite *returning;
 
     CipherList = fopen(filename, "rb");
     
@@ -1006,24 +1026,22 @@ CipherSuite *loadCipher(char* filename, uint8_t *len){
     
     fread(len, sizeof(uint8_t), 1, CipherList);
     buffer = (uint8_t *)malloc((len[0])*sizeof(uint8_t));
-    returning = (CipherSuite *)malloc((len[0])*sizeof(CipherSuite));
     fread(buffer, len[0]*sizeof(uint8_t), 1, CipherList);
     fclose(CipherList);
     
-    for(int i =0; i < len[0]; i++){
-        returning[i].code = buffer[i];
-    }
-    
-    return returning;
-    
+    return buffer;    
 } 
-
-KeyExchangeAlgorithm getAlgorithm(CipherSuite cipher){
-    if(cipher.code > 0 && cipher.code < 11)
+/**
+ * From the code of a ciphersuite decide if it match with RSA_, DIFFIE_HELLMAN or FORTEZZA.
+ * @param uint8_t cipher_code
+ * @return KeyExchangeAlgorithm 
+ */
+KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
+    if(cipher_code> 0 && cipher_code < 11)
         return RSA_;
-    if(cipher.code > 10 && cipher.code < 28)
+    if(cipher_code > 10 && cipher_code< 28)
         return DIFFIE_HELLMAN;
-    if(cipher.code > 27 && cipher.code < 31)
+    if(cipher_code > 27 && cipher_code < 31)
         return KFORTEZZA;
     perror("Cipher null or not a valid \n");
     exit(1);

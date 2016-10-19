@@ -50,8 +50,8 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 RecordLayer *ChangeCipherSpecRecord();
 
 /* CIPHERSUITE */
-void setPriorities(uint8_t *number, CipherSuite *priority, char *filename);
-CipherSuite *loadCipher(char* filename , uint8_t *len);
+void setPriorities(uint8_t *number, uint8_t *priority, char *filename);
+uint8_t *loadCipher(char* filename , uint8_t *len);
 CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 

@@ -77,7 +77,7 @@ typedef struct{
     uint8_t version;
     Random *random;
     uint32_t sessionId;
-    CipherSuite *ciphersuite;
+    uint8_t *ciphersuite_code;
     HandshakeType type;
 }ClientServerHello;
 
