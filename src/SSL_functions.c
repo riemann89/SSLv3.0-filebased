@@ -193,7 +193,6 @@ void FreeHandshake(Handshake *handshake){
  * @param *client_server_hello
  */
 void FreeClientServerHello(ClientServerHello *client_server_hello){
-    free(client_server_hello->ciphersuite);//TODO Rivedere
     free(client_server_hello->random);
     free(client_server_hello);
 }
@@ -294,7 +293,7 @@ Handshake *HelloRequestToHandshake(){
  */
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //VARIABLE DECLARATION//
-    CipherSuite *cipher;
+    uint8_t *cipher;
     Handshake *handshake; 																		 	//returning variable
     uint8_t timeB[4]; 																					//current time bytes representation
     uint8_t session[4];			 																		//session bytes representation
@@ -314,9 +313,9 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
         exit(1);
     }
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    cipher = client_server_hello->ciphersuite;   //temporary vector containing all cipher codes - it is requested to perform following memcopy
+    cipher = client_server_hello->ciphersuite_code;   //temporary vector containing all cipher codes - it is requested to perform following memcopy
     for (int i=0;i<(client_server_hello->length-38);i++){  
-        cipher_codes[i]=(cipher+i)->code;
+        cipher_codes[i]= *(cipher+i);
     }
     int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);   	    //unix_time 
     int_To_Bytes(client_server_hello->sessionId, session);  								// session values to bytes transformation
@@ -603,9 +602,9 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
  */
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
-    CipherSuite *ciphers;
+    uint8_t *ciphers;
     Random *random;
-    ciphers = (CipherSuite*)calloc(handshake->length-41,sizeof(CipherSuite));    
+    ciphers = (uint8_t*)calloc(handshake->length-41, sizeof(uint8_t));
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
     random = (Random*)calloc(1,sizeof(Random));
     
@@ -625,7 +624,7 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     client_server_hello->sessionId = Bytes_To_Int(4, handshake->content + 1);
     client_server_hello->random = random;
 
-    client_server_hello->ciphersuite = ciphers;
+    client_server_hello->ciphersuite_code = ciphers;
 
     return client_server_hello;
 }//RIVEDERE da completare
@@ -971,8 +970,8 @@ void setPriorities(uint8_t *number, uint8_t *priority, char *filename){
     PriorityList = fopen(filename , "wb");   																																													 	
     fwrite(number,sizeof(uint8_t),1,PriorityList);
    
-    for(int i = 0; i<*number; i++){   																									
-        fwrite(&(priority +i),sizeof(uint8_t),1,PriorityList);
+    for(int i = 0; i<*number; i++){
+        fwrite(priority +i, sizeof(uint8_t), 1, PriorityList); //To CHECK
     }
     fclose(PriorityList);                                                                                                                    
 }
