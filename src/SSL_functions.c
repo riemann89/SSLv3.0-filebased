@@ -1,13 +1,7 @@
 #include "SSL_functions.h"
 #include <openssl/md5.h>
 
-/*****************************************FUNCTIONS***********************************************/
-
-//CHANNEL FUNCTIONS
-
-/*
- It allows the communication to the indicated talker: (0 - client, 1 - server, as defined in Talker enum)
- */
+/*****************************************CHANNEL FUNCTIONS***********************************************/
 
 /**
  * Gives to talker the right to write on the main channel,
@@ -401,6 +395,12 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exc
     
     return handshake;
 }
+
+/**
+ * Serialize server_key_exchange into handshake
+ * @param ServerKeyExchange *client_key_exchange
+ * @return Handshake *handshake
+ */
 Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -466,6 +466,10 @@ Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request
     return handshake;
 }
 
+/**
+ * Serialize server_done (empty message) into handshake
+ * @return Handshake *handshake
+ */
 Handshake *ServerDoneToHandshake(){
     //VARIABLE DECLARATION//
     Handshake *handshake;
@@ -733,15 +737,11 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
 }//TOCHECK
 
 /**
- *  Parse handshake into server_key_exchange
+ *  Parse handshake into client_key_exchange
  * @param Handshake *handshake
- * @param KeyExchangeAlgorithm algorithm_type
- * @param SignatureAlgorithm signature_type
- * @param uint32_t len_parameters
- * @param uint32_t len_signature
- * @return ServerKeyExchange *server_key_exchange
+ * @param CipherSuite *cipher_suite
+ * @return ClientKeyExchange *client_key_exchange
  */
-
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
     
     ClientKeyExchange *client_server_key_exchange;
@@ -773,6 +773,12 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuit
     return client_server_key_exchange;
 }
 
+/**
+ *  Parse handshake into server_key_exchange
+ * @param Handshake *handshake
+ * @param CipherSuite *cipher_suite
+ * @return ServerKeyExchange *server_key_exchange
+ */
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
     
     ServerKeyExchange *client_server_key_exchange;

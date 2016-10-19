@@ -188,7 +188,7 @@ int main(int argc, const char *argv[]){
                     printf("%d\n", client_handshake->length);
                     len_parameters = client_handshake->length - 4;
                     printf("%d\n",len_parameters);
-                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, cipher_suite_choosen);//TODO 128 va letto dal certificato ed è la lunghezza della chiave in byte.
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, cipher_suite_choosen);
 
                     printf("\nCLIENT_KEY_EXCHANGE: recived\n");
                         for(int i=0; i<client_message->length - 5; i++){
@@ -200,7 +200,7 @@ int main(int argc, const char *argv[]){
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 					
                     int out_size = 0;
-                    pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters, len_parameters ,&out_size);//TODO inizializzare RSA_ sopra
+                    pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters, len_parameters ,&out_size);
                     
                     master_secret = calloc(48, sizeof(uint8_t));
                     master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
