@@ -27,7 +27,7 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished finished;
     uint8_t priority[10], choosen;
-    CipherSuite2 *cipher_suite_choosen;
+    CipherSuite *cipher_suite_choosen;
     int phase, key_block_size, len_parameters;
     //char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
@@ -76,12 +76,12 @@ int main(int argc, const char *argv[]){
     //Cipher choosing TODO: rivedere
     int i;
     for (i = 0; i < 10; i++) {
-        priority[i].code = i+12;
+        priority[i] = i+12;
     }
-    priority[0].code = 5;
+    priority[0] = 5;
     setPriorities(&prioritylen, priority, "ServerConfig/Priority1.txt");
-    choosen.code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
-    ciphersuite_code = choosen.code;
+    choosen = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
+    ciphersuite_code = choosen;
     printf("%02X", ciphersuite_code);
     
     //Construction Server Hello

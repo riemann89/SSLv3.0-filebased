@@ -30,7 +30,7 @@ int main(int argc, const char *argv[]){
     uint32_t sender_id;
     uint8_t len_hello, *key_block;
     CipherSuite *supported_ciphers;
-    CipherSuite2 *cipher_suite_choosen;
+    CipherSuite *cipher_suite_choosen;
     
     
     //Initialization

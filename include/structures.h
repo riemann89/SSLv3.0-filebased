@@ -42,12 +42,6 @@ typedef enum{
     SNULL, SHA1_, MD5_1
 }SignatureAlgorithm;
 
-typedef struct{
-    uint8_t code;
-    //uint8_t key_size;
-    //uint8_t iv_size;
-    //CipherAlgorithm cipher_algorithm;
-}CipherSuite;
 
 typedef struct{
     KeyExchangeAlgorithm key_exchange_algorithm;
@@ -58,7 +52,7 @@ typedef struct{
     SignatureAlgorithm signature_algorithm;
     uint8_t signature_size;
     _Bool exportable;
-}CipherSuite2;
+}CipherSuite;
 
 typedef struct {
     HandshakeType msg_type;

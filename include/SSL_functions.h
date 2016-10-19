@@ -25,8 +25,8 @@ Handshake *CertificateToHandshake(Certificate *certificate);
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request);
 Handshake *ServerDoneToHandshake();
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify);
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite);
-Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite);
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite);
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite);
 Handshake *FinishedToHandshake(Finished *finished);
 
 // hanshake -> message
@@ -36,8 +36,8 @@ Certificate *HandshakeToCertificate(Handshake *handshake);
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);
 ServerDone *HandshakeToServerdone(Handshake *handshake);
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite);
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite);
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite *cipher_suite);
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite);
 Finished *HandshakeToFinished(Handshake *handshake);
 
 // record -> handshake
@@ -52,7 +52,7 @@ RecordLayer *ChangeCipherSpecRecord();
 /* CIPHERSUITE */
 void setPriorities(uint8_t *number, uint8_t *priority, char *filename);
 uint8_t *loadCipher(char* filename , uint8_t *len);
-CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code);
+CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code);
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 
 
@@ -81,7 +81,7 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
 
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
-uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
+uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
 /* ENCRYPTION */
 
@@ -90,8 +90,8 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
 uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size);
 
 //symmetric
-uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
+uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 
 /* AUTHENTICATION */
-uint8_t* MAC(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret);
+uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret);
 
