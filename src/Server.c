@@ -93,7 +93,7 @@ int main(int argc, const char *argv[]){
     server_hello.version = 3;
     server_hello.random = &random;
     server_hello.sessionId = 32;
-    server_hello.ciphersuite = &choosen;
+    server_hello.ciphersuite_code = &choosen;
 				
     //Wrapping
     handshake = ClientServerHelloToHandshake(&server_hello);

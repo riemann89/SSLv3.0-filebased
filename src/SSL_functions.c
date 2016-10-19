@@ -1,7 +1,13 @@
 #include "SSL_functions.h"
 #include <openssl/md5.h>
 
-/*****************************************CHANNEL FUNCTIONS***********************************************/
+/*****************************************FUNCTIONS***********************************************/
+
+//CHANNEL FUNCTIONS
+
+/*
+ It allows the communication to the indicated talker: (0 - client, 1 - server, as defined in Talker enum)
+ */
 
 /**
  * Gives to talker the right to write on the main channel,
@@ -193,6 +199,7 @@ void FreeHandshake(Handshake *handshake){
  * @param *client_server_hello
  */
 void FreeClientServerHello(ClientServerHello *client_server_hello){
+    free(client_server_hello->ciphersuite_code);//TODO Rivedere
     free(client_server_hello->random);
     free(client_server_hello);
 }
@@ -315,7 +322,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     cipher = client_server_hello->ciphersuite_code;   //temporary vector containing all cipher codes - it is requested to perform following memcopy
     for (int i=0;i<(client_server_hello->length-38);i++){  
-        cipher_codes[i]= *(cipher+i);
+        cipher_codes[i]=(cipher+i);
     }
     int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);   	    //unix_time 
     int_To_Bytes(client_server_hello->sessionId, session);  								// session values to bytes transformation
@@ -394,12 +401,6 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exc
     
     return handshake;
 }
-
-/**
- * Serialize server_key_exchange into handshake
- * @param ServerKeyExchange *client_key_exchange
- * @return Handshake *handshake
- */
 Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite){
     Handshake *handshake;
     uint8_t *Bytes;
@@ -465,10 +466,6 @@ Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request
     return handshake;
 }
 
-/**
- * Serialize server_done (empty message) into handshake
- * @return Handshake *handshake
- */
 Handshake *ServerDoneToHandshake(){
     //VARIABLE DECLARATION//
     Handshake *handshake;
@@ -602,9 +599,9 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
  */
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
-    uint8_t *ciphers;
+    CipherSuite *ciphers;
     Random *random;
-    ciphers = (uint8_t*)calloc(handshake->length-41, sizeof(uint8_t));
+    ciphers = (CipherSuite*)calloc(handshake->length-41,sizeof(CipherSuite));    
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
     random = (Random*)calloc(1,sizeof(Random));
     
@@ -736,11 +733,15 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
 }//TOCHECK
 
 /**
- *  Parse handshake into client_key_exchange
+ *  Parse handshake into server_key_exchange
  * @param Handshake *handshake
- * @param CipherSuite *cipher_suite
- * @return ClientKeyExchange *client_key_exchange
+ * @param KeyExchangeAlgorithm algorithm_type
+ * @param SignatureAlgorithm signature_type
+ * @param uint32_t len_parameters
+ * @param uint32_t len_signature
+ * @return ServerKeyExchange *server_key_exchange
  */
+
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
     
     ClientKeyExchange *client_server_key_exchange;
@@ -772,12 +773,6 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuit
     return client_server_key_exchange;
 }
 
-/**
- *  Parse handshake into server_key_exchange
- * @param Handshake *handshake
- * @param CipherSuite *cipher_suite
- * @return ServerKeyExchange *server_key_exchange
- */
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
     
     ServerKeyExchange *client_server_key_exchange;
@@ -970,8 +965,8 @@ void setPriorities(uint8_t *number, uint8_t *priority, char *filename){
     PriorityList = fopen(filename , "wb");   																																													 	
     fwrite(number,sizeof(uint8_t),1,PriorityList);
    
-    for(int i = 0; i<*number; i++){
-        fwrite(priority +i, sizeof(uint8_t), 1, PriorityList); //To CHECK
+    for(int i = 0; i<*number; i++){   																									
+        fwrite(priority +i,sizeof(uint8_t),1,PriorityList);
     }
     fclose(PriorityList);                                                                                                                    
 }
