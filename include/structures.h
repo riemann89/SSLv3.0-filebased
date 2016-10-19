@@ -134,8 +134,8 @@ typedef struct{
 }ServerKeyExchange;
 
 //Extern variables
-extern CipherSuite lista[31];
-extern CipherSuite lista2[8];
+extern uint8_t lista[31];
+extern uint8_t lista2[8];
 extern uint8_t pad_1[48];
 extern uint8_t pad_2[48];
 extern ProtocolVersion std_version;

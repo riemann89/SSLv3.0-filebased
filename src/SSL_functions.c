@@ -322,7 +322,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     cipher = client_server_hello->ciphersuite_code;   //temporary vector containing all cipher codes - it is requested to perform following memcopy
     for (int i=0;i<(client_server_hello->length-38);i++){  
-        cipher_codes[i]=(cipher+i);
+        cipher_codes[i]= *(cipher+i);
     }
     int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);   	    //unix_time 
     int_To_Bytes(client_server_hello->sessionId, session);  								// session values to bytes transformation
@@ -374,7 +374,7 @@ Handshake *CertificateToHandshake(Certificate *certificate){
  * @param ClientKeyExchange *client_key_exchange
  * @return Handshake *handshake
  */
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite){
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite){
     Handshake *handshake;
     uint8_t *Bytes;
 
@@ -401,7 +401,7 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exc
     
     return handshake;
 }
-Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite2 *cipher_suite){
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite){
     Handshake *handshake;
     uint8_t *Bytes;
     
@@ -599,9 +599,9 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
  */
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
-    CipherSuite *ciphers;
+    uint8_t *ciphers;
     Random *random;
-    ciphers = (CipherSuite*)calloc(handshake->length-41,sizeof(CipherSuite));    
+    ciphers = (uint8_t*)calloc(handshake->length-41, sizeof(uint8_t));
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
     random = (Random*)calloc(1,sizeof(Random));
     
@@ -742,7 +742,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
  * @return ServerKeyExchange *server_key_exchange
  */
 
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite *cipher_suite){
     
     ClientKeyExchange *client_server_key_exchange;
     
@@ -773,7 +773,7 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuit
     return client_server_key_exchange;
 }
 
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite2 *cipher_suite){
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite){
     
     ServerKeyExchange *client_server_key_exchange;
     
@@ -887,6 +887,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     uint8_t length24[4];
     RecordLayer *recordlayer;  																										//returning variable
     int len;
+    
     //MEMORY ALLOCATION//
     Bytes =(uint8_t*)calloc(handshake->length,sizeof(uint8_t)); 			    								//bytes data vector allocation
     if (Bytes == NULL) { 																													//contain the lenght of corresponding vector
@@ -901,7 +902,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     int_To_Bytes(handshake->length ,length24); 			  				  												
     len=handshake->length;							
-    Bytes[0]=handshake->msg_type;
+    Bytes[0] = handshake->msg_type;
     memcpy(Bytes+1 ,length24+1,3);
     memcpy(Bytes+ 4 ,handshake->content,len-4);
 	//RECORDLAYER CONSTRUCTION//
@@ -1048,12 +1049,12 @@ KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
 }
 
 /*************************************** OTHERS ******************************************************/
-CipherSuite2 *CodeToCipherSuite(uint8_t ciphersuite_code){
+CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
     //INIZIALIZZARE CipherSuite
     
-    CipherSuite2 *cipher_suite;
+    CipherSuite *cipher_suite;
     
-    cipher_suite = (CipherSuite2*)calloc(1, sizeof(CipherSuite2));
+    cipher_suite = (CipherSuite*)calloc(1, sizeof(CipherSuite));
     
     switch (ciphersuite_code) {
         case 0x00:
@@ -1348,7 +1349,7 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     
     return master_secret;
 }
-uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite2 *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello){
+uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello){
     
     uint8_t *key_block, *final_client_write_key, *final_server_write_key, *client_write_iv, *server_write_iv;
     MD5_CTX md5;
@@ -1494,7 +1495,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
 }
 
 //Symmetric TODO: TO CHECK
-uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite2 *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
+uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
     uint8_t *out_packet;
     EVP_CIPHER_CTX *ctx;
     uint8_t *key, *iv;
@@ -1588,7 +1589,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
 }
 
 
-uint8_t* MAC(CipherSuite2 cipher, Handshake *hand, uint8_t* macWriteSecret){
+uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
     
     MD5_CTX md5,md52;
     SHA_CTX sha, sha2;

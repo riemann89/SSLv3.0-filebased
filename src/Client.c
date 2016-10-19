@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint32_t sender_id;
     uint8_t len_hello, *key_block;
-    CipherSuite *supported_ciphers;
+    uint8_t *supported_ciphers;
     CipherSuite *cipher_suite_choosen;
     
     
@@ -72,7 +72,7 @@ int main(int argc, const char *argv[]){
     client_hello.sessionId = 32; //TODO
     supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello); //TODO
     client_hello.length = 38 + len_hello;
-    client_hello.ciphersuite = supported_ciphers;
+    client_hello.ciphersuite_code = supported_ciphers;
     sender_id = client_hello.sessionId;
     
     //Wrapping
@@ -118,7 +118,6 @@ int main(int argc, const char *argv[]){
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
     
-    algorithm_type = getAlgorithm(server_hello->ciphersuite[0]);
     cipher_suite_choosen = CodeToCipherSuite(05); //TODO: automatizzare il processo. 05 deve essere estratto dal server_hello
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
@@ -207,7 +206,7 @@ int main(int argc, const char *argv[]){
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
         int out_size = 0;
-        pre_master_secret_encrypted= encryptPreMaster(pubkey, algorithm_type , pre_master_secret, 48, &out_size);
+        pre_master_secret_encrypted= encryptPreMaster(pubkey, cipher_suite_choosen->key_exchange_algorithm, pre_master_secret, 48, &out_size);
         client_key_exchange.parameters = pre_master_secret_encrypted;
         client_key_exchange.len_parameters = out_size;
         handshake = ClientKeyExchangeToHandshake(&client_key_exchange, cipher_suite_choosen);

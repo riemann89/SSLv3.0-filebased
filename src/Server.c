@@ -26,8 +26,8 @@ int main(int argc, const char *argv[]){
     Certificate *certificate;
     CertificateVerify *certificate_verify;
     Finished finished;
-    uint8_t priority[10], choosen;
-    CipherSuite *cipher_suite_choosen;
+    uint8_t priority[10];
+    CipherSuite *ciphersuite_choosen;
     int phase, key_block_size, len_parameters;
     //char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
@@ -80,8 +80,7 @@ int main(int argc, const char *argv[]){
     }
     priority[0] = 5;
     setPriorities(&prioritylen, priority, "ServerConfig/Priority1.txt");
-    choosen = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
-    ciphersuite_code = choosen;
+    ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
     printf("%02X", ciphersuite_code);
     
     //Construction Server Hello
@@ -93,7 +92,7 @@ int main(int argc, const char *argv[]){
     server_hello.version = 3;
     server_hello.random = &random;
     server_hello.sessionId = 32;
-    server_hello.ciphersuite_code = &choosen;
+    server_hello.ciphersuite_code = &ciphersuite_code;
 				
     //Wrapping
     handshake = ClientServerHelloToHandshake(&server_hello);
@@ -108,8 +107,7 @@ int main(int argc, const char *argv[]){
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
-    cipher_suite_choosen = CodeToCipherSuite(05);
-    printf("%d\n",cipher_suite_choosen->cipher_algorithm);
+    ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code);
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
@@ -188,7 +186,7 @@ int main(int argc, const char *argv[]){
                     printf("%d\n", client_handshake->length);
                     len_parameters = client_handshake->length - 4;
                     printf("%d\n",len_parameters);
-                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, cipher_suite_choosen);
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, ciphersuite_choosen);
 
                     printf("\nCLIENT_KEY_EXCHANGE: recived\n");
                         for(int i=0; i<client_message->length - 5; i++){
@@ -212,9 +210,9 @@ int main(int argc, const char *argv[]){
                     printf("\n");
                     
                     //KEYBLOCK GENERATION
-                    key_block_size = 2*(cipher_suite_choosen->signature_size + cipher_suite_choosen->key_material + cipher_suite_choosen->iv_size);
+                    key_block_size = 2*(ciphersuite_choosen->signature_size + ciphersuite_choosen->key_material + ciphersuite_choosen->iv_size);
                     printf("key block size: %d\n", key_block_size);
-                    key_block = KeyBlockGen(master_secret, cipher_suite_choosen, client_hello, &server_hello);
+                    key_block = KeyBlockGen(master_secret, ciphersuite_choosen, client_hello, &server_hello);
                     
                     printf("\nKEY BLOCK\n");
                     for (int i=0; i< key_block_size; i++){
@@ -270,7 +268,7 @@ int main(int argc, const char *argv[]){
     
     printf("%d/n", client_message->length);
     
-    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, cipher_suite_choosen, key_block, client, 0);
+    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
     
     dec_message_len = 40; //TODO
     
@@ -339,7 +337,7 @@ int main(int argc, const char *argv[]){
     // MANCA IL MAC
     int enc_message_len = 0;
     
-    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, server, 1);
+    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     
     // assembling encrypted packet
     record = calloc(1, sizeof(RecordLayer));

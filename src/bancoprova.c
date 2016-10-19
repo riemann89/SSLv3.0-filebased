@@ -16,7 +16,7 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    
+    /*
    
    
     
@@ -69,6 +69,6 @@ int main(int argc, const char *argv[]){
    
      
     setPriorities(&prioritylen, priority, "ClientConfig/Priority3.txt");
-    
+    */
    return 0;
 }
