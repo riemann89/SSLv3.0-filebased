@@ -3,7 +3,6 @@ COSE DA SISTEMARE:
 
 Nel Client:
 - randomizzare la sessionId del client hello.
-- sistemare la questione della lettura delle cipher supportate: tutto va adattato con CipherSuite2.
 - estrarre la cipher_suite choosen dal server hello
 
 
@@ -14,13 +13,11 @@ Nel Server:
 - TODO nel codice.
 
 Nell SSLfunctions:
+- ODO: ALLOCO IL MAX
+
+
 
 Structure:
-(clienthelloserver)Sostituire ciphesuite(ciphersuite) con ciphersuite_code(uint8_t) ->
-ricordarsi di sistemare la funzione handshake->record e record->handshake.
-
-
--devo gestire gli export
 
 -encryptPreMaster //cambiare il nome
 - mancano delle free?

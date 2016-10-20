@@ -298,8 +298,8 @@ int main(int argc, const char *argv[]){
     SHA1_Update(&sha,master_secret,sizeof(uint8_t)*48);
     MD5_Update(&md5,master_secret,sizeof(uint8_t)*48);  
     
-    SHA1_Update(&sha,pad_1,sizeof(uint8_t)*40);  
-    MD5_Update(&md5,pad_1,sizeof(uint8_t)*48); 
+    SHA1_Update(&sha, pad_1,sizeof(uint8_t)*40);
+    MD5_Update(&md5, pad_1,sizeof(uint8_t)*48);
     
     md5_1 = calloc(16, sizeof(uint8_t));
     sha_1 = calloc(20, sizeof(uint8_t));
