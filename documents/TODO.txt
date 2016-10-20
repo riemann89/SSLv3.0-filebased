@@ -13,7 +13,8 @@ Nel Server:
 - TODO nel codice.
 
 Nell SSLfunctions:
-- ODO: ALLOCO IL MAX
+- TODO: ALLOCO IL MAX
+- completare: CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code)
 
 
 

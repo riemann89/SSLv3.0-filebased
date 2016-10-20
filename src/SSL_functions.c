@@ -1041,7 +1041,7 @@ KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
     if(cipher_code> 0 && cipher_code < 11)
         return RSA_;
     if(cipher_code > 10 && cipher_code< 28)
-        return DIFFIE_HELLMAN;
+        return DH_;
     if(cipher_code > 27 && cipher_code < 31)
         return KFORTEZZA;
     perror("Cipher null or not a valid \n");
@@ -1245,6 +1245,33 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
     }
     return cipher_suite;
 	}
+CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
+    
+    if (ciphersuite_code<= 0x0A && ciphersuite_code>=0x01){
+        return RSA_SIGN;
+    }
+    else if (ciphersuite_code<= 0x0D && ciphersuite_code>=0x0B){
+        return DSS_FIXED_DH;
+    }
+    else if (ciphersuite_code<= 0x10 && ciphersuite_code>=0x1E){
+        return RSA_FIXED_DH;
+    }
+    else if (ciphersuite_code<= 0x13 && ciphersuite_code>=0x11){
+        return DSS_EPHEMERAL_DH;
+    }
+    else if (ciphersuite_code<= 0x16 && ciphersuite_code>=0x14){
+        return RSA_EPHEMERAL_DH;
+    }
+    else if (ciphersuite_code<= 0x1B && ciphersuite_code>=0x17){
+        return DH_ANON;
+    }
+    else if (ciphersuite_code<= 0x1E && ciphersuite_code>=0x1C){
+        return FORTEZZA_MISSI;
+    }
+    
+    perror("CodeToCertificateType Error: ciphersuite_code not correct.");
+    exit(1);
+}
 
 uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello){
     uint8_t *buffer;
@@ -1446,7 +1473,7 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
                 pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
                 *out_size = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
                 break;
-            case DIFFIE_HELLMAN:
+            case DH_:
                 printf("CIAO");
                 break;
             case KFORTEZZA:
@@ -1472,7 +1499,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
 
     switch(alg){
         case RSA_:
-            certificate = fopen("certificates/RSA_server.key","rb");
+            certificate = fopen("private_keys/RSA_server.key","rb");
             
             if (certificate == NULL){
                 printf("decryptPreMaster error: memory leak - null pointer .");
@@ -1483,7 +1510,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
             *out_size = RSA_private_decrypt(in_size, enc_pre_master_secret, pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
             break;
             
-        case DIFFIE_HELLMAN:
+        case DH_:
             break;
         case KFORTEZZA:
             break;

@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <openssl/rand.h>
 #include <openssl/md5.h>
+#include <openssl/dh.h>
+#include <openssl/bn.h>
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
@@ -28,6 +30,7 @@ int main(int argc, const char *argv[]){
     Finished finished;
     uint8_t priority[10];
     CipherSuite *ciphersuite_choosen;
+    CertificateType certificate_type;
     int phase, key_block_size, len_parameters;
     //char certificate_string[100];
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
@@ -42,9 +45,11 @@ int main(int argc, const char *argv[]){
     master_secret = NULL;
     cipher_key = NULL;
     key_block = NULL;
+    certificate = NULL;
     ciphersuite_code = 0; //TODO come mai questi valori?
     prioritylen = 10;
     phase = 0;
+    certificate_type = 0;
     
     SHA1_Init(&sha);
     MD5_Init(&md5);
@@ -91,7 +96,7 @@ int main(int argc, const char *argv[]){
     server_hello.length = 39;
     server_hello.version = 3;
     server_hello.random = &random;
-    server_hello.sessionId = 32;
+    server_hello.sessionId = 32; //TODO: da sistemare
     server_hello.ciphersuite_code = &ciphersuite_code;
 				
     //Wrapping
@@ -108,8 +113,11 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(06);
-
+    ciphersuite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
+	
+    
+    printf("%d\n", certificate_type);
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
     OpenCommunication(client);
@@ -119,12 +127,39 @@ int main(int argc, const char *argv[]){
     
     
     //CERTIFICATE
-    if (ciphersuite_code == 0x05){ //TODO sistemare
-        //TODO fare uno switch sui vari casi che trattiamo
-        //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
-    	certificate = loadCertificate("certificates/RSA_server.crt");
-    	handshake = CertificateToHandshake(certificate);
-    	record = HandshakeToRecordLayer(handshake);
+
+	//TODO: gestire gli altri certificati
+    
+    if (certificate_type !=DH_ANON) {
+        
+    	switch (certificate_type) {
+        	case RSA_SIGN:
+                //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
+            	certificate = loadCertificate("certificates/RSA_server.crt");
+            	break;
+            case DSS_SIGN:
+                break;
+            case RSA_FIXED_DH:
+                break;
+            case DSS_FIXED_DH:
+                break;
+            case RSA_EPHEMERAL_DH:
+                break;
+            case DSS_EPHEMERAL_DH:
+                certificate = loadCertificate("certificates/DSA_server.crt");
+                break;
+            case DH_ANON:
+                break;
+            case FORTEZZA_MISSI:
+                break;
+        	default:
+                perror("Certificate type error.");
+                exit(1);
+            	break;
+        }
+
+        handshake = CertificateToHandshake(certificate);
+        record = HandshakeToRecordLayer(handshake);
       
     	printf("\nCERTIFICATE: sent\n");
     	for(int i=0; i<record->length - 5; i++){
@@ -139,8 +174,67 @@ int main(int argc, const char *argv[]){
     	OpenCommunication(client);
     	while(CheckCommunication() == client){}
     }
+
     
     //SERVER KEY EXCHANGE
+    
+    if (certificate_type != RSA_SIGN && certificate_type != RSA_FIXED_DH && certificate_type != DSS_FIXED_DH){
+        
+        //generare i parametri di diffie-helmann
+        DH *dh;
+        
+        dh = DH_new();//TODO: remember to free
+        
+        if (DH_generate_parameters_ex(dh, 2048, 2, NULL) == 0){
+            perror("DH parameter generation error.");
+            exit(1);
+        };
+        
+        int error_codes = 0;
+        
+        if(DH_check(dh, &error_codes) == 0){
+            perror("DH parameter check not passed.");
+            exit(1);
+        }
+		
+        if(DH_generate_key(dh) == 0){
+            perror("DH keys generarion error.");
+            exit(1);
+        }
+
+        ServerKeyExchange server_key_exchange;
+        
+        server_key_exchange.len_parameters = 3*DH_size(dh);
+        server_key_exchange.parameters = (uint8_t*)calloc(server_key_exchange.len_parameters, sizeof(uint8_t));
+        server_key_exchange.signature = (uint8_t*)calloc(ciphersuite_choosen->signature_size, sizeof(uint8_t));
+        
+        BN_bn2bin(dh->p, server_key_exchange.parameters);
+        BN_bn2bin(dh->g, server_key_exchange.parameters + BN_num_bytes(dh->p));
+        BN_bn2bin(dh->pub_key, server_key_exchange.parameters + 2*BN_num_bytes(dh->p));
+        
+        //TODO: salvare p,g nel codice o su file.
+        
+        //creare la firma
+        
+        //impacchettare
+        
+        //spedire e mettersi in attesa
+        handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen);
+        record = HandshakeToRecordLayer(handshake);
+        
+        printf("\nSERVER KEY EXCHANGE: sent\n");
+        for(int i=0; i<record->length - 5; i++){
+            printf("%02X ", record->message[i]);
+        }
+        printf("\n\n");
+        
+        SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+        MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+        
+        sendPacketByte(record);
+        OpenCommunication(client);
+        while(CheckCommunication() == client){}
+    }
     
     //CERTIFICATE REQUEST
     
@@ -224,7 +318,7 @@ int main(int argc, const char *argv[]){
                     break;
                 case CERTIFICATE_VERIFY:
                     certificate_verify = HandshakeToCertificateVerify(client_handshake);
-                   printf("\nCERTIFICATE_VERIFY: recived\n");
+                   printf("\nCERTIFICATE_VERIFY: received\n");
                         for(int i=0; i<client_message->length - 5; i++){
                         printf("%02X ", client_message->message[i]);       
                         }

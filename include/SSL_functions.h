@@ -53,6 +53,7 @@ RecordLayer *ChangeCipherSpecRecord();
 void setPriorities(uint8_t *number, uint8_t *priority, char *filename);
 uint8_t *loadCipher(char* filename , uint8_t *len);
 CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code);
+CertificateType CodeToCertificateType(uint8_t ciphersuite_code);
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 
 

@@ -22,7 +22,7 @@ typedef enum{
 }HandshakeType;
 
 typedef enum{
-    KNULL, RSA_, DIFFIE_HELLMAN, KFORTEZZA
+    KNULL, RSA_, DH_, KFORTEZZA
 }KeyExchangeAlgorithm;
 
 typedef enum {
@@ -30,8 +30,10 @@ typedef enum {
 } CipherType;
 
 typedef enum{
-    RSA_SIGN, DSS_SIGN, RSA_FIXED_DH,
-    DSS_FIXED_DH,RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH, FORTEZZA_MISSI = 20
+    RSA_SIGN, DSS_SIGN,
+    RSA_FIXED_DH, DSS_FIXED_DH,
+    RSA_EPHEMERAL_DH, DSS_EPHEMERAL_DH,
+    DH_ANON, FORTEZZA_MISSI = 20
 }CertificateType;
 
 typedef enum{

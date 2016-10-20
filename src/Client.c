@@ -20,6 +20,7 @@ int main(int argc, const char *argv[]){
     CertificateRequest *certificate_request;
     KeyExchangeAlgorithm algorithm_type;
     Finished finished;
+    CertificateType certificate_type;
     EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
@@ -54,6 +55,7 @@ int main(int argc, const char *argv[]){
     len_hello = 0;
     phase = 0;
     key_block_size = 0;
+    certificate_type = 0;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
@@ -69,8 +71,8 @@ int main(int argc, const char *argv[]){
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
-    client_hello.sessionId = 32; //TODO
-    supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello); //TODO
+    client_hello.sessionId = 32; //TODO: randomizzare la session id
+    supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite_code = supported_ciphers;
     sender_id = client_hello.sessionId;
@@ -110,7 +112,7 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    //TODO: inserire il controllo se riceviamo un server hello.
+    //TODO: inserire il controllo per vedere se riceviamo un server hello.
     
     SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
     MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
@@ -118,7 +120,9 @@ int main(int argc, const char *argv[]){
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
     
-    cipher_suite_choosen = CodeToCipherSuite(06); //TODO: automatizzare il processo. Deve essere estratto dal server_hello
+    //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
+    cipher_suite_choosen = CodeToCipherSuite(0x11); //TODO: riga su... QUESTO TODO lascialo che lo uso per fare i test: impostando direttamente la CIPHERSUITE
+    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
@@ -151,7 +155,7 @@ int main(int argc, const char *argv[]){
                 OpenCommunication(server);
                 break;
             case SERVER_KEY_EXCHANGE:
-                printf("TODO:SERVER KEY EXCHANGE: read\n");
+                printf("SERVER KEY EXCHANGE: read\n");
                 OpenCommunication(server);
                 break;
             case CERTIFICATE_REQUEST:
@@ -198,7 +202,6 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
-        //TODO: switch ???
         ///CERTIFICATE///
         
 		///CLIENT_KEY_EXCHANGE///
@@ -249,7 +252,6 @@ int main(int argc, const char *argv[]){
 
 
         ///CERTIFICATE_VERIFY///
-    	//TODO
         //OpenCommunication(server);
         
         //while(CheckCommunication() == server){};
@@ -320,11 +322,11 @@ int main(int argc, const char *argv[]){
     uint8_t *enc_message = NULL;
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
-    //enc_message_len = 45;
+
     // assembling encrypted packet
     RecordLayer record2;
     
-	record2.length = enc_message_len + 5; //TODO
+	record2.length = enc_message_len + 5;
     record2.type = HANDSHAKE;
     record2.version = std_version;
     record2.message = enc_message;
@@ -343,7 +345,6 @@ int main(int argc, const char *argv[]){
     free(md5_1);
     free(sha_fin);
     free(md5_fin);
-     //TODO free finished
     
     OpenCommunication(server);
     while(CheckCommunication() == server){};
@@ -381,7 +382,7 @@ int main(int argc, const char *argv[]){
     
     //FreeRecordLayer(server_message);
     //FreeHandshake(server_handshake);
-    //TODO FreeFinished(server_finished);
+    //FreeFinished(server_finished);
     free(master_secret);
 
     return 0;
