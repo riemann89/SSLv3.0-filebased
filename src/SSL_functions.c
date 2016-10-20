@@ -917,10 +917,10 @@ RecordLayer *ChangeCipherSpecRecord(){
     
     RecordLayer *recordlayer;
     uint8_t *byte;
-    byte =(uint8_t*)calloc(1,sizeof(uint8_t)); 
+    byte = (uint8_t*)calloc(1, sizeof(uint8_t)); 
     recordlayer = (RecordLayer*)calloc(1, sizeof(RecordLayer));
     
-    byte[0]=1;
+    byte[0] = 1;
     
     recordlayer->type= CHANGE_CIPHER_SPEC;
     recordlayer->version= std_version;
@@ -1349,7 +1349,7 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     
     return master_secret;
 }
-uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello){
+uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *size, ClientServerHello *client_hello, ClientServerHello *server_hello){
     
     uint8_t *key_block, *final_client_write_key, *final_server_write_key, *client_write_iv, *server_write_iv;
     MD5_CTX md5;
@@ -1363,14 +1363,15 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientSe
     
     if (cipher_suite->exportable == false) {
         key_block_size = 2*(cipher_suite->signature_size + cipher_suite->key_material + cipher_suite->iv_size);
-        key_block_size = key_block_size + key_block_size % 16; //made a multiple of 16
+        key_block_size = key_block_size + (16 - key_block_size % 16); //made a multiple of 16
         key_block = BaseFunction(key_block_size/16, master_secret, 48, client_hello, server_hello);
+        *size = key_block_size;
     }
     else{
         //KeyBlock temp
         key_block_size_temp = 2*(cipher_suite->signature_size + cipher_suite->key_material);
-        key_block_size_temp = key_block_size_temp + key_block_size_temp % 16; //made a multiple of 16
-        key_block = BaseFunction(key_block_size_temp, master_secret, 48, client_hello, server_hello);
+        key_block_size_temp = key_block_size_temp + (16 -key_block_size_temp % 16); //made a multiple of 16
+        key_block = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);//TODO da controllare
         
         //final write key
         //client
@@ -1403,7 +1404,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientSe
         MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
         MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
         MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-        MD5_Final(final_client_write_key, &md5);
+        MD5_Final(client_write_iv, &md5);
         
         //server
         server_write_iv = calloc(16, sizeof(uint8_t));
@@ -1413,18 +1414,18 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientSe
         MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
         MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
         MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-        MD5_Final(final_server_write_key, &md5);
+        MD5_Final(server_write_iv, &md5);
         
         //construct final keyblock
+        *size = 2*cipher_suite->signature_size + 64;
+        key_block =(uint8_t*)realloc(key_block, (*size)*sizeof(uint8_t));
         memcpy(key_block + 2*(cipher_suite->signature_size), final_client_write_key, 16);
         memcpy(key_block + 2*(cipher_suite->signature_size) + 16, final_server_write_key, 16);
-        memcpy(key_block + 2*(cipher_suite->signature_size) + 32, final_client_write_key, 16);
-        memcpy(key_block + 2*(cipher_suite->signature_size) + 48, final_server_write_key, 16);
+        memcpy(key_block + 2*(cipher_suite->signature_size) + 32, client_write_iv, 16);
+        memcpy(key_block + 2*(cipher_suite->signature_size) + 48, server_write_iv, 16);
+        
     }
     
-    
-    
-	
     return key_block;
     
     
@@ -1510,7 +1511,12 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     
     ctx = EVP_CIPHER_CTX_new();
     if (cipher_suite->exportable) {
-    	//TODO RIVEDERE
+        if (key_talker == server) {
+            shift1 = 16;
+            shift2 = 16;
+        }
+        key = key_block + (2*cipher_suite->signature_size + shift1);
+        iv = key + (32 + shift2);
         
     }
     else{
@@ -1521,6 +1527,8 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
         key = key_block + (2*cipher_suite->signature_size + shift1);
         iv = key + (2*cipher_suite->key_material + shift2);
     }
+
+
 
     
     switch (cipher_suite->cipher_algorithm) {
@@ -1547,7 +1555,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
             break;
             
         case RC2:
-            EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, NULL, state);
+            EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
             break;
         
         case IDEA:
@@ -1575,13 +1583,10 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     }
     int tmp_len;
     
-    out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCO IL MAX
+    out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCARE IL MAX
     
     EVP_CipherUpdate(ctx, out_packet, out_packet_len, in_packet, in_packet_len);
     EVP_CipherFinal_ex(ctx, out_packet, &tmp_len); //TODO non si capisce a che serve sta tmp_len
-    *out_packet_len = tmp_len + *out_packet_len;
-    printf("OUT:%d\n", *out_packet_len);
-    printf("TEMP:%d\n", tmp_len);
     EVP_CIPHER_CTX_free(ctx);
     
     return out_packet;

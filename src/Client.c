@@ -118,7 +118,7 @@ int main(int argc, const char *argv[]){
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
     
-    cipher_suite_choosen = CodeToCipherSuite(05); //TODO: automatizzare il processo. 05 deve essere estratto dal server_hello
+    cipher_suite_choosen = CodeToCipherSuite(06); //TODO: automatizzare il processo. Deve essere estratto dal server_hello
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
@@ -238,9 +238,7 @@ int main(int argc, const char *argv[]){
         printf("\n");
         
         //KEYBLOCK GENERATION
-        key_block_size = 2*(cipher_suite_choosen->signature_size + cipher_suite_choosen->key_material + cipher_suite_choosen->iv_size);
-        printf("key block size: %d\n", key_block_size);
-        key_block = KeyBlockGen(master_secret, cipher_suite_choosen, &client_hello, server_hello);
+        key_block = KeyBlockGen(master_secret, cipher_suite_choosen, &key_block_size, &client_hello, server_hello);
 		
         printf("\nKEY BLOCK\n");
         for (int i=0; i< key_block_size; i++){
@@ -312,6 +310,7 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
     /* MAC and ENCRYPTION*/
+    
     RecordLayer *temp = NULL;
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);

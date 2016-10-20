@@ -107,8 +107,9 @@ int main(int argc, const char *argv[]){
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
-    ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code);
-    
+    //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
+    ciphersuite_choosen = CodeToCipherSuite(06);
+
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
     OpenCommunication(client);
@@ -210,9 +211,7 @@ int main(int argc, const char *argv[]){
                     printf("\n");
                     
                     //KEYBLOCK GENERATION
-                    key_block_size = 2*(ciphersuite_choosen->signature_size + ciphersuite_choosen->key_material + ciphersuite_choosen->iv_size);
-                    printf("key block size: %d\n", key_block_size);
-                    key_block = KeyBlockGen(master_secret, ciphersuite_choosen, client_hello, &server_hello);
+                    key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, &server_hello);
                     
                     printf("\nKEY BLOCK\n");
                     for (int i=0; i< key_block_size; i++){

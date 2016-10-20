@@ -81,7 +81,7 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
 
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
-uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, ClientServerHello *client_hello, ClientServerHello *server_hello);
+uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *size, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
 /* ENCRYPTION */
 
