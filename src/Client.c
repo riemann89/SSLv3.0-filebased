@@ -13,7 +13,7 @@ int main(int argc, const char *argv[]){
     //Declaration
     ClientServerHello client_hello, *server_hello;
     Handshake *handshake, *server_handshake;
-    RecordLayer *record, *server_message;
+    RecordLayer *record, *server_message, *temp;
     Random random;
     ClientKeyExchange client_key_exchange;
     Certificate *certificate;
@@ -24,17 +24,21 @@ int main(int argc, const char *argv[]){
     EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
-    int phase, key_block_size;
+    int phase, key_block_size,enc_message_len,dec_message_len;
     uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_id;
     uint8_t len_hello, *key_block, *session_id;
-    uint8_t *supported_ciphers;
+    uint8_t *supported_ciphers,*enc_message, *dec_message;
     CipherSuite *cipher_suite_choosen;
-    
+     
     
     //Initialization
+    dec_message_len = 0;
+    dec_message = NULL;
+    enc_message_len = 0;
+    enc_message=NULL
     server_hello = NULL;
     handshake = NULL;
     server_handshake = NULL;
@@ -56,6 +60,7 @@ int main(int argc, const char *argv[]){
     phase = 0;
     key_block_size = 0;
     certificate_type = 0;
+    temp=NULL;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
@@ -320,13 +325,11 @@ int main(int argc, const char *argv[]){
     
     /* MAC and ENCRYPTION*/
     
-    RecordLayer *temp = NULL;
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
     // MANCA IL MAC
 	
-    int enc_message_len = 0;
-    uint8_t *enc_message = NULL;
+   
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
 
@@ -375,8 +378,7 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    int dec_message_len = 0;
-    uint8_t *dec_message = NULL;
+    
     
     dec_message = DecEncryptPacket(server_message->message, server_message->length - 5, &dec_message_len, cipher_suite_choosen, key_block, server, 0);
 
