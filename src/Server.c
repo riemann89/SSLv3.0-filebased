@@ -31,14 +31,16 @@ int main(int argc, const char *argv[]){
     uint8_t priority[10];
     CipherSuite *ciphersuite_choosen;
     CertificateType certificate_type;
-    int phase, key_block_size, len_parameters;
+    int phase, key_block_size, len_parameters,dec_message_len,enc_message_len;
     //char certificate_string[100];
-    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *enc_message;
+    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin;
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
     uint8_t *cipher_key;
-    uint8_t *key_block;
+    uint8_t *key_block,*dec_message,*enc_message;
+    ServerKeyExchange server_key_exchange;
+ 
 
     
     //Initialization
@@ -50,7 +52,10 @@ int main(int argc, const char *argv[]){
     prioritylen = 10;
     phase = 0;
     certificate_type = 0;
-    
+    dec_message = NULL;
+    enc_message=NULL;
+    dec_message_len = 0;
+    enc_message_len = 0;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
@@ -197,7 +202,7 @@ int main(int argc, const char *argv[]){
             exit(1);
         }
 
-        ServerKeyExchange server_key_exchange;
+        
         
         server_key_exchange.len_parameters = 3*DH_size(dh);
         server_key_exchange.parameters = (uint8_t*)calloc(server_key_exchange.len_parameters, sizeof(uint8_t));
@@ -353,9 +358,8 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-	int dec_message_len = 0;
-    uint8_t *dec_message = NULL;
     
+   
     printf("%d/n", client_message->length);
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
@@ -425,7 +429,7 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     
     // MANCA IL MAC
-    int enc_message_len = 0;
+ 
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     
