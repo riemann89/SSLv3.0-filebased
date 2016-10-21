@@ -913,6 +913,10 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     return recordlayer;
 }
 
+/**
+ * creates a record containing a ChangeCipherSpech
+ * @return RecordLayer *recordlayer 
+ */
 RecordLayer *ChangeCipherSpecRecord(){
     
     RecordLayer *recordlayer;
@@ -930,7 +934,11 @@ RecordLayer *ChangeCipherSpecRecord(){
     return recordlayer;   
 }
 
-/* RecordLayer to Handshake */
+/**
+ * parse a record layer struct into an handshake struct
+ * @param RecordLayer *record
+ * @return Handshake *result
+ */
 Handshake *RecordToHandshake(RecordLayer *record){
     Handshake *result;
     uint8_t *buffer;
@@ -1049,6 +1057,12 @@ KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
 }
 
 /*************************************** OTHERS ******************************************************/
+
+/**
+ * Initialize and return the ciphersuite corresponding to the ciphersuite_code 
+ * @param uint8_t ciphersuite_code
+ * @return CipherSuite *cipher_suite
+ */
 CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
     //INIZIALIZZARE CipherSuite
     
@@ -1273,6 +1287,15 @@ CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
     exit(1);
 }
 
+/**
+ * TODO
+ * @param int numer_of_MD5
+ * @param uint8_t *principal_argument
+ * @param int principal_argument_size
+ * @param ClientServerHello *client_hello
+ * @param ClientServerHello *server_hello
+ * @return uint8_t *buffer
+ */
 uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello){
     uint8_t *buffer;
     uint8_t letter;
@@ -1331,6 +1354,12 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
 }
 
 /*************************************** CERTIFICATES ******************************************************/
+
+/**
+ * write certificate over a file named "cert_out-crt"
+ * @param X509 *certificate
+ * @return int exit_value  
+ */
 int writeCertificate(X509* certificate){
     /* Per leggere il der
     X509 *res= NULL;
@@ -1341,8 +1370,18 @@ int writeCertificate(X509* certificate){
     file_cert=fopen("cert_out.crt", "w+");
     return PEM_write_X509(file_cert, certificate);
 }
+
+/**
+ * TODO apparently it does nothing
+ * @return 0
+ */
 int readCertificate(){return 0;}
 
+/**
+ * extract the public key read from the certificate
+ * @param Certificate *certificate
+ * @return EVP_KEY *pubkey
+ */
 EVP_PKEY* readCertificateParam (Certificate *certificate){
     
     X509 *cert_509;
@@ -1362,8 +1401,13 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
 }
 
 /*************************************** KEYS GENERATION ******************************************************/
-//Return size (in bytes) of keyblock
-
+/**
+ * derives the master_secret from pre_master_secret, client hello and server hello
+ * @param uint8_t *pre_master_secret
+ * @param ClientServerHello *client_hello
+ * @param ClientServerHello *server_hello
+ * @return uint8_t *master_secret
+ */
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
     uint8_t *master_secret;
     
@@ -1376,6 +1420,15 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_h
     
     return master_secret;
 }
+/**
+ * Generate key_block (TODO) (any better description?)
+ * @param uint8_t *master_secret
+ * @param CipherSuite *cipher_suite
+ * @param int *size
+ * @param ClientServerHello *client_hello
+ * @param ClientServerHello *server_hello
+ * @return uint8_t *key_block
+ */
 uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *size, ClientServerHello *client_hello, ClientServerHello *server_hello){
     
     uint8_t *key_block, *final_client_write_key, *final_server_write_key, *client_write_iv, *server_write_iv;
@@ -1460,6 +1513,17 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
 
 /*************************************** ENCRYPTION ******************************************************/
 //Asymmetric
+
+/**
+ * encrypts pKey (pre-master-secret) with using the algorithm algorithm
+ * @param EVP_KEY *pKey
+ * @param KeyExchangeAlgorithm algorithm
+ * @param uint8_t *pre_master_secret
+ * @param int in_size
+ * @param int *out_size
+ * @return uint8_t *pre_master_secret_encrypted
+
+ */
 uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size){
     RSA *rsa;
     uint8_t *pre_master_secret_encrypted;
@@ -1487,7 +1551,17 @@ uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_ma
         
         return pre_master_secret_encrypted;
 }
+/**
+ * decrypt pre master secret
+ * @param KeyExchangeAlgorithm alg
+ * @param uint8_t *enc_pre_master_secret
+ * @param int in_size
+ * @param int *out_size
+ * @return uint8_t *pre_master_secret
+ 
+ */
 uint8_t* AsymDec(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size){
+
     uint8_t *pre_master_secret;
     FILE *certificate;
     RSA *rsa_private_key;
@@ -1523,6 +1597,17 @@ uint8_t* AsymDec(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int i
 }
 
 //Symmetric TODO: TO CHECK
+/**
+ * decrypt an enciphred packet 
+ * @param uint8_t *in_packet
+ * @param int in_packet_len
+ * @param int *out_packet_len
+ * @param CipherSuite *cipher_suite
+ * @param uint8_t *key_block
+ * @param Talker key_talker
+ * @param int state
+ * @return uint8_t *out_packet
+ */
 uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
     uint8_t *out_packet;
     EVP_CIPHER_CTX *ctx;
@@ -1620,7 +1705,14 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     
 }
 
-
+/**
+ * MAC of the Handshake hand.
+ * could be made using sha1 or md5 according to the CipherSuite cipher in input
+ * @param CipherSuite cipher
+ * @param Handshake *hand
+ * @param uint8_t *macWriteSecret
+ * @return uint8_t *sha_fin or *md5_fin
+ */
 uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
     
     MD5_CTX md5,md52;

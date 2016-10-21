@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_id;
-    uint8_t len_hello, *key_block;
+    uint8_t len_hello, *key_block, *session_id;
     uint8_t *supported_ciphers;
     CipherSuite *cipher_suite_choosen;
     
@@ -71,7 +71,8 @@ int main(int argc, const char *argv[]){
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
-    client_hello.sessionId = 32; //TODO: randomizzare la session id
+    RAND_bytes(session_id,4);
+    client_hello.sessionId = Bytes_To_Int(4,session_id);
     supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite_code = supported_ciphers;
@@ -103,6 +104,11 @@ int main(int argc, const char *argv[]){
     
     server_message = readchannel();
     server_handshake = RecordToHandshake(server_message);
+    
+    if(handshake->msg_type!= SERVER_HELLO) {
+        perror("expected a SERVER_HELLO in this phase");
+        exit(1);
+    }
     server_hello = HandshakeToClientServerHello(server_handshake);
     
     printf("\nSERVER HELLO: read\n");
@@ -111,19 +117,20 @@ int main(int argc, const char *argv[]){
         
     }
     printf("\n\n");
-    
-    //TODO: inserire il controllo per vedere se riceviamo un server hello.
-    
+        
     SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
     MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
     
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
-    
+    cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);  // Non posso testarlo ho messo la parte che c'era prima in commento
+    certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
+
+    /*
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
     cipher_suite_choosen = CodeToCipherSuite(0x11); //TODO: riga su... QUESTO TODO lascialo che lo uso per fare i test: impostando direttamente la CIPHERSUITE
     certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
-    
+    */
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
     phase = 2;
