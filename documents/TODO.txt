@@ -2,7 +2,7 @@ COSE DA SISTEMARE:
 - stampare anche i record layer.
 
 Nel Client:
-- randomizzare la sessionId del client hello.
+- randomizzata la sessionId del client hello.   (ma non dovrebbe essere un numero sequenziale?)
 - estrarre la cipher_suite choosen dal server hello
 
 

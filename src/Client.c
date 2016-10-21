@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_id;
-    uint8_t len_hello, *key_block;
+    uint8_t len_hello, *key_block, *session_id;
     uint8_t *supported_ciphers;
     CipherSuite *cipher_suite_choosen;
     
@@ -71,7 +71,8 @@ int main(int argc, const char *argv[]){
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
-    client_hello.sessionId = 32; //TODO: randomizzare la session id
+    RAND_bytes(session_id,4);
+    client_hello.sessionId = Bytes_To_Int(4,session_id);
     supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite_code = supported_ciphers;
