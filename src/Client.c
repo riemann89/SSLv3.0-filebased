@@ -104,6 +104,11 @@ int main(int argc, const char *argv[]){
     
     server_message = readchannel();
     server_handshake = RecordToHandshake(server_message);
+    
+    if(handshake->msg_type!= SERVER_HELLO) {
+        perror("expected a SERVER_HELLO in this phase");
+        exit(1);
+    }
     server_hello = HandshakeToClientServerHello(server_handshake);
     
     printf("\nSERVER HELLO: read\n");
@@ -112,9 +117,7 @@ int main(int argc, const char *argv[]){
         
     }
     printf("\n\n");
-    
-    //TODO: inserire il controllo per vedere se riceviamo un server hello.
-    
+        
     SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
     MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
     
