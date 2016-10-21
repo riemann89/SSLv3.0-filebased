@@ -1460,7 +1460,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
 
 /*************************************** ENCRYPTION ******************************************************/
 //Asymmetric
-uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size){
+uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size){
     RSA *rsa;
     uint8_t *pre_master_secret_encrypted;
     
@@ -1480,14 +1480,14 @@ uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_
                 printf("CIAO");
                 break;
             default:
-                perror("EncryptPreMaster error: unknown keyexchange algorithm.");
+                perror("AsymEnc error: unknown keyexchange algorithm.");
                 exit(1);
                 break;
         }
         
         return pre_master_secret_encrypted;
 }
-uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size){
+uint8_t* AsymDec(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size){
     uint8_t *pre_master_secret;
     FILE *certificate;
     RSA *rsa_private_key;
@@ -1502,7 +1502,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
             certificate = fopen("private_keys/RSA_server.key","rb");
             
             if (certificate == NULL){
-                printf("decryptPreMaster error: memory leak - null pointer .");
+                printf("AsymDec error: memory leak - null pointer .");
                 exit(1);
             }
             
@@ -1515,7 +1515,7 @@ uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secr
         case KFORTEZZA:
             break;
         default:
-            perror("decryptPreMaster error: unknown key exchange algorithm.");
+            perror("AsymDec error: unknown key exchange algorithm.");
             exit(1);
             break;
     }
@@ -1683,6 +1683,49 @@ uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
         perror("MAC Error: signature algorithm not valid.");
         exit(1);
     }
+}
+uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params){
+    
+    uint8_t *signature, *sha_final, *md5_final;
+    SHA_CTX sha;
+    MD5_CTX md5;
+    
+    //hash
+    switch (cipher->signature_algorithm) {
+        case SHA1_:
+            sha_final = calloc(16, sizeof(uint8_t));
+            
+            SHA_Init(&sha);
+            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
+            SHA_Final(sha_final, &sha);
+            
+            break;
+        case MD5_1:
+            md5_final = calloc(16, sizeof(uint8_t));
+            
+            MD5_Init(&md5);
+            MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+            MD5_Update(&md5, params, len_params*sizeof(uint8_t));
+            MD5_Final(md5_final, &md5);
+        default:
+            perror("Signature_ error: signature algorithm not supported");
+            exit(1);
+            break;
+    }
+    
+    
+    //firmare : posso riutilizzare la funzione encrypt
+    //devo passare la private key in input
+    
+    return signature;
+    
 }
 
 

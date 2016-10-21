@@ -87,12 +87,13 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
 /* ENCRYPTION */
 
 //asymmetric
-uint8_t* encryptPreMaster(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size);
-uint8_t* decryptPreMaster(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size);
+uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size);
+uint8_t* AsymDec(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size);
 
 //symmetric
 uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 
 /* AUTHENTICATION */
 uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret);
+uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params);
 

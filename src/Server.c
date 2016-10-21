@@ -216,6 +216,8 @@ int main(int argc, const char *argv[]){
         
         //creare la firma
         
+        
+        
         //impacchettare
         
         //spedire e mettersi in attesa
@@ -293,7 +295,7 @@ int main(int argc, const char *argv[]){
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 					
                     int out_size = 0;
-                    pre_master_secret = decryptPreMaster(RSA_, client_key_exchange->parameters, len_parameters ,&out_size);
+                    pre_master_secret = AsymDec(RSA_, client_key_exchange->parameters, len_parameters ,&out_size);
                     
                     master_secret = calloc(48, sizeof(uint8_t));
                     master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
