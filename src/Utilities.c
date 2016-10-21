@@ -1,18 +1,18 @@
 #include "Utilities.h"
 /**
- * Take as input an array its length and reverse it uo to the length
+ * Take as input an array and its length and reverse it uo to the selected length
  * for example: reverse([1,2,3,4,5] ,4) -> [4,3,2,1,5]
  * @param *originale
  * @param int length
  */
-void reverse(uint8_t originale[],int length){ 					 		//take as input an array of Bytes and its length,  after this function is called your original vector will be reversed
-	uint8_t reversed[length];			                                                //array into which put a copy of the original one
+void reverse(uint8_t originale[],int length){ 					 		
+	uint8_t reversed[length];			                                                
 	int i;
 	for(i=0; i<length;  i++){
-		reversed[i]=originale[i];														//copy original into reversed
+		reversed[i]=originale[i];														
 	}
  for(i=0; i<length;   i++){ 
-		originale[i]=reversed[length-i-1];										//substitute original starting from top to bottom	
+		originale[i]=reversed[length-i-1];										
 	}
 }
 
@@ -21,13 +21,13 @@ void reverse(uint8_t originale[],int length){ 					 		//take as input an array o
  * @param uint32_t t
  * @param uint8_t *t_Bytes
  */
-void  int_To_Bytes(uint32_t t, uint8_t *t_Bytes){ 						 			//take as input an integer and an array of bytes  after this function is called, the array will be the reversed Bytes representation of the integer
+void  int_To_Bytes(uint32_t t, uint8_t *t_Bytes){ 						 			
     int i;
-	uint8_t *p=(uint8_t*) &t;                                                               //*p is a pointer uint8 representation  of the  input int t, but still reversed
+	uint8_t *p=(uint8_t*) &t;                                                               
 	for(i=0;i<4;i++){
-		t_Bytes[i]= *(p+i);                                                                        // copy *p into the array t_Bytes
+		t_Bytes[i]= *(p+i);                                                                        
 	}
-	reverse(t_Bytes,4);                                                                         // reverse t_Bytes, now it is the 4 bytes rappresentation of int t with leftmost significant bit.
+	reverse(t_Bytes,4);                                                                         
 }
 
 /**
@@ -36,7 +36,7 @@ void  int_To_Bytes(uint32_t t, uint8_t *t_Bytes){ 						 			//take as input an i
  * @param uint8_t *t_Bytes
  * @return int res
  */
-uint32_t Bytes_To_Int(int len, uint8_t  *t_Bytes){								// convert a stream of max 4 byte into an unsigned int with leftmost significant bit 
+uint32_t Bytes_To_Int(int len, uint8_t  *t_Bytes){								
 	if(len > 4)
 	{
 		printf("error max length conversion = 4");
