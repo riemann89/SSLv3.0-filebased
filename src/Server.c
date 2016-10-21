@@ -79,12 +79,7 @@ int main(int argc, const char *argv[]){
     sender = &sender_var;
    
     //Cipher choosing TODO: rivedere
-    int i;
-    for (i = 0; i < 10; i++) {
-        priority[i] = i+12;
-    }
-    priority[0] = 5;
-    setPriorities(&prioritylen, priority, "ServerConfig/Priority1.txt");
+
     ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
     printf("%02X", ciphersuite_code);
     
