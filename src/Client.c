@@ -120,11 +120,14 @@ int main(int argc, const char *argv[]){
     
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
-    
+    cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);  // Non posso testarlo ho messo la parte che c'era prima in commento
+    certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
+
+    /*
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
     cipher_suite_choosen = CodeToCipherSuite(0x11); //TODO: riga su... QUESTO TODO lascialo che lo uso per fare i test: impostando direttamente la CIPHERSUITE
     certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
-    
+    */
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     OpenCommunication(server);
     phase = 2;

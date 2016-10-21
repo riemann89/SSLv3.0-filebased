@@ -3,7 +3,7 @@ COSE DA SISTEMARE:
 
 Nel Client:
 - randomizzata la sessionId del client hello.   (ma non dovrebbe essere un numero sequenziale?)
-- estrarre la cipher_suite choosen dal server hello
+- estrarre la cipher_suite choosen dal server hello  (spero funzioni vedi riga 126,127 del client.c)
 
 
 - TODO nel codice.
