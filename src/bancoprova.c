@@ -16,13 +16,21 @@
 #include "SSL_functions.h"
 
 int main(int argc, const char *argv[]){
-    /*
+    
    
    
     
    uint8_t prioritylen = 7;
    CipherSuite *priority = NULL;
    
+   
+   /* come fare altre liste
+    * si può capire dal codice sotto usato per creare le liste già in essere
+    * nello specifico:
+    * inserire nell array priority un numero a piacere di chipher codes, settare prioritylen di conseguenza
+    * setPriorities(&prioritylen,priority, "percorso/PriorityNumeroSequenziale.txt")
+    * compilare ed eseguire :)
+    */
     int i;
     for (i = 0; i < prioritylen; i++) {
         priority[i].code=i+12;
@@ -69,6 +77,6 @@ int main(int argc, const char *argv[]){
    
      
     setPriorities(&prioritylen, priority, "ClientConfig/Priority3.txt");
-    */
+    
    return 0;
 }
