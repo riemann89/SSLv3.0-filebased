@@ -2,14 +2,13 @@ COSE DA SISTEMARE:
 - stampare anche i record layer.
 
 Nel Client:
-- randomizzata la sessionId del client hello.   (ma non dovrebbe essere un numero sequenziale?)
-- estrarre la cipher_suite choosen dal server hello  (spero funzioni vedi riga 126,127 del client.c)
+
+- estrarre la cipher_suite choosen dal server hello  (spero funzioni vedi circa riga 126,127 del client.c)
 
 
 - TODO nel codice.
 
 Nel Server:
-- errore nello sha: dovrebbe fare l’ID del server non del client.
 - TODO nel codice.
 
 Nell SSLfunctions:
@@ -34,4 +33,4 @@ Structure:
 - estrare la len_parameters dal certificato
 - aggiungere altre ciphersuite .
 
-- Sistemare i commenti (DA ASSEGNARE)
+- Sistemare i commenti (DA ASSEGNARE)izzat
