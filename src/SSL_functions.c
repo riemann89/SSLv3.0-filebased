@@ -70,8 +70,7 @@ Certificate* loadCertificate(char * cert_name){
     certificate = calloc(1,sizeof(certificate));
     X509* certificate_x509 = NULL;
     uint8_t *buf;
-    FILE* certificate_file;
-    
+    FILE* certificate_file;    
     int len = 0;
     
     buf = NULL;
@@ -100,20 +99,20 @@ void sendPacketByte(RecordLayer *record_layer){
     FILE* SSLchannel;
     uint8_t length16[4],*message,*length,*Mversion,*mversion;
     ContentType *type;
-    int_To_Bytes(record_layer->length, length16);																		//int to bytes representation of the lenght
+    int_To_Bytes(record_layer->length, length16);
+    
     //Channel Operations//
-    SSLchannel=fopen("SSLchannelbyte.txt", "wb");															 		//channel opening in creating-writing mode
+    SSLchannel=fopen("SSLchannelbyte.txt", "wb");															 		
     if (SSLchannel == NULL) {
-        perror("Failed to open SSLchannel.txt - sendPacket operation\n");										//error
+        perror("Failed to open SSLchannel.txt - sendPacket operation\n");							
         exit(1);
     }
-    //extracting fields from record_layer, loading into temporary variables
+    //extracting fields from record_layer, loading into temporary variables//
     type=&record_layer->type;
     length=&length16[2];
     message=record_layer->message;
     Mversion=&record_layer->version.major;
     mversion=&record_layer->version.minor;
-    //record_layer fields serializing phase equivalent to transmit  those on the channel, in this toy our channel is just a file named SSLChannelbyte.txt
     fwrite(type,sizeof(uint8_t),sizeof(uint8_t),SSLchannel);
     fwrite(Mversion,sizeof(uint8_t),1,SSLchannel);
     fwrite(mversion,sizeof(uint8_t),1,SSLchannel);
@@ -404,8 +403,7 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exc
 Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite){
     Handshake *handshake;
     uint8_t *Bytes;
-    
-    
+      
     Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + cipher_suite->signature_size, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
@@ -601,10 +599,10 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     ClientServerHello *client_server_hello;
     uint8_t *ciphers;
     Random *random;
+    
     ciphers = (uint8_t*)calloc(handshake->length-41, sizeof(uint8_t));
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
-    random = (Random*)calloc(1,sizeof(Random));
-    
+    random = (Random*)calloc(1,sizeof(Random));   
     random->gmt_unix_time = Bytes_To_Int(4, handshake->content + 5);
     
     if (handshake->msg_type != CLIENT_HELLO && handshake->msg_type != SERVER_HELLO){
@@ -620,7 +618,6 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     client_server_hello->version = handshake->content[0];
     client_server_hello->sessionId = Bytes_To_Int(4, handshake->content + 1);
     client_server_hello->random = random;
-
     client_server_hello->ciphersuite_code = ciphers;
 
     return client_server_hello;
@@ -921,9 +918,9 @@ RecordLayer *ChangeCipherSpecRecord(){
     
     RecordLayer *recordlayer;
     uint8_t *byte;
-    byte = (uint8_t*)calloc(1, sizeof(uint8_t)); 
-    recordlayer = (RecordLayer*)calloc(1, sizeof(RecordLayer));
     
+    byte = (uint8_t*)calloc(1, sizeof(uint8_t)); 
+    recordlayer = (RecordLayer*)calloc(1, sizeof(RecordLayer));    
     byte[0] = 1;
     
     recordlayer->type= CHANGE_CIPHER_SPEC;
@@ -970,7 +967,8 @@ Handshake *RecordToHandshake(RecordLayer *record){
  */
 void setPriorities(uint8_t *number, uint8_t *priority, char *filename){   															
 
-    FILE* PriorityList; 																														
+    FILE* PriorityList; 
+    
     PriorityList = fopen(filename , "wb");   																																													 	
     fwrite(number,sizeof(uint8_t),1,PriorityList);
    
@@ -992,9 +990,10 @@ void setPriorities(uint8_t *number, uint8_t *priority, char *filename){
  */
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
     FILE* PriorityList;
-    uint8_t choosen;
-    PriorityList = fopen(filename, "rb");  	 																		
+    uint8_t choosen;   	 																		
     uint8_t *buffer;
+    
+    PriorityList = fopen(filename, "rb");  
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
     fread(buffer, 32, 1, PriorityList);
     //printf("%d\n",buffer[0]);
@@ -1297,6 +1296,7 @@ CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
  * @return uint8_t *buffer
  */
 uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello){
+    
     uint8_t *buffer;
     uint8_t letter;
     MD5_CTX md5;
@@ -1304,7 +1304,6 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
     uint8_t *md5_1, *sha_1;
     
     letter = 65;
-    
     buffer = calloc(16*numer_of_MD5, sizeof(uint8_t));
     
     if (buffer == NULL){
@@ -1365,6 +1364,7 @@ int writeCertificate(X509* certificate){
     X509 *res= NULL;
     d2i_X509(&res, &buf, *len);
      */
+    
     FILE* file_cert;
     
     file_cert=fopen("cert_out.crt", "w+");
@@ -1409,6 +1409,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
  * @return uint8_t *master_secret
  */
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
+   
     uint8_t *master_secret;
     
     master_secret = BaseFunction(3, pre_master_secret, 48, client_hello, server_hello);
@@ -1525,6 +1526,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
 
  */
 uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size){
+   
     RSA *rsa;
     uint8_t *pre_master_secret_encrypted;
     
@@ -1609,6 +1611,7 @@ uint8_t* AsymDec(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int i
  * @return uint8_t *out_packet
  */
 uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
+    
     uint8_t *out_packet;
     EVP_CIPHER_CTX *ctx;
     uint8_t *key, *iv;
