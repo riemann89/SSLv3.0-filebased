@@ -67,13 +67,13 @@ int main(int argc, const char *argv[]){
     while(CheckCommunication() == client){}
     client_message = readchannel();
     
+    
     printf("\nCLIENT_HELLO: read\n");
     for(int i=0; i<client_message->length - 5; i++){
         printf("%02X ", client_message->message[i]);       
     }
     printf("\n\n");
     
-    //TODO: inserire controllo sul pacchetto
     
     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
@@ -84,7 +84,6 @@ int main(int argc, const char *argv[]){
     sender_var= client_hello->sessionId; //TODO: errore ID (vedi /Documents/TODO.txt)
     sender = &sender_var;
    
-    //Cipher choosing TODO: rivedere
 
     ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
     printf("%02X", ciphersuite_code);
@@ -266,11 +265,9 @@ int main(int argc, const char *argv[]){
         while(CheckCommunication() == client){}
         
         client_message = readchannel();
-        //TODO: l'IF si può rimuovere
-        if(client_message->type==HANDSHAKE){
 
-            client_handshake = RecordToHandshake(client_message);
-            switch (client_handshake->msg_type) {
+        client_handshake = RecordToHandshake(client_message);
+        switch (client_handshake->msg_type) {
                 case CERTIFICATE:
                     certificate = HandshakeToCertificate(client_handshake);
                      printf("\nCERTIFICATE: received\n");
@@ -338,7 +335,7 @@ int main(int argc, const char *argv[]){
                     exit(1);
                     break;
             }
-        }
+        
     }
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     
@@ -364,8 +361,7 @@ int main(int argc, const char *argv[]){
    
     printf("%d/n", client_message->length);
     
-    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
-    
+    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);    
     dec_message_len = 40; //TODO
     
     printf("\nFINISHED DECRYPTED\n");

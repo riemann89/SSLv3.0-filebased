@@ -1,6 +1,8 @@
 COSE DA SISTEMARE:
 - stampare anche i record layer.
 
+in generale: rivedere i TODO se sono superflui o sbagliati
+
 Nel Client:
 
 - estrarre la cipher_suite choosen dal server hello  (spero funzioni vedi circa riga 126,127 del client.c)
