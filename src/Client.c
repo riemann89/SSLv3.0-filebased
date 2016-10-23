@@ -76,8 +76,7 @@ int main(int argc, const char *argv[]){
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.type = CLIENT_HELLO;
-    RAND_bytes(session_id,4);
-    client_hello.sessionId = Bytes_To_Int(4,session_id);
+    client_hello.sessionId = 0;
     supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite_code = supported_ciphers;

@@ -17,6 +17,7 @@
 #include <openssl/dh.h>
 #include <openssl/bn.h>
 #include "SSL_functions.h"
+#include "Utilities.h"
 
 int main(int argc, const char *argv[]){
     //Declaration
@@ -37,7 +38,7 @@ int main(int argc, const char *argv[]){
     MD5_CTX md5;
     SHA_CTX sha;
     uint32_t sender_var ,*sender;
-    uint8_t *cipher_key;
+    uint8_t *cipher_key, *session_Id;
     uint8_t *key_block,*dec_message,*enc_message;
     ServerKeyExchange server_key_exchange;
  
@@ -96,7 +97,8 @@ int main(int argc, const char *argv[]){
     server_hello.length = 39;
     server_hello.version = 3;
     server_hello.random = &random;
-    server_hello.sessionId = 32; //TODO: da sistemare
+    RAND_bytes(session_Id,4);
+    server_hello.sessionId = Bytes_To_Int(4,session_Id);
     server_hello.ciphersuite_code = &ciphersuite_code;
 				
     //Wrapping
