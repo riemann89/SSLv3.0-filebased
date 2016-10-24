@@ -42,7 +42,7 @@ uint8_t lista[31]={
     0x1E,//"SSL_FORTEZZA_KEA_WITH_RC4_128_SHA"}
 };
 
-ProtocolVersion std_version={0,3};
+ProtocolVersion std_version={3, 0};
 
 
 //PROVVISORIO SPERIMENTALE    lista 2 seve per fare esperimenti del tipo caricare il clienthello con  alcune cipher e vedere se funziona la scelta fatta poi dal server con queste cipher a disposizione

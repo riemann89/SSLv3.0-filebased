@@ -49,8 +49,10 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake);
 //change cipher spec protocol
 RecordLayer *ChangeCipherSpecRecord();
 
+//print package
+void printRecordLayer(RecordLayer *record_layer);
+
 /* CIPHERSUITE */
-void setPriorities(uint8_t *number, uint8_t *priority, char *filename);
 uint8_t *loadCipher(char* filename , uint8_t *len);
 CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code);
 CertificateType CodeToCertificateType(uint8_t ciphersuite_code);
@@ -58,7 +60,6 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 
 
 /* FREE FUNCTIONS */
-
 void FreeRecordLayer(RecordLayer *recordLayer);
 
 void FreeHandshake(Handshake *handshake);
@@ -79,9 +80,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate);
 /* KEY BLOCK*/
 
 uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello);
-
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
-
 uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *size, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
 /* ENCRYPTION */

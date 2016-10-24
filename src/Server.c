@@ -29,20 +29,18 @@ int main(int argc, const char *argv[]){
     Certificate *certificate;
     CertificateVerify *certificate_verify;
     Finished finished;
-    uint8_t priority[10];
     CipherSuite *ciphersuite_choosen;
     CertificateType certificate_type;
+    Talker sender;
     int phase, key_block_size, len_parameters,dec_message_len,enc_message_len;
     //char certificate_string[100];
-    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin;
+    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
-    uint32_t sender_var ,*sender;
-    uint8_t *cipher_key, *session_Id;
+    uint8_t *cipher_key;
     uint8_t *key_block,*dec_message,*enc_message;
     ServerKeyExchange server_key_exchange;
- 
-
+	
     
     //Initialization
     master_secret = NULL;
@@ -57,32 +55,22 @@ int main(int argc, const char *argv[]){
     enc_message=NULL;
     dec_message_len = 0;
     enc_message_len = 0;
+    sender = server;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
-    
-    printf("!!!SERVER AVVIATO!!!\n");
-    
     while(CheckCommunication() == client){}
     client_message = readchannel();
     
     
-    printf("\nCLIENT_HELLO: read\n");
-    for(int i=0; i<client_message->length - 5; i++){
-        printf("%02X ", client_message->message[i]);       
-    }
-    printf("\n\n");
-    
+    printRecordLayer(client_message);
     
     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
-    
-    sender_var= client_hello->sessionId; //TODO: errore ID (vedi /Documents/TODO.txt)
-    sender = &sender_var;
    
 
     ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
@@ -91,36 +79,29 @@ int main(int argc, const char *argv[]){
     //Construction Server Hello
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
     RAND_bytes(random.random_bytes, 28);
-    
+
     server_hello.type = SERVER_HELLO;
     server_hello.length = 39;
-    server_hello.version = 3;
     server_hello.random = &random;
-    RAND_bytes(session_Id,4);
-    server_hello.sessionId = Bytes_To_Int(4,session_Id);
+    server_hello.sessionId = Bytes_To_Int(4, session_Id);
     server_hello.ciphersuite_code = &ciphersuite_code;
 				
     //Wrapping
     handshake = ClientServerHelloToHandshake(&server_hello);
     record = HandshakeToRecordLayer(handshake);
     
-    printf("\nSERVER_HELLO: sent\n");
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);        
-    }
-    printf("\n\n");
-    
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x03); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x03);//TODO: automatizzare
 	
     
     printf("%d\n", certificate_type);
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
+    printRecordLayer(record);
     OpenCommunication(client);
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
@@ -161,17 +142,12 @@ int main(int argc, const char *argv[]){
 
         handshake = CertificateToHandshake(certificate);
         record = HandshakeToRecordLayer(handshake);
-      
-    	printf("\nCERTIFICATE: sent\n");
-    	for(int i=0; i<record->length - 5; i++){
-        	printf("%02X ", record->message[i]);
-    	}
-    	printf("\n\n");
        
     	SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
     	MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     	sendPacketByte(record);
+        printRecordLayer(record);
     	OpenCommunication(client);
     	while(CheckCommunication() == client){}
     }
@@ -225,16 +201,11 @@ int main(int argc, const char *argv[]){
         handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen);
         record = HandshakeToRecordLayer(handshake);
         
-        printf("\nSERVER KEY EXCHANGE: sent\n");
-        for(int i=0; i<record->length - 5; i++){
-            printf("%02X ", record->message[i]);
-        }
-        printf("\n\n");
-        
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
         
         sendPacketByte(record);
+        printRecordLayer(record);
         OpenCommunication(client);
         while(CheckCommunication() == client){}
     }
@@ -244,18 +215,12 @@ int main(int argc, const char *argv[]){
     //SERVER HELLO DONE
     handshake = ServerDoneToHandshake();
     record = HandshakeToRecordLayer(handshake);
-   
-    printf("\nSERVER_DONE: sent\n");
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
-        
-    }
-    printf("\n\n");
     
     SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     sendPacketByte(record);
+    printRecordLayer(record);
     OpenCommunication(client);
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
@@ -265,17 +230,11 @@ int main(int argc, const char *argv[]){
         while(CheckCommunication() == client){}
         
         client_message = readchannel();
-
+        printRecordLayer(client_message);
         client_handshake = RecordToHandshake(client_message);
         switch (client_handshake->msg_type) {
                 case CERTIFICATE:
                     certificate = HandshakeToCertificate(client_handshake);
-                     printf("\nCERTIFICATE: received\n");
-                        for(int i=0; i<client_message->length - 5; i++){
-                             printf("%02X ", client_message->message[i]);
-
-                             }
-                    printf("\n\n");
                     OpenCommunication(client);
                     break;
                 case CLIENT_KEY_EXCHANGE:
@@ -283,12 +242,6 @@ int main(int argc, const char *argv[]){
                     len_parameters = client_handshake->length - 4;
                     printf("%d\n",len_parameters);
                     client_key_exchange = HandshakeToClientKeyExchange(client_handshake, ciphersuite_choosen);
-
-                    printf("\nCLIENT_KEY_EXCHANGE: recived\n");
-                        for(int i=0; i<client_message->length - 5; i++){
-                        printf("%02X ", client_message->message[i]);
-                        }
-                    printf("\n\n");
                     
                     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
@@ -319,11 +272,6 @@ int main(int argc, const char *argv[]){
                     break;
                 case CERTIFICATE_VERIFY:
                     certificate_verify = HandshakeToCertificateVerify(client_handshake);
-                   printf("\nCERTIFICATE_VERIFY: received\n");
-                        for(int i=0; i<client_message->length - 5; i++){
-                        printf("%02X ", client_message->message[i]);       
-                        }
-                    printf("\n\n");
                     
                     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
@@ -341,24 +289,14 @@ int main(int argc, const char *argv[]){
     
     while(CheckCommunication() == client)
     client_message = readchannel();
-    printf("\nCHANGE_CIPHER_SPEC: received\n");
-    for(int i=0; i<client_message->length - 5; i++){
-        printf("%02X ", client_message->message[i]);
-    }
-    printf("\n\n");
+    printRecordLayer(client_message);
     
     OpenCommunication(client);
     while(CheckCommunication() == client){}
     
     client_message = readchannel();
-    printf("\nFINISHED: received\n");
-    for(int i=0; i<client_message->length - 5; i++){
-        printf("%02X ", client_message->message[i]);
-    }
-    printf("\n\n");
+    printRecordLayer(client_message);
     
-    
-   
     printf("%d/n", client_message->length);
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);    
@@ -373,20 +311,14 @@ int main(int argc, const char *argv[]){
     
     record = ChangeCipherSpecRecord();
     sendPacketByte(record);
-    
-    printf("\nCHANGE_CIPHER_SPEC: sent\n");
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
-        
-    }
-    printf("\n\n");
+    printRecordLayer(record);
     
     OpenCommunication(client);
     
     while(CheckCommunication() == client){}
     
-    SHA1_Update(&sha,sender,sizeof(uint32_t));
-    MD5_Update(&md5,sender,sizeof(uint32_t));
+    SHA1_Update(&sha, &sender, sizeof(uint32_t));
+    MD5_Update(&md5, &sender, sizeof(uint32_t));
     
     SHA1_Update(&sha,master_secret,sizeof(uint8_t)*48);
     MD5_Update(&md5,master_secret,sizeof(uint8_t)*48);  
@@ -414,8 +346,8 @@ int main(int argc, const char *argv[]){
     md5_fin = calloc(16, sizeof(uint8_t));
     sha_fin = calloc(20, sizeof(uint8_t));
     
-    SHA1_Final(sha_fin,&sha);
-    MD5_Final(md5_fin,&md5);
+    SHA1_Final(sha_fin, &sha);
+    MD5_Final(md5_fin, &md5);
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
@@ -439,14 +371,7 @@ int main(int argc, const char *argv[]){
     record->message = enc_message;
     
     sendPacketByte(record);
-    
-    printf("\nFINISHED: sent\n");
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
-        
-    }
-    printf("\n\n");
-    printf("tutto e' compiuto..!\n");
+    printRecordLayer(record);
     
     OpenCommunication(client);
 

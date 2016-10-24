@@ -12,7 +12,7 @@
 #define structure_h
 
 //OTHER STRUCTS
-typedef enum{client, server
+typedef enum{client = 0x434C4E54, server = 0x53525652
 }Talker;
 
 // HANDSHAKE STRUCTS //

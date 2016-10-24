@@ -15,6 +15,7 @@
 #include <time.h>
 #include "SSL_functions.h"
 
+void setPriorities(uint8_t *number, uint8_t *priority, char *filename);
 int main(int argc, const char *argv[]){
     
    
@@ -80,3 +81,25 @@ int main(int argc, const char *argv[]){
     
    return 0;
 }
+
+
+/**
+ * write on the file named *filename the list of chiphersuite *priority coded as uint8_t which length is *number,
+ * the list *priority should be sorted in decrescent order of priority.
+ * @param uint8_t *number
+ * @param uint8_t *priority
+ * @param char *filename
+ */
+void setPriorities(uint8_t *number, uint8_t *priority, char *filename){
+    
+    FILE* PriorityList;
+    
+    PriorityList = fopen(filename , "wb");
+    fwrite(number,sizeof(uint8_t),1,PriorityList);
+    
+    for(int i = 0; i<*number; i++){
+        fwrite(priority +i,sizeof(uint8_t),1,PriorityList);
+    }
+    fclose(PriorityList);
+}
+

@@ -148,7 +148,6 @@ RecordLayer  *readchannel(){
     fread(record_header, sizeof(uint8_t), 5*sizeof(uint8_t), SSLchannel);
     packet_size = Bytes_To_Int(2, record_header + 3);
     
-    //buffer = (uint8_t*)malloc((packet_size - 5)*sizeof(uint8_t)); //alloc enough memory to handle SSLchannel file
     buffer = (uint8_t*)calloc(packet_size - 5, sizeof(uint8_t));
     fseek(SSLchannel, SEEK_SET, 5);
     fread(buffer,sizeof(uint8_t),(packet_size-5)*sizeof(uint8_t), SSLchannel);// load file into buffer
@@ -158,8 +157,8 @@ RecordLayer  *readchannel(){
     type = record_header[0];
     returning_record->type = type;	// assign type
     
-    version.minor = record_header[1]; //loading version
-    version.major = record_header[2];
+    version.major = record_header[1]; //loading version
+    version.minor = record_header[2];
     returning_record->version = version;// assign version
     returning_record->length = packet_size;// assign length to record
     returning_record->message= buffer;
@@ -959,26 +958,65 @@ Handshake *RecordToHandshake(RecordLayer *record){
 }
 
 /**
- * write on the file named *filename the list of chiphersuite *priority coded as uint8_t which length is *number,
- * the list *priority should be sorted in decrescent order of priority.
- * @param uint8_t *number
- * @param uint8_t *priority
- * @param char *filename
+ * print in console the record layer pointed
+ * @param RecordLayer *record_layer
  */
-void setPriorities(uint8_t *number, uint8_t *priority, char *filename){   															
-
-    FILE* PriorityList; 
+void printRecordLayer(RecordLayer *record_layer){
     
-    PriorityList = fopen(filename , "wb");   																																													 	
-    fwrite(number,sizeof(uint8_t),1,PriorityList);
-   
-    for(int i = 0; i<*number; i++){   																									
-        fwrite(priority +i,sizeof(uint8_t),1,PriorityList);
+    switch (record_layer->type) {
+        case HANDSHAKE:
+            switch (record_layer->message[0]) {
+                case HELLO_REQUEST:
+                    printf("HELLO REQUEST:\n");
+                    break;
+                case CLIENT_HELLO:
+                    printf("CLIENT HELLO:\n");
+                    break;
+                case SERVER_HELLO:
+                    printf("SERVER HELLO:\n");
+                    break;
+                case CERTIFICATE:
+                    printf("CERTIFICATE:\n");
+                    break;
+                case SERVER_KEY_EXCHANGE:
+                    printf("SERVER KEY EXCHANGE\n");
+                    break;
+                case CERTIFICATE_REQUEST:
+                    printf("CERTIFICATE REQUEST\n");
+                    break;
+                case SERVER_DONE:
+                    printf("SERVER DONE\n");
+                    break;
+            	case CERTIFICATE_VERIFY:
+                    printf("CERTIFICATE VERITY\n");
+                    break;
+                case CLIENT_KEY_EXCHANGE:
+                    printf("CLIENT KEY EXCHANGE\n");
+                    break;
+                case FINISHED:
+                    printf("FINISHED\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case CHANGE_CIPHER_SPEC:
+            printf("CHANGE CIPHER SPEC:\n");
+        default:
+            break;
     }
-    fclose(PriorityList);                                                                                                                    
-}
+    
+    printf("%02X ", record_layer->type);
+    printf("%02X ", record_layer->version.major);
+    printf("%02X ", record_layer->version.minor);
+    
+    for(int i=0; i<record_layer->length - 5; i++){
+        printf("%02X ", record_layer->message[i]);
+    }
+    printf("\n\n");
 
-//this function read from PryorityList.txt and the input struct ClientServerHello, comparing chiphers Priority and avaiable and choosing the best fitting in a naive way
+
+}
 
 /**
  * compare the client_supported_list of ciphersuite containded in ClientHello with the ones contained in the *filename,
@@ -1784,6 +1822,8 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     uint8_t *signature, *sha_final, *md5_final;
     SHA_CTX sha;
     MD5_CTX md5;
+    
+    signature = NULL;
     
     //hash
     switch (cipher->signature_algorithm) {
