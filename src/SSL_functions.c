@@ -775,7 +775,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
     
     ServerKeyExchange *client_server_key_exchange;
     
-    if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
+    if (handshake->msg_type != SERVER_KEY_EXCHANGE){
         perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
         exit(1);
     }
