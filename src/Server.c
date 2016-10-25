@@ -94,8 +94,8 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(0x03); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x03);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
 	
     
     //Sending server hello and open the communication to the client.

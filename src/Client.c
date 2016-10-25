@@ -289,12 +289,9 @@ int main(int argc, const char *argv[]){
     
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
-    //TODO: MANCA IL MAC
-	
-   
-    
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
-
+	//TODO: MANCA IL MAC
+    
     // assembling encrypted packet
     RecordLayer record2;
     
