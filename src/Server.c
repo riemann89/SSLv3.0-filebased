@@ -196,8 +196,11 @@ int main(int argc, const char *argv[]){
         
         //impacchettare
         
-        //spedire e mettersi in attesa
-        handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen);
+        //spedire e mettersi in attesa);
+        handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen); //bisogna spedire la server_key_exchange
+        /* sostiuire riga sopra con:
+         *handshake = ServerKeyExchangeToHandshake(&server_key_exchange,server_key_exchange);
+         */
         record = HandshakeToRecordLayer(handshake);
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
