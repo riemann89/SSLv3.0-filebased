@@ -98,7 +98,6 @@ int main(int argc, const char *argv[]){
     certificate_type = CodeToCertificateType(0x03);//TODO: automatizzare
 	
     
-    printf("%d\n", certificate_type);
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
     printRecordLayer(record);
@@ -246,9 +245,10 @@ int main(int argc, const char *argv[]){
                     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
 					
-                    int out_size = 0;
-                    pre_master_secret = AsymDec(RSA_, client_key_exchange->parameters, len_parameters ,&out_size);
-                    
+                    size_t out_size = 0;
+                    pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters ,&out_size);
+                
+                	//printf("aaaaaa:%zu", out_size);
                     master_secret = calloc(48, sizeof(uint8_t));
                     master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
 
@@ -364,12 +364,16 @@ int main(int argc, const char *argv[]){
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     
     // assembling encrypted packet
+    //TODO: il paccheto non è assemblato correttamente: manca il tipo di handshake, infatti non lo stampa.
+    
     record = calloc(1, sizeof(RecordLayer));
     record->length = enc_message_len + 5; //TODO
     record->type = HANDSHAKE;
     record->version = std_version;
-    record->message = enc_message;
     
+    
+    record->message = enc_message;
+	
     sendPacketByte(record);
     printRecordLayer(record);
     

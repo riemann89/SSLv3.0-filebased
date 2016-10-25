@@ -1,5 +1,7 @@
 #include "SSL_functions.h"
 #include <openssl/md5.h>
+#include <openssl/evp.h>
+
 
 /*****************************************FUNCTIONS***********************************************/
 
@@ -155,14 +157,14 @@ RecordLayer  *readchannel(){
     returning_record = calloc(6, sizeof(uint8_t));
     
     type = record_header[0];
-    returning_record->type = type;	// assign type
+    returning_record->type = type;
     
-    version.major = record_header[1]; //loading version
+    version.major = record_header[1];
     version.minor = record_header[2];
-    returning_record->version = version;// assign version
-    returning_record->length = packet_size;// assign length to record
+    returning_record->version = version;
+    returning_record->length = packet_size;
     returning_record->message= buffer;
-    return returning_record;//assign pointer to message
+    return returning_record;
 }
 
 /***************************************FREE FUNCTIONS**********************************************/
@@ -732,7 +734,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
  *  Parse handshake into server_key_exchange
  * @param Handshake *handshake
  * @param KeyExchangeAlgorithm algorithm_type
- * @param SignatureAlgorithm signature_type
+ * @param HashAlgorithm signature_type
  * @param uint32_t len_parameters
  * @param uint32_t len_signature
  * @return ServerKeyExchange *server_key_exchange
@@ -1434,7 +1436,6 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     }
     
     pubkey = X509_get_pubkey(cert_509);
-    EVP_PKEY_id(pubkey);
     return pubkey;
 }
 
@@ -1554,7 +1555,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
 //Asymmetric
 
 /**
- * encrypts pKey (pre-master-secret) with using the algorithm algorithm
+ * encrypts pKey (pre-master-secret) with using the algorithm algorithm TODO
  * @param EVP_KEY *pKey
  * @param KeyExchangeAlgorithm algorithm
  * @param uint8_t *pre_master_secret
@@ -1563,36 +1564,52 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
  * @return uint8_t *pre_master_secret_encrypted
 
  */
-uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_master_secret, int in_size, int *out_size){
+uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t *outlen){
    
-    RSA *rsa;
-    uint8_t *pre_master_secret_encrypted;
+    EVP_PKEY_CTX *ctx;
+    uint8_t *ciphertext;
+    //TODO: add controllo
     
-    rsa = NULL;
-    pre_master_secret_encrypted = NULL;
     
-        switch(algorithm){
-            case RSA_:
-                rsa = EVP_PKEY_get1_RSA(pKey);
-                pre_master_secret_encrypted = (uint8_t*)calloc(RSA_size(rsa), sizeof(uint8_t));
-                *out_size = RSA_public_encrypt(48, pre_master_secret, pre_master_secret_encrypted, rsa, RSA_PKCS1_PADDING);//TODO: rivedere sto padding
-                break;
-            case DH_:
-                printf("CIAO");
-                break;
-            case KFORTEZZA:
-                printf("CIAO");
-                break;
-            default:
-                perror("AsymEnc error: unknown keyexchange algorithm.");
-                exit(1);
-                break;
-        }
+    ctx = EVP_PKEY_CTX_new(public_key, NULL);
+    
+    if (!ctx){
+        exit(1);}
+    /* Error occurred */
+    if (EVP_PKEY_encrypt_init(ctx) <= 0){
+            exit(1);}
+    /* Error */
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){
+            exit(1);}
+    /* Error */
+                
+    /* Determine buffer length */
+    if (EVP_PKEY_encrypt(ctx, NULL, outlen, plaintext, inlen) <= 0){
+        exit(1);}
+    /* Error */
+                    
+    ciphertext = OPENSSL_malloc(outlen);
+    
+    if (!ciphertext){
+        exit(1);}
+    /* malloc failure */
         
-        return pre_master_secret_encrypted;
+    if (EVP_PKEY_encrypt(ctx, ciphertext, outlen, plaintext, inlen) <= 0){
+        exit(1);}
+    /* Error */
+    
+    
+    /* Encrypted data is outlen bytes written to buffer out */
+    
+    return ciphertext;
+    /*
+    EVP_PKEY_encrypt
+    ciphertext = (uint8_t*)calloc(EVP_PKEY_size(public_key), sizeof(uint8_t));
+    *out_size = RSA_public_encrypt(in_size, plaintext, ciphertext, rsa, RSA_PKCS1_PADDING);
+    */
 }
 /**
- * decrypt pre master secret
+ * decrypt pre master secret TODO
  * @param KeyExchangeAlgorithm alg
  * @param uint8_t *enc_pre_master_secret
  * @param int in_size
@@ -1600,40 +1617,59 @@ uint8_t* AsymEnc(EVP_PKEY *pKey, KeyExchangeAlgorithm algorithm, uint8_t* pre_ma
  * @return uint8_t *pre_master_secret
  
  */
-uint8_t* AsymDec(KeyExchangeAlgorithm alg, uint8_t *enc_pre_master_secret, int in_size, int *out_size){
+uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t *outlen){
 
-    uint8_t *pre_master_secret;
+    uint8_t *plaintext;
     FILE *certificate;
-    RSA *rsa_private_key;
-    
-    rsa_private_key = NULL;
     certificate = NULL;
-    pre_master_secret = (uint8_t*)calloc(48, sizeof(uint8_t));
-    
 
-    switch(alg){
-        case RSA_:
+    EVP_PKEY_CTX *ctx;
+    
+    
+    /* NB: assumes key in, inlen are already set up
+     * and that key is an RSA private key
+     */
+    EVP_PKEY *private_key;
+    private_key = EVP_PKEY_new();
+    
+    switch (private_key_type) {
+        case EVP_PKEY_RSA:
             certificate = fopen("private_keys/RSA_server.key","rb");
-            
-            if (certificate == NULL){
-                printf("AsymDec error: memory leak - null pointer .");
-                exit(1);
-            }
-            
-            rsa_private_key = PEM_read_RSAPrivateKey(certificate, &rsa_private_key, NULL, NULL);
-            *out_size = RSA_private_decrypt(in_size, enc_pre_master_secret, pre_master_secret, rsa_private_key, RSA_PKCS1_PADDING);
             break;
-            
-        case DH_:
-            break;
-        case KFORTEZZA:
+        case EVP_PKEY_DSA:
+            certificate = fopen("private_keys/DSA_server.key","rb");
             break;
         default:
-            perror("AsymDec error: unknown key exchange algorithm.");
-            exit(1);
             break;
     }
-    return pre_master_secret;
+    private_key = PEM_read_PrivateKey(certificate, &private_key, NULL, NULL);
+    ctx = EVP_PKEY_CTX_new(private_key, NULL);
+    if (!ctx){}
+
+    if (EVP_PKEY_decrypt_init(ctx) <= 0){}
+    
+    switch (private_key_type) {//TODO: posso eliminare i due switch?
+        case EVP_PKEY_RSA:
+            if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){}
+            break;
+        case EVP_PKEY_DSA:
+            //TODO: da gestire
+            break;
+        default:
+            perror("");
+            break;
+    }
+	
+    if (EVP_PKEY_decrypt(ctx, NULL, outlen, plaintext, inlen) <= 0){}
+                    
+    plaintext = OPENSSL_malloc(outlen);
+    
+    if (!plaintext){}
+        
+    if (EVP_PKEY_decrypt(ctx, plaintext, outlen, ciphertext, inlen) <= 0){}
+	//TODO: free e controlli
+    return plaintext;
+
 }
 
 //Symmetric TODO: TO CHECK
@@ -1817,9 +1853,9 @@ uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
         exit(1);
     }
 }
-uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params){
+uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey){
     
-    uint8_t *signature, *sha_final, *md5_final;
+    uint8_t *signature;
     SHA_CTX sha;
     MD5_CTX md5;
     
@@ -1828,7 +1864,7 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     //hash
     switch (cipher->signature_algorithm) {
         case SHA1_:
-            sha_final = calloc(16, sizeof(uint8_t));
+            signature = calloc(16, sizeof(uint8_t));
             
             SHA_Init(&sha);
             SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -1836,11 +1872,11 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
             SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
             SHA_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
             SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-            SHA_Final(sha_final, &sha);
+            SHA_Final(signature, &sha);
             
             break;
         case MD5_1:
-            md5_final = calloc(16, sizeof(uint8_t));
+            signature = calloc(16, sizeof(uint8_t));
             
             MD5_Init(&md5);
             MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -1848,12 +1884,15 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
             MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
             MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
             MD5_Update(&md5, params, len_params*sizeof(uint8_t));
-            MD5_Final(md5_final, &md5);
+            MD5_Final(signature, &md5);
         default:
             perror("Signature_ error: signature algorithm not supported");
             exit(1);
             break;
     }
+    
+    
+    
     
     
     //firmare : posso riutilizzare la funzione encrypt

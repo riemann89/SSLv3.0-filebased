@@ -42,8 +42,7 @@ typedef enum{
 
 typedef enum{
     SNULL, SHA1_, MD5_1
-}SignatureAlgorithm;
-
+}HashAlgorithm;
 
 typedef struct{
     KeyExchangeAlgorithm key_exchange_algorithm;
@@ -51,7 +50,7 @@ typedef struct{
     CipherAlgorithm cipher_algorithm;
     uint8_t iv_size;
     uint8_t key_material;
-    SignatureAlgorithm signature_algorithm;
+    HashAlgorithm signature_algorithm;
     uint8_t signature_size;
     _Bool exportable;
 }CipherSuite;
@@ -96,7 +95,7 @@ typedef struct{
 }ServerDone;
 
 typedef struct{
-    SignatureAlgorithm algorithm_type;
+    HashAlgorithm algorithm_type;
     uint8_t *signature;
 }CertificateVerify;
 
@@ -126,7 +125,7 @@ typedef struct {
 
 typedef struct{
     uint8_t *parameters;
-    uint32_t len_parameters;
+    size_t len_parameters;
 }ClientKeyExchange;
 
 typedef struct{

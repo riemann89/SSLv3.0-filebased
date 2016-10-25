@@ -186,8 +186,13 @@ int main(int argc, const char *argv[]){
         
         pre_master_secret= (uint8_t*)calloc(48, sizeof(uint8_t));
         RAND_bytes(pre_master_secret, 48);
-        int out_size = 0;
-        pre_master_secret_encrypted= AsymEnc(pubkey, cipher_suite_choosen->key_exchange_algorithm, pre_master_secret, 48, &out_size);
+        pre_master_secret[0] = std_version.major;
+        pre_master_secret[1] = std_version.minor;
+        
+        size_t out_size = 0;
+        pre_master_secret_encrypted= AsymEnc(pubkey, pre_master_secret, 48, &out_size);
+        printf("%zu\n", out_size);
+        
         client_key_exchange.parameters = pre_master_secret_encrypted;
         client_key_exchange.len_parameters = out_size;
         handshake = ClientKeyExchangeToHandshake(&client_key_exchange, cipher_suite_choosen);
