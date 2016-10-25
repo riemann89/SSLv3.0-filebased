@@ -16,6 +16,7 @@ int main(int argc, const char *argv[]){
     RecordLayer *record, *server_message, *temp;
     Random random;
     ClientKeyExchange client_key_exchange;
+    ServerKeyExchange *server_key_exchange;
     Certificate *certificate;
     CertificateRequest *certificate_request;
     KeyExchangeAlgorithm algorithm_type;
@@ -65,6 +66,7 @@ int main(int argc, const char *argv[]){
     sender = client;
     SHA1_Init(&sha);
     MD5_Init(&md5);
+    server_key_exchange= NULL;
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     OpenCommunication(client);
@@ -145,6 +147,10 @@ int main(int argc, const char *argv[]){
                 break;
             case SERVER_KEY_EXCHANGE:
 
+                server_key_exchange = HandshakeToServerKeyExchange(server_handshake,cipher_suite_choosen);
+                              
+                FreeRecordLayer(server_message);
+                FreeHandshake(server_handshake);
                 
                 OpenCommunication(server);
                 break;
@@ -230,8 +236,7 @@ int main(int argc, const char *argv[]){
         printf("\n\n");
         
         ///CERTIFICATE_VERIFY///
-        //OpenCommunication(server);
-        
+        //OpenCommunication(server);        
         //while(CheckCommunication() == server){};
         phase = 4;
     }
