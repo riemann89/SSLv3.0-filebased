@@ -1,4 +1,17 @@
 COSE DA SISTEMARE:
+
+1. funzione CipherToCode - riempire i casi che riguardano DHE_DSS e DHE_RSA. Nota: nel codice DSS è rappresentato da DSA.
+
+DSA_s per la precisione
+
+tutte le informazioni su come riempire i case sono nella tabella a pagina 54 della rfc
+
+2. Lavorare alla funzione di Signature_ : io l'ho solo iniziata. Informazioni utili sono al link: https://www.openssl.org/docs/manmaster/crypto/EVP_PKEY_sign.html
+
+Note: la struttura EVP è un involucro per le chiavi o cifrari. Permette di decidere a runtime quale algoritmo e chiave utilizzare (per esempio RSA). Guarda come ho fatto la funzione AsymmetricEncryption
+
+Il procedimento è simile: invece di usare EVP_encrypt(chiave pubblica) utilizzi EVP_sign(chiave privata). Le chiavi private stanno nell'apposita cartella.
+
 - stampare anche i record layer.
 
 in generale: rivedere i TODO se sono superflui o sbagliati
