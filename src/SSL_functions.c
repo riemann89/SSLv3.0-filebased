@@ -788,7 +788,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
     }
     
     
-    client_server_key_exchange->len_parameters = handshake->length - 5 - cipher_suite->hash_size;
+    client_server_key_exchange->len_parameters = handshake->length - 4 - cipher_suite->hash_size;
     
     client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
     
@@ -804,8 +804,8 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
         exit(1);
     }
     
-    memcpy(handshake->content, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
-    memcpy(handshake->content + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->hash_size);
+    memcpy(client_server_key_exchange->parameters, handshake->content,client_server_key_exchange->len_parameters);
+    memcpy(client_server_key_exchange->signature, handshake->content + client_server_key_exchange->len_parameters , cipher_suite->hash_size);
     
     return client_server_key_exchange;
 }//TOCHECK
@@ -1656,7 +1656,7 @@ DH *get_dh2048(){
         0x02,
     };
     DH *dh;
-    
+
     if ((dh=DH_new()) == NULL) return(NULL);
     dh->p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
     dh->g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);

@@ -34,16 +34,17 @@ int main(int argc, const char *argv[]){
     Talker sender;
     int phase, key_block_size, len_parameters,dec_message_len,enc_message_len;
     //char certificate_string[100];
-    size_t size_shared_key;
+
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t *cipher_key;
     uint8_t *key_block,*dec_message,*enc_message;
 	DH *dh;
-    uint8_t *shared_key;
     BIGNUM *pub_key_client;
+    size_t out_size;
     ServerKeyExchange server_key_exchange;
+    size_t pre_master_secret_size;
 	
     
     //Initialization
@@ -60,6 +61,8 @@ int main(int argc, const char *argv[]){
     certificate_type = 0;
     dec_message_len = 0;
     enc_message_len = 0;
+    out_size = 0;
+    pre_master_secret_size = 0;
     sender = server;
     SHA1_Init(&sha);
     MD5_Init(&md5);
@@ -110,10 +113,7 @@ int main(int argc, const char *argv[]){
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}
     
-    
     //CERTIFICATE
-
-	//TODO: gestire gli altri certificati
     switch (ciphersuite_choosen->key_exchange_algorithm){
         case RSA_:
             //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
@@ -158,12 +158,9 @@ int main(int argc, const char *argv[]){
             perror("DH keys generarion error.");
             exit(1);
         }
-
-        printf("p size: %d\n",BN_num_bytes(dh->p));
-        printf("g size: %d\n",BN_num_bytes(dh->g));
-        printf("g^a size: %d\n",BN_num_bytes(dh->pub_key));
         
         server_key_exchange.len_parameters = BN_num_bytes(dh->p) + BN_num_bytes(dh->g) + BN_num_bytes(dh->pub_key);
+        //TODO: questi mi sa che non vanno allocati
         server_key_exchange.parameters = (uint8_t*)calloc(server_key_exchange.len_parameters, sizeof(uint8_t));
         server_key_exchange.signature = (uint8_t*)calloc(ciphersuite_choosen->hash_size, sizeof(uint8_t));
         
@@ -221,31 +218,26 @@ int main(int argc, const char *argv[]){
                     OpenCommunication(client);
                     break;
                 case CLIENT_KEY_EXCHANGE:
-                    printf("%d\n", client_handshake->length);
                     len_parameters = client_handshake->length - 4;
-                    printf("%d\n",len_parameters);
                     client_key_exchange = HandshakeToClientKeyExchange(client_handshake, ciphersuite_choosen);
-                    
-                    SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
-                    MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
-					
-                	size_t out_size = 0;
-                
+
                 	switch (ciphersuite_choosen->key_exchange_algorithm){
                     	case RSA_:
-                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, &out_size);
-                            master_secret = calloc(48, sizeof(uint8_t));
-                            master_secret = MasterSecretGen(pre_master_secret, 48, client_hello, &server_hello);
+                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, &pre_master_secret_size);
                         	break;
                         case DH_:
+                            pub_key_client = BN_new();
+                            pub_key_client = BN_bin2bn(client_key_exchange->parameters, DH_size(dh), NULL);
+                            
+                            pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
+                            pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
+                            
                             /*
-                            //shared = g^ab
-                            BN_bin2bn(client_key_exchange->parameters, client_key_exchange->len_parameters, pub_key_client);
-                            shared_key = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
-                            size_shared_key = DH_compute_key(shared_key, pub_key_client, dh);
-                            printf("%zu", size_shared_key);
-                            pre_master_secret = shared_key;
-                            master_secret = MasterSecretGen(pre_master_secret, size_shared_key, client_hello, &server_hello);
+                            printf("Shared key: \n");
+                            for (int i=0; i<shared_key_size; i++){
+                                printf("%02X ", shared_key[i]);
+                            }
+                            printf("\n");
                             */
                             break;
                     	default:
@@ -253,10 +245,13 @@ int main(int argc, const char *argv[]){
                             exit(1);
                         	break;
                 	}
+                	master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, &server_hello);
                 
+                	SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
+                	MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
 
 
-                    printf("\nMASTER KEY:generated\n");
+                    printf("MASTER KEY:generated\n");
                     for (int i=0; i< 48; i++){
                         printf("%02X ", master_secret[i]);
                     }
@@ -266,11 +261,10 @@ int main(int argc, const char *argv[]){
                     key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, &server_hello);
                     
                     printf("\nKEY BLOCK\n");
-                	printf("%d\n", key_block_size);
                     for (int i=0; i< key_block_size; i++){
                         printf("%02X ", key_block[i]);
                     }
-                    printf("\n");
+                    printf("\n\n");
                     phase = 4;//TODO: se usa il verify non funziona
                     OpenCommunication(client);
 
@@ -283,7 +277,6 @@ int main(int argc, const char *argv[]){
                     OpenCommunication(client);
                     break;
             	default:
-                    printf("%02X\n", client_handshake->msg_type);
                     perror("ERROR: Unattended message in phase 3.\n");
                     exit(1);
                     break;
@@ -301,8 +294,6 @@ int main(int argc, const char *argv[]){
     
     client_message = readchannel();
     printRecordLayer(client_message);
-    
-    printf("%d/n", client_message->length);
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);    
     dec_message_len = 40; //TODO
