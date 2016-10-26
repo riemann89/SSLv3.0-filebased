@@ -1280,18 +1280,68 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             break;
             
         case 0x12:
+            
+            cipher_suite->key_exchange_algorithm = DH_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 8;
+            cipher_suite->hash_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = DSA_s;
             break;
             
         case 0x13:
+            
+            cipher_suite->key_exchange_algorithm = DH_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES3;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 24;
+            cipher_suite->hash_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = DSA_s;
             break;
             
         case 0x14:
+            
+            cipher_suite->key_exchange_algorithm = DH_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES40;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 5;
+            cipher_suite->hash_algorithm = SHA1_;
+            cipher_suite->exportable = true;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = RSA_s;
             break;
             
         case 0x15:
+            
+            cipher_suite->key_exchange_algorithm = DH_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 8;
+            cipher_suite->hash_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = RSA_s;
             break;
             
         case 0x16:
+            
+            cipher_suite->key_exchange_algorithm = DH_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES3;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 24;
+            cipher_suite->hash_algorithm = SHA1_;
+            cipher_suite->exportable = false;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = RSA_s;
             break;
             
         case 0x17:
