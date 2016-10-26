@@ -118,8 +118,8 @@ int main(int argc, const char *argv[]){
     cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
-    cipher_suite_choosen = CodeToCipherSuite(0x03); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x03);//TODO: automatizzare
+    cipher_suite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
     
     OpenCommunication(server);
     phase = 2;
@@ -196,7 +196,7 @@ int main(int argc, const char *argv[]){
         pre_master_secret[1] = std_version.minor;
         
         size_t out_size = 0;
-        pre_master_secret_encrypted= AsymEnc(pubkey, pre_master_secret, 48, &out_size);
+        pre_master_secret_encrypted = AsymEnc(pubkey, pre_master_secret, 48, &out_size);
         printf("%zu\n", out_size);
         
         client_key_exchange.parameters = pre_master_secret_encrypted;
@@ -217,7 +217,7 @@ int main(int argc, const char *argv[]){
 
         //MASTER KEY COMPUTATION
         master_secret = calloc(48, sizeof(uint8_t));
-        master_secret = MasterSecretGen(pre_master_secret, &client_hello, server_hello);
+        master_secret = MasterSecretGen(pre_master_secret, 48, &client_hello, server_hello);
         
         //TODO: rimuovere questi print
         printf("MASTER KEY:generated\n");

@@ -1,6 +1,7 @@
 #include "SSL_functions.h"
 #include <openssl/md5.h>
 #include <openssl/evp.h>
+#include <openssl/dh.h>
 
 
 /*****************************************FUNCTIONS***********************************************/
@@ -405,7 +406,7 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exc
     Handshake *handshake;
     uint8_t *Bytes;
       
-    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + cipher_suite->signature_size, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + cipher_suite->hash_size, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
         exit(1);
@@ -419,11 +420,11 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exc
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     memcpy(Bytes, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
-    memcpy(Bytes + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->signature_size);
+    memcpy(Bytes + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->hash_size);
     
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = CLIENT_KEY_EXCHANGE;
-    handshake->length = 4 + client_server_key_exchange->len_parameters + cipher_suite->signature_size;
+    handshake->msg_type = SERVER_KEY_EXCHANGE;
+    handshake->length = 4 + client_server_key_exchange->len_parameters + cipher_suite->hash_size;
     handshake->content = Bytes;
     
     return handshake;
@@ -787,7 +788,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
     }
     
     
-    client_server_key_exchange->len_parameters = handshake->length - 5 - cipher_suite->signature_size;
+    client_server_key_exchange->len_parameters = handshake->length - 5 - cipher_suite->hash_size;
     
     client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
     
@@ -796,7 +797,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
         exit(1);
     }
     
-    client_server_key_exchange->signature = (uint8_t *)calloc(cipher_suite->signature_size, sizeof(uint8_t));
+    client_server_key_exchange->signature = (uint8_t *)calloc(cipher_suite->hash_size, sizeof(uint8_t));
     
     if (client_server_key_exchange->signature == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
@@ -804,7 +805,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
     }
     
     memcpy(handshake->content, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
-    memcpy(handshake->content + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->signature_size);
+    memcpy(handshake->content + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->hash_size);
     
     return client_server_key_exchange;
 }//TOCHECK
@@ -964,6 +965,7 @@ Handshake *RecordToHandshake(RecordLayer *record){
  * @param RecordLayer *record_layer
  */
 void printRecordLayer(RecordLayer *record_layer){
+    uint8_t length_bytes[4];
     
     switch (record_layer->type) {
         case HANDSHAKE:
@@ -1007,10 +1009,15 @@ void printRecordLayer(RecordLayer *record_layer){
         default:
             break;
     }
+    int_To_Bytes(record_layer->length, length_bytes);
     
     printf("%02X ", record_layer->type);
     printf("%02X ", record_layer->version.major);
     printf("%02X ", record_layer->version.minor);
+    printf("%02X ", length_bytes[0]);
+	printf("%02X ", length_bytes[1]);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
     
     for(int i=0; i<record_layer->length - 5; i++){
         printf("%02X ", record_layer->message[i]);
@@ -1116,9 +1123,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = CNULL;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 0;
-            cipher_suite->signature_algorithm = SNULL;
+            cipher_suite->hash_algorithm = HNULL;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 0;
+            cipher_suite->hash_size = 0;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x01:
@@ -1127,9 +1135,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = CNULL;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 0;
-            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->hash_algorithm = MD5_1;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 16;
+            cipher_suite->hash_size = 16;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x02:
@@ -1138,9 +1147,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = CNULL;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 0;
-            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->hash_algorithm = SHA1_;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 20;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x03:
@@ -1149,9 +1159,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = RC4;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 5;
-            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->hash_algorithm = MD5_1;
             cipher_suite->exportable = true;
-            cipher_suite->signature_size = 16;
+            cipher_suite->hash_size = 16;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x04:
@@ -1160,9 +1171,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = RC4;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 16;
-            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->hash_algorithm = MD5_1;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 16;
+            cipher_suite->hash_size = 16;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x05:
@@ -1171,9 +1183,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = RC4;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 16;
-            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->hash_algorithm = SHA1_;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 20;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x06:
@@ -1182,9 +1195,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = RC2;
             cipher_suite->iv_size = 8;
             cipher_suite->key_material = 5;
-            cipher_suite->signature_algorithm = MD5_1;
+            cipher_suite->hash_algorithm = MD5_1;
             cipher_suite->exportable = true;
-            cipher_suite->signature_size = 16;
+            cipher_suite->hash_size = 16;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x07:
@@ -1193,9 +1207,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = IDEA;
             cipher_suite->iv_size = 8;
             cipher_suite->key_material = 16;
-            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->hash_algorithm = SHA1_;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 20;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x08:
@@ -1204,9 +1219,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = DES40;
             cipher_suite->iv_size = 8;
             cipher_suite->key_material = 5;
-            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->hash_algorithm = SHA1_;
             cipher_suite->exportable = true;
-            cipher_suite->signature_size = 20;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x09:
@@ -1215,9 +1231,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = DES;
             cipher_suite->iv_size = 8;
             cipher_suite->key_material = 8;
-            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->hash_algorithm = SHA1_;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 20;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x0A:
@@ -1226,9 +1243,10 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             cipher_suite->cipher_algorithm = DES3;
             cipher_suite->iv_size = 8;
             cipher_suite->key_material = 24;
-            cipher_suite->signature_algorithm = SHA1_;
+            cipher_suite->hash_algorithm = SHA1_;
             cipher_suite->exportable = false;
-            cipher_suite->signature_size = 20;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = SNULL;
             break;
             
         case 0x0B:
@@ -1250,6 +1268,15 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             break;
             
         case 0x11:
+            cipher_suite->key_exchange_algorithm = DH_;
+            cipher_suite->cipher_type = BLOCK;
+            cipher_suite->cipher_algorithm = DES40;
+            cipher_suite->iv_size = 8;
+            cipher_suite->key_material = 5;
+            cipher_suite->hash_algorithm = SHA1_;
+            cipher_suite->exportable = true;
+            cipher_suite->hash_size = 20;
+            cipher_suite->signature_algorithm = DSA_s;
             break;
             
         case 0x12:
@@ -1447,11 +1474,10 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
  * @param ClientServerHello *server_hello
  * @return uint8_t *master_secret
  */
-uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello){
-   
+uint8_t *MasterSecretGen(uint8_t *pre_master_secret, int pre_master_len, ClientServerHello *client_hello, ClientServerHello *server_hello){
     uint8_t *master_secret;
     
-    master_secret = BaseFunction(3, pre_master_secret, 48, client_hello, server_hello);
+    master_secret = BaseFunction(3, pre_master_secret, pre_master_len, client_hello, server_hello);
     
     if (master_secret == NULL) {
         perror("MasterSecretGen Error: memory allocation leak.");
@@ -1482,14 +1508,14 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
     key_block_size_temp = 0;
     
     if (cipher_suite->exportable == false) {
-        key_block_size = 2*(cipher_suite->signature_size + cipher_suite->key_material + cipher_suite->iv_size);
+        key_block_size = 2*(cipher_suite->hash_size + cipher_suite->key_material + cipher_suite->iv_size);
         key_block_size = key_block_size + (16 - key_block_size % 16); //made a multiple of 16
         key_block = BaseFunction(key_block_size/16, master_secret, 48, client_hello, server_hello);
         *size = key_block_size;
     }
     else{
         //KeyBlock temp
-        key_block_size_temp = 2*(cipher_suite->signature_size + cipher_suite->key_material);
+        key_block_size_temp = 2*(cipher_suite->hash_size + cipher_suite->key_material);
         key_block_size_temp = key_block_size_temp + (16 -key_block_size_temp % 16); //made a multiple of 16
         key_block = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);//TODO da controllare
         
@@ -1498,7 +1524,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         final_client_write_key = calloc(16, sizeof(uint8_t));
         
     	MD5_Init(&md5);
-        MD5_Update(&md5, key_block + 2*(cipher_suite->signature_size), cipher_suite->key_material);
+        MD5_Update(&md5, key_block + 2*(cipher_suite->hash_size), cipher_suite->key_material);
         MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
         MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
         MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -1509,7 +1535,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         final_server_write_key = calloc(16, sizeof(uint8_t));
         
         MD5_Init(&md5);
-        MD5_Update(&md5, key_block + 2*(cipher_suite->signature_size) + cipher_suite->key_material, cipher_suite->key_material);
+        MD5_Update(&md5, key_block + 2*(cipher_suite->hash_size) + cipher_suite->key_material, cipher_suite->key_material);
         MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
         MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
         MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -1537,18 +1563,56 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         MD5_Final(server_write_iv, &md5);
         
         //construct final keyblock
-        *size = 2*cipher_suite->signature_size + 64;
+        *size = 2*cipher_suite->hash_size + 64;
         key_block =(uint8_t*)realloc(key_block, (*size)*sizeof(uint8_t));
-        memcpy(key_block + 2*(cipher_suite->signature_size), final_client_write_key, 16);
-        memcpy(key_block + 2*(cipher_suite->signature_size) + 16, final_server_write_key, 16);
-        memcpy(key_block + 2*(cipher_suite->signature_size) + 32, client_write_iv, 16);
-        memcpy(key_block + 2*(cipher_suite->signature_size) + 48, server_write_iv, 16);
+        memcpy(key_block + 2*(cipher_suite->hash_size), final_client_write_key, 16);
+        memcpy(key_block + 2*(cipher_suite->hash_size) + 16, final_server_write_key, 16);
+        memcpy(key_block + 2*(cipher_suite->hash_size) + 32, client_write_iv, 16);
+        memcpy(key_block + 2*(cipher_suite->hash_size) + 48, server_write_iv, 16);
         
     }
     
     return key_block;
     
     
+}
+
+DH *get_dh2048(){
+    static unsigned char dh2048_p[]={
+        0xC5,0x36,0x72,0xCF,0x5A,0xA4,0x02,0xDA,0x0B,0xD2,0x49,0xE9,
+        0x86,0x33,0xDF,0x51,0x06,0xE1,0x93,0x9E,0xDD,0x95,0xEA,0x5E,
+        0x9A,0x80,0x47,0x3F,0x7D,0x4F,0x5D,0x19,0x09,0x9B,0xEA,0x6E,
+        0x3B,0x89,0xD7,0xB8,0xC5,0xD5,0x28,0x57,0x4A,0xAA,0xEF,0x21,
+        0x72,0x18,0x12,0x80,0xD5,0x15,0xEE,0x8C,0x9A,0x04,0xB0,0x23,
+        0x89,0x98,0x62,0x5D,0xC8,0xA1,0x84,0x5E,0x1C,0x70,0x01,0xE1,
+        0x1A,0x75,0x45,0xF0,0x90,0x7D,0x84,0x53,0x10,0xD5,0x65,0x98,
+        0xF9,0x2E,0x7A,0xC4,0x5C,0xAF,0x76,0xB9,0x83,0xB3,0xF6,0x14,
+        0x61,0x83,0xD8,0xCA,0x31,0x94,0xF4,0xF9,0x0B,0x6C,0x37,0x11,
+        0x42,0xE7,0x16,0x50,0x76,0x24,0xE9,0x48,0x3E,0x19,0xFF,0x6E,
+        0xEF,0x98,0x10,0x09,0x98,0x93,0x2E,0xAB,0x23,0xB5,0x9D,0xBB,
+        0xB9,0x69,0xFD,0x6E,0xD1,0x85,0xA8,0xEF,0x8B,0x51,0xE7,0x0A,
+        0x45,0x32,0x82,0x3B,0xD4,0x71,0x0C,0x8A,0x7A,0x79,0xF3,0x08,
+        0x6C,0xBE,0xE3,0x61,0x11,0x40,0xF1,0x98,0x4E,0xF4,0x7B,0xD6,
+        0xF5,0x6C,0xD5,0xCF,0x7B,0xF6,0xA2,0xBF,0xB8,0xAD,0xF2,0x29,
+        0x3D,0x4E,0xDE,0x9A,0xEB,0xF5,0x8C,0x2E,0xEA,0x0D,0x0A,0x24,
+        0xB3,0x82,0x84,0xEC,0x21,0xD2,0x87,0x8A,0xD2,0x12,0x12,0xA3,
+        0x4F,0xC8,0xC0,0x09,0xDD,0x09,0x41,0xD2,0xEB,0x93,0xCE,0x94,
+        0xBA,0xA2,0x5A,0x17,0x98,0x8A,0xB3,0x1C,0x13,0x6C,0xD8,0x7C,
+        0x12,0x6E,0x57,0x0B,0x74,0xAC,0xF5,0xB6,0x22,0xBC,0xD4,0xC6,
+        0x3C,0xC2,0x90,0x08,0xB8,0x9E,0x61,0x85,0xE8,0x3B,0x15,0x1B,
+        0x2A,0x52,0x01,0xE3,
+    };
+    static unsigned char dh2048_g[]={
+        0x02,
+    };
+    DH *dh;
+    
+    if ((dh=DH_new()) == NULL) return(NULL);
+    dh->p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
+    dh->g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
+    if ((dh->p == NULL) || (dh->g == NULL))
+    { DH_free(dh); return(NULL); }
+    return(dh);
 }
 
 /*************************************** ENCRYPTION ******************************************************/
@@ -1704,7 +1768,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
             shift1 = 16;
             shift2 = 16;
         }
-        key = key_block + (2*cipher_suite->signature_size + shift1);
+        key = key_block + (2*cipher_suite->hash_size + shift1);
         iv = key + (32 + shift2);
         
     }
@@ -1713,7 +1777,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
             shift1 = cipher_suite->key_material;
             shift2 = cipher_suite->iv_size;
         }
-        key = key_block + (2*cipher_suite->signature_size + shift1);
+        key = key_block + (2*cipher_suite->hash_size + shift1);
         iv = key + (2*cipher_suite->key_material + shift2);
     }
 

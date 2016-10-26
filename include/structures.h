@@ -41,8 +41,12 @@ typedef enum{
 }CipherAlgorithm;//TODO: completare
 
 typedef enum{
-    SNULL, SHA1_, MD5_1
+    HNULL, SHA1_, MD5_1
 }HashAlgorithm;
+
+typedef enum{
+    SNULL, RSA_s, DSA_s, FORTEZZA_s
+}SignatureAlgorithm;
 
 typedef struct{
     KeyExchangeAlgorithm key_exchange_algorithm;
@@ -50,8 +54,9 @@ typedef struct{
     CipherAlgorithm cipher_algorithm;
     uint8_t iv_size;
     uint8_t key_material;
-    HashAlgorithm signature_algorithm;
-    uint8_t signature_size;
+    HashAlgorithm hash_algorithm;
+    SignatureAlgorithm signature_algorithm;
+    uint8_t hash_size;
     _Bool exportable;
 }CipherSuite;
 

@@ -76,11 +76,12 @@ void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange);
 Certificate* loadCertificate(char * cert_name);
 int writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
+DH *get_dh2048();
 
 /* KEY BLOCK*/
 
 uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int principal_argument_size, ClientServerHello *client_hello, ClientServerHello *server_hello);
-uint8_t *MasterSecretGen(uint8_t *pre_master_secret, ClientServerHello *client_hello, ClientServerHello *server_hello);
+uint8_t *MasterSecretGen(uint8_t *pre_master_secret, int pre_master_len, ClientServerHello *client_hello, ClientServerHello *server_hello);
 uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *size, ClientServerHello *client_hello, ClientServerHello *server_hello);
 
 /* ENCRYPTION */

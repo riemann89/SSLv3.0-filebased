@@ -34,11 +34,15 @@ int main(int argc, const char *argv[]){
     Talker sender;
     int phase, key_block_size, len_parameters,dec_message_len,enc_message_len;
     //char certificate_string[100];
+    size_t size_shared_key;
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t *cipher_key;
     uint8_t *key_block,*dec_message,*enc_message;
+	DH *dh;
+    uint8_t *shared_key;
+    BIGNUM *pub_key_client;
     ServerKeyExchange server_key_exchange;
 	
     
@@ -47,12 +51,13 @@ int main(int argc, const char *argv[]){
     cipher_key = NULL;
     key_block = NULL;
     certificate = NULL;
+    dec_message = NULL;
+    enc_message=NULL;
+    dh = NULL;
     ciphersuite_code = 0; //TODO come mai questi valori?
     prioritylen = 10;
     phase = 0;
     certificate_type = 0;
-    dec_message = NULL;
-    enc_message=NULL;
     dec_message_len = 0;
     enc_message_len = 0;
     sender = server;
@@ -74,7 +79,6 @@ int main(int argc, const char *argv[]){
    
 
     ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
-    printf("%02X", ciphersuite_code);
     
     //Construction Server Hello
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
@@ -110,87 +114,64 @@ int main(int argc, const char *argv[]){
     //CERTIFICATE
 
 	//TODO: gestire gli altri certificati
-    
-    if (certificate_type !=DH_ANON) {
-        
-    	switch (certificate_type) {
-        	case RSA_SIGN:
-                //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
-            	certificate = loadCertificate("certificates/RSA_server.crt");
-            	break;
-            case DSS_SIGN:
-                break;
-            case RSA_FIXED_DH:
-                break;
-            case DSS_FIXED_DH:
-                break;
-            case RSA_EPHEMERAL_DH:
-                break;
-            case DSS_EPHEMERAL_DH:
-                certificate = loadCertificate("certificates/DSA_server.crt");
-                break;
-            case DH_ANON:
-                break;
-            case FORTEZZA_MISSI:
-                break;
-        	default:
-                perror("Certificate type error.");
-                exit(1);
-            	break;
+    switch (ciphersuite_choosen->key_exchange_algorithm){
+        case RSA_:
+            //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
+            certificate = loadCertificate("certificates/RSA_server.crt");
+            break;
+        case DH_:
+            switch (ciphersuite_choosen->signature_algorithm) {
+                case RSA_s:
+                    certificate = loadCertificate("certificates/RSA_server.crt");
+                    break;
+                case DSA_s:
+                    certificate = loadCertificate("certificates/DSA_server.crt");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            perror("Certificate error: type not supported.");
+            exit(1);
+            break;
         }
 
-        handshake = CertificateToHandshake(certificate);
-        record = HandshakeToRecordLayer(handshake);
+    handshake = CertificateToHandshake(certificate);
+    record = HandshakeToRecordLayer(handshake);
        
-    	SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
-    	MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
+    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
-    	sendPacketByte(record);
-        printRecordLayer(record);
-    	OpenCommunication(client);
-    	while(CheckCommunication() == client){}
-    }
-
+    sendPacketByte(record);
+    printRecordLayer(record);
+    OpenCommunication(client);
+    while(CheckCommunication() == client){}
+	
     
     //SERVER KEY EXCHANGE
-    
-    if (certificate_type != RSA_SIGN && certificate_type != RSA_FIXED_DH && certificate_type != DSS_FIXED_DH){
+    if (ciphersuite_choosen->key_exchange_algorithm == DH_){
         
-        //generare i parametri di diffie-helmann
-        DH *dh;
-        
-        dh = DH_new();//TODO: remember to free
-        
-        if (DH_generate_parameters_ex(dh, 2048, 2, NULL) == 0){
-            perror("DH parameter generation error.");
-            exit(1);
-        };
-        
-        int error_codes = 0;
-        
-        if(DH_check(dh, &error_codes) == 0){
-            perror("DH parameter check not passed.");
-            exit(1);
-        }
-		
+        //dh = DH_new();//TODO: remember to free
+        dh = get_dh2048();
         if(DH_generate_key(dh) == 0){
             perror("DH keys generarion error.");
             exit(1);
         }
 
+        printf("p size: %d\n",BN_num_bytes(dh->p));
+        printf("g size: %d\n",BN_num_bytes(dh->g));
+        printf("g^a size: %d\n",BN_num_bytes(dh->pub_key));
         
-        
-        server_key_exchange.len_parameters = 3*DH_size(dh);
+        server_key_exchange.len_parameters = BN_num_bytes(dh->p) + BN_num_bytes(dh->g) + BN_num_bytes(dh->pub_key);
         server_key_exchange.parameters = (uint8_t*)calloc(server_key_exchange.len_parameters, sizeof(uint8_t));
-        server_key_exchange.signature = (uint8_t*)calloc(ciphersuite_choosen->signature_size, sizeof(uint8_t));
+        server_key_exchange.signature = (uint8_t*)calloc(ciphersuite_choosen->hash_size, sizeof(uint8_t));
         
         BN_bn2bin(dh->p, server_key_exchange.parameters);
         BN_bn2bin(dh->g, server_key_exchange.parameters + BN_num_bytes(dh->p));
-        BN_bn2bin(dh->pub_key, server_key_exchange.parameters + 2*BN_num_bytes(dh->p));
-        
-        //TODO: salvare p,g nel codice o su file.
-        
+        BN_bn2bin(dh->pub_key, server_key_exchange.parameters + BN_num_bytes(dh->p) + BN_num_bytes(dh->g));
         //creare la firma
+        //TODO:
         
         
         
@@ -205,7 +186,7 @@ int main(int argc, const char *argv[]){
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
-        
+        printf("size paccheto:%d\n", record->length);
         sendPacketByte(record);
         printRecordLayer(record);
         OpenCommunication(client);
@@ -245,15 +226,35 @@ int main(int argc, const char *argv[]){
                     printf("%d\n",len_parameters);
                     client_key_exchange = HandshakeToClientKeyExchange(client_handshake, ciphersuite_choosen);
                     
-                    SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
-                    MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
+                    SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
+                    MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
 					
-                    size_t out_size = 0;
-                    pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters ,&out_size);
+                	size_t out_size = 0;
                 
-                	//printf("aaaaaa:%zu", out_size);
-                    master_secret = calloc(48, sizeof(uint8_t));
-                    master_secret = MasterSecretGen(pre_master_secret, client_hello, &server_hello);
+                	switch (ciphersuite_choosen->key_exchange_algorithm){
+                    	case RSA_:
+                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, &out_size);
+                            master_secret = calloc(48, sizeof(uint8_t));
+                            master_secret = MasterSecretGen(pre_master_secret, 48, client_hello, &server_hello);
+                        	break;
+                        case DH_:
+                            /*
+                            //shared = g^ab
+                            BN_bin2bn(client_key_exchange->parameters, client_key_exchange->len_parameters, pub_key_client);
+                            shared_key = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
+                            size_shared_key = DH_compute_key(shared_key, pub_key_client, dh);
+                            printf("%zu", size_shared_key);
+                            pre_master_secret = shared_key;
+                            master_secret = MasterSecretGen(pre_master_secret, size_shared_key, client_hello, &server_hello);
+                            */
+                            break;
+                    	default:
+                            perror("Client Key Exchange not supported");
+                            exit(1);
+                        	break;
+                	}
+                
+
 
                     printf("\nMASTER KEY:generated\n");
                     for (int i=0; i< 48; i++){
@@ -265,6 +266,7 @@ int main(int argc, const char *argv[]){
                     key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, &server_hello);
                     
                     printf("\nKEY BLOCK\n");
+                	printf("%d\n", key_block_size);
                     for (int i=0; i< key_block_size; i++){
                         printf("%02X ", key_block[i]);
                     }
