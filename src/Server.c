@@ -62,7 +62,7 @@ int main(int argc, const char *argv[]){
     enc_message_len = 0;
     out_size = 0;
     pre_master_secret_size = 0;
-    sender = server;
+    sender = client;//TODO: sostituire con client
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
@@ -100,8 +100,8 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(0x12); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x12);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x06); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x06);//TODO: automatizzare
 	
     
     //Sending server hello and open the communication to the client.
@@ -298,7 +298,7 @@ int main(int argc, const char *argv[]){
     
     uint8_t length_bytes[4];
     int_To_Bytes(client_message->length, length_bytes);
-    printf("ENCRYPED FINISHED:\n");
+    printf("ENCRYPED FINISHED: received\n");
     printf("%02X ", client_message->type);
     printf("%02X ", client_message->version.major);
     printf("%02X ", client_message->version.minor);
@@ -312,7 +312,7 @@ int main(int argc, const char *argv[]){
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
     
     
-    printf("\nFINISHED DECRYPTED\n");
+    printf("DECRYPTED FINISHED:\n");
     printf("%02X ", client_message->type);
     printf("%02X ", client_message->version.major);
     printf("%02X ", client_message->version.minor);
@@ -368,6 +368,13 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
+    /*
+    printf("FINISHED:\n");
+    for(int i = 0; i<36; i++){
+        printf("%02X ", finished.hash[i]);
+    }
+    */
+    
     /* MAC and ENCRYPTION*/
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
@@ -385,7 +392,7 @@ int main(int argc, const char *argv[]){
     sendPacketByte(record);
     
     int_To_Bytes(record->length, length_bytes);
-    printf("ENCRYPED FINISHED:\n");
+    printf("ENCRYPED FINISHED: sent\n");
     printf("%02X ", record->type);
     printf("%02X ", record->version.major);
     printf("%02X ", record->version.minor);

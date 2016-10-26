@@ -123,8 +123,8 @@ int main(int argc, const char *argv[]){
     cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
-    cipher_suite_choosen = CodeToCipherSuite(0x12); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x12);//TODO: automatizzare
+    cipher_suite_choosen = CodeToCipherSuite(0x06); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x06);//TODO: automatizzare
     
     OpenCommunication(server);
     phase = 2;
@@ -356,7 +356,7 @@ int main(int argc, const char *argv[]){
     sendPacketByte(&record2);
     uint8_t length_bytes[4];
     int_To_Bytes(server_message->length, length_bytes);
-    printf("ENCRYPED FINISHED:\n");
+    printf("ENCRYPED FINISHED: sent\n");
     printf("%02X ", record2.type);
     printf("%02X ", record2.version.major);
     printf("%02X ", record2.version.minor);
@@ -388,7 +388,7 @@ int main(int argc, const char *argv[]){
     server_message = readchannel();
     int_To_Bytes(server_message->length, length_bytes);
     
-    printf("ENCRYPED FINISHED:\n");
+    printf("FINISHED ENCRYPED: received\n");
     printf("%02X ", server_message->type);
     printf("%02X ", server_message->version.major);
     printf("%02X ", server_message->version.minor);
@@ -400,7 +400,6 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     dec_message = DecEncryptPacket(server_message->message, server_message->length - 5, &dec_message_len, cipher_suite_choosen, key_block, server, 0);
-    printf("dec_message_len: %d\n", dec_message_len);
     printf("FINISHED DECRYPTED\n");
     printf("%02X ", server_message->type);
     printf("%02X ", server_message->version.major);
