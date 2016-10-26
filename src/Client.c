@@ -123,8 +123,8 @@ int main(int argc, const char *argv[]){
     cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
-    cipher_suite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
+    cipher_suite_choosen = CodeToCipherSuite(0x12); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x12);//TODO: automatizzare
     
     OpenCommunication(server);
     phase = 2;
@@ -348,13 +348,25 @@ int main(int argc, const char *argv[]){
     // assembling encrypted packet
     RecordLayer record2;
     
-	record2.length = enc_message_len + 5;
     record2.type = HANDSHAKE;
+    record2.length = enc_message_len + 5;
     record2.version = std_version;
     record2.message = enc_message;
         
     sendPacketByte(&record2);
-    printRecordLayer(&record2);
+    uint8_t length_bytes[4];
+    int_To_Bytes(server_message->length, length_bytes);
+    printf("ENCRYPED FINISHED:\n");
+    printf("%02X ", record2.type);
+    printf("%02X ", record2.version.major);
+    printf("%02X ", record2.version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<record2.length - 5; i++){
+        printf("%02X ", record2.message[i]);
+    }
+    printf("\n\n");
+    
 	
     //FreeRecordLayer(record);
     //FreeHandshake(handshake);
@@ -366,19 +378,35 @@ int main(int argc, const char *argv[]){
     OpenCommunication(server);
     while(CheckCommunication() == server){};
     
+    //CHANGE CIPHER SPEC
     server_message = readchannel();
-    printRecordLayer(server_message); //stamparlo a mano
+    printRecordLayer(server_message);
     
     OpenCommunication(server);
     while(CheckCommunication() == server){};
     
     server_message = readchannel();
-	printRecordLayer(server_message);
+    int_To_Bytes(server_message->length, length_bytes);
+    
+    printf("ENCRYPED FINISHED:\n");
+    printf("%02X ", server_message->type);
+    printf("%02X ", server_message->version.major);
+    printf("%02X ", server_message->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<server_message->length - 5; i++){
+        printf("%02X ", server_message->message[i]);
+    }
+    printf("\n\n");
     
     dec_message = DecEncryptPacket(server_message->message, server_message->length - 5, &dec_message_len, cipher_suite_choosen, key_block, server, 0);
-
-    printf("\nFINISHED DECRYPTED\n");
-    
+    printf("dec_message_len: %d\n", dec_message_len);
+    printf("FINISHED DECRYPTED\n");
+    printf("%02X ", server_message->type);
+    printf("%02X ", server_message->version.major);
+    printf("%02X ", server_message->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
     for(int i=0; i < dec_message_len; i++){
         printf("%02X ", dec_message[i]);
     }

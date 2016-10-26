@@ -33,7 +33,6 @@ int main(int argc, const char *argv[]){
     CertificateType certificate_type;
     Talker sender;
     int phase, key_block_size, len_parameters,dec_message_len,enc_message_len;
-    //char certificate_string[100];
 
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
@@ -101,8 +100,8 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x11);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x12); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x12);//TODO: automatizzare
 	
     
     //Sending server hello and open the communication to the client.
@@ -285,26 +284,46 @@ int main(int argc, const char *argv[]){
     }
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     
+    //CHANGE CIPHER SPEC read
     while(CheckCommunication() == client)
     client_message = readchannel();
+    
     printRecordLayer(client_message);
     
+    //FINISHED read
     OpenCommunication(client);
     while(CheckCommunication() == client){}
     
     client_message = readchannel();
-    printRecordLayer(client_message);
     
-    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);    
-    dec_message_len = 40; //TODO
+    uint8_t length_bytes[4];
+    int_To_Bytes(client_message->length, length_bytes);
+    printf("ENCRYPED FINISHED:\n");
+    printf("%02X ", client_message->type);
+    printf("%02X ", client_message->version.major);
+    printf("%02X ", client_message->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<client_message->length - 5; i++){
+        printf("%02X ", client_message->message[i]);
+    }
+    printf("\n\n");
+    
+    dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
+    
     
     printf("\nFINISHED DECRYPTED\n");
-    for(int i=0; i < dec_message_len; i++){
+    printf("%02X ", client_message->type);
+    printf("%02X ", client_message->version.major);
+    printf("%02X ", client_message->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i = 0; i < dec_message_len; i++){
         printf("%02X ", dec_message[i]);
     }
     printf("\n\n");
 
-    
+    //CHANGE CIPHER SPEC send
     record = ChangeCipherSpecRecord();
     sendPacketByte(record);
     printRecordLayer(record);
@@ -313,6 +332,7 @@ int main(int argc, const char *argv[]){
     
     while(CheckCommunication() == client){}
     
+    //FINISHED send
     SHA1_Update(&sha, &sender, sizeof(uint32_t));
     MD5_Update(&md5, &sender, sizeof(uint32_t));
     
@@ -349,29 +369,32 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
     /* MAC and ENCRYPTION*/
-    
     handshake = FinishedToHandshake(&finished);
-    /* MAC and ENCRYPTION*/
     temp = HandshakeToRecordLayer(handshake);
     
     // MANCA IL MAC
- 
-    
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
-    
-    // assembling encrypted packet
-    //TODO: il paccheto non è assemblato correttamente: manca il tipo di handshake, infatti non lo stampa.
+    //.......MAC......
     
     record = calloc(1, sizeof(RecordLayer));
-    record->length = enc_message_len + 5; //TODO
     record->type = HANDSHAKE;
     record->version = std_version;
+	record->length = enc_message_len + 5; //TODO
+	record->message = enc_message;
     
-    
-    record->message = enc_message;
-	
     sendPacketByte(record);
-    printRecordLayer(record);
+    
+    int_To_Bytes(record->length, length_bytes);
+    printf("ENCRYPED FINISHED:\n");
+    printf("%02X ", record->type);
+    printf("%02X ", record->version.major);
+    printf("%02X ", record->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<record->length - 5; i++){
+        printf("%02X ", record->message[i]);
+    }
+    printf("\n\n");
     
     OpenCommunication(client);
 

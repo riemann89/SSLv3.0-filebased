@@ -1014,8 +1014,6 @@ void printRecordLayer(RecordLayer *record_layer){
     printf("%02X ", record_layer->type);
     printf("%02X ", record_layer->version.major);
     printf("%02X ", record_layer->version.minor);
-    printf("%02X ", length_bytes[0]);
-	printf("%02X ", length_bytes[1]);
     printf("%02X ", length_bytes[2]);
     printf("%02X ", length_bytes[3]);
     
@@ -1280,7 +1278,6 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             break;
             
         case 0x12:
-            
             cipher_suite->key_exchange_algorithm = DH_;
             cipher_suite->cipher_type = BLOCK;
             cipher_suite->cipher_algorithm = DES;
@@ -1489,12 +1486,6 @@ int writeCertificate(X509* certificate){
 }
 
 /**
- * TODO apparently it does nothing
- * @return 0
- */
-int readCertificate(){return 0;}
-
-/**
  * extract the public key read from the certificate
  * @param Certificate *certificate
  * @return EVP_KEY *pubkey
@@ -1626,7 +1617,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
     
     
 }
-
+//TODO
 DH *get_dh2048(){
     static unsigned char dh2048_p[]={
         0xC5,0x36,0x72,0xCF,0x5A,0xA4,0x02,0xDA,0x0B,0xD2,0x49,0xE9,
@@ -1831,9 +1822,6 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
         iv = key + (2*cipher_suite->key_material + shift2);
     }
 
-
-
-    
     switch (cipher_suite->cipher_algorithm) {
         case CNULL:
             //TODO da gestire
