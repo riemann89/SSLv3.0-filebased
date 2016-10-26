@@ -340,8 +340,24 @@ int main(int argc, const char *argv[]){
     
     /* MAC and ENCRYPTION*/
     
+    
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
+    
+    uint8_t length_bytes[4];
+    int_To_Bytes(temp->length, length_bytes);
+    printf("%d", temp->length);
+    printf("FINISHED:to sent\n");
+    printf("%02X ", temp->type);
+    printf("%02X ", temp->version.major);
+    printf("%02X ", temp->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<temp->length - 5; i++){
+        printf("%02X ", temp->message[i]);
+    }
+    printf("\n\n");
+    
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
 	//TODO: MANCA IL MAC
     
@@ -354,7 +370,7 @@ int main(int argc, const char *argv[]){
     record2.message = enc_message;
         
     sendPacketByte(&record2);
-    uint8_t length_bytes[4];
+
     int_To_Bytes(server_message->length, length_bytes);
     printf("ENCRYPED FINISHED: sent\n");
     printf("%02X ", record2.type);

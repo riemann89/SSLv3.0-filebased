@@ -54,7 +54,7 @@ int main(int argc, const char *argv[]){
     dec_message = NULL;
     enc_message=NULL;
     dh = NULL;
-    ciphersuite_code = 0; //TODO come mai questi valori?
+    ciphersuite_code = 0;
     prioritylen = 10;
     phase = 0;
     certificate_type = 0;
@@ -62,7 +62,7 @@ int main(int argc, const char *argv[]){
     enc_message_len = 0;
     out_size = 0;
     pre_master_secret_size = 0;
-    sender = client;//TODO: sostituire con client
+    sender = server;
     SHA1_Init(&sha);
     MD5_Init(&md5);
     
@@ -230,21 +230,13 @@ int main(int argc, const char *argv[]){
                             
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
-                            
-                            /*
-                            printf("Shared key: \n");
-                            for (int i=0; i<shared_key_size; i++){
-                                printf("%02X ", shared_key[i]);
-                            }
-                            printf("\n");
-                            */
                             break;
                     	default:
                             perror("Client Key Exchange not supported");
                             exit(1);
                         	break;
                 	}
-                	master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, &server_hello);
+                	master_secret = MasterSecretGen(pre_master_secret, 48, client_hello, &server_hello);
                 
                 	SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
                 	MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
@@ -311,7 +303,7 @@ int main(int argc, const char *argv[]){
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
     
-    
+    printf("%d\n", dec_message_len);
     printf("DECRYPTED FINISHED:\n");
     printf("%02X ", client_message->type);
     printf("%02X ", client_message->version.major);
@@ -378,6 +370,18 @@ int main(int argc, const char *argv[]){
     /* MAC and ENCRYPTION*/
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
+    
+    int_To_Bytes(temp->length, length_bytes);
+    printf("FINISHED:to sent\n");
+    printf("%02X ", temp->type);
+    printf("%02X ", temp->version.major);
+    printf("%02X ", temp->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<temp->length - 5; i++){
+        printf("%02X ", temp->message[i]);
+    }
+    printf("\n\n");
     
     // MANCA IL MAC
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
