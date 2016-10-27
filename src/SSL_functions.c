@@ -1960,39 +1960,62 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     uint8_t *signature;
     SHA_CTX sha;
     MD5_CTX md5;
+    EVP_MD_CTX c;
+    uint8_t len;
+
     
     signature = NULL;
     
     //hash
-    switch (cipher->signature_algorithm) {
-        case SHA1_:
-            signature = calloc(16, sizeof(uint8_t));
+    SHA_Init(&sha);
+    SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+    SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+    SHA_Update(&sha, params, len_params*sizeof(uint8_t));
+    SHA_Final(signature, &sha);
             
-            SHA_Init(&sha);
-            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-            SHA_Final(signature, &sha);
+    MD5_Init(&md5);
+    MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+    MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+    MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+    MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+    MD5_Update(&md5, params, len_params*sizeof(uint8_t));
+    MD5_Final(signature, &md5);
+    SHA_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+       
+    
+    EVP_MD_CTX_init(&c);
+    signature = malloc(EVP_PKEY_size(pKey));
+
+    EVP_SignInit(&c, type);
+
+    switch (cipher->signature_algorithm){
+        
+        case RSA_s:
             
+            len = 36;
+            EVP_SignUpdate(&c, md5,16*sizeof(uint8_t));
+            EVP_SignUpdate(&c, sha,20*sizeof(uint8_t));
+            EVP_SignFinal(&c, signature, &len, pKey);
+            EVP_MD_CTX_cleanup(&c);
+            return signature;
             break;
-        case MD5_1:
-            signature = calloc(16, sizeof(uint8_t));
+        
+        case DSA_s:
             
-            MD5_Init(&md5);
-            MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-            MD5_Update(&md5, params, len_params*sizeof(uint8_t));
-            MD5_Final(signature, &md5);
+            len = 20;
+            EVP_SignUpdate(&c, sha,20*sizeof(uint8_t));
+            EVP_SignFinal(&c, signature, &len, pKey);
+            EVP_MD_CTX_cleanup(&c);
+            return signature;
+            break;
+        
         default:
-            perror("Signature_ error: signature algorithm not supported");
+            perror("key exchange algorithm not supported");
             exit(1);
             break;
+               
     }
-    
     
     
     
