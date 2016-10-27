@@ -137,6 +137,7 @@ typedef struct{
     uint8_t *parameters;
     uint8_t *signature;
     uint32_t len_parameters;
+    uint32_t len_signature;
 }ServerKeyExchange;
 
 //Extern variables
