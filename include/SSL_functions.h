@@ -37,7 +37,7 @@ CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);
 ServerDone *HandshakeToServerdone(Handshake *handshake);
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite *cipher_suite);
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite);
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite,uint32_t len_signature);
 Finished *HandshakeToFinished(Handshake *handshake);
 
 // record -> handshake

@@ -1965,7 +1965,7 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     MD5_CTX md5;
     EVP_MD_CTX c;
     uint8_t len;
-
+    EVP_MD *type;
     
     signature = NULL;
     
@@ -1997,8 +1997,8 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
         case RSA_s:
             
             len = 36;
-            EVP_SignUpdate(&c, md5,16*sizeof(uint8_t));
-            EVP_SignUpdate(&c, sha,20*sizeof(uint8_t));
+            EVP_SignUpdate(&c, &md5,16*sizeof(uint8_t));
+            EVP_SignUpdate(&c, &sha,20*sizeof(uint8_t));
             EVP_SignFinal(&c, signature, &len, pKey);
             EVP_MD_CTX_cleanup(&c);
             return signature;
@@ -2007,7 +2007,7 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
         case DSA_s:
             
             len = 20;
-            EVP_SignUpdate(&c, sha,20*sizeof(uint8_t));
+            EVP_SignUpdate(&c, &sha,20*sizeof(uint8_t));
             EVP_SignFinal(&c, signature, &len, pKey);
             EVP_MD_CTX_cleanup(&c);
             return signature;
