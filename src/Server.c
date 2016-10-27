@@ -80,7 +80,7 @@ int main(int argc, const char *argv[]){
     client_hello = HandshakeToClientServerHello(client_handshake);
    
 
-    ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1.txt");
+    ciphersuite_code = chooseChipher(client_hello, "ServerConfig/All.txt");
     
     //Construction Server Hello
     random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto

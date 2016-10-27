@@ -88,6 +88,10 @@ int main(int argc, const char *argv[]){
     supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
     client_hello.length = 38 + len_hello;
     client_hello.ciphersuite_code = supported_ciphers;
+    //modifica per inserire velocemente ciphers da clienthello cancellare le 3 rige seguenti per tornare al modello vecchio
+    supported_ciphers = NULL;
+    supported_ciphers[0] = 5;   //inserire il codice corrispondente alla ciphers voluta
+    client_hello.ciphersuite_code = supported_ciphers;
     sender_id = client_hello.sessionId;
     
     //Wrapping

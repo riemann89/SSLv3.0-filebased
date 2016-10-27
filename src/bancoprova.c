@@ -34,16 +34,16 @@ int main(int argc, const char *argv[]){
     */
     int i;
     for (i = 0; i < prioritylen; i++) {
-        priority[i].code=i+12;
+        priority[i]=i+12;
     }
-    priority[0].code= 5;
+    priority[0]= 5;
    
     setPriorities(&prioritylen, priority, "ServerConfig/Priority1.txt");
     
     
     prioritylen = 9;
       for (i = 0; i < prioritylen; i++) {
-        priority[i].code=i+18;
+        priority[i]=i+18;
     }
    
     setPriorities(&prioritylen, priority, "ServerConfig/Priority2.txt");
@@ -51,29 +51,40 @@ int main(int argc, const char *argv[]){
     
     prioritylen = 5;
       for (i = 0; i < prioritylen; i++) {
-        priority[i].code=i+2;
+        priority[i]=i+2;
     }
    
     setPriorities(&prioritylen, priority, "ServerConfig/Priority3.txt");
     
    
+    prioritylen = 16;
+      for (i = 0; i < 10; i++) {
+        priority[i]=i;
+    }
+    for(i=10;i<16;i++){
+        priority[i]=i+6;
+    }
+   
+    setPriorities(&prioritylen, priority, "ServerConfig/All.txt");
+    
+    
      prioritylen = 7;
       for (i = 0; i < prioritylen; i++) {
-        priority[i].code=i+21;
+        priority[i]=i+21;
     }
    
     setPriorities(&prioritylen, priority, "ClientConfig/Priority1.txt");
     
      prioritylen = 5;
       for (i = 0; i < prioritylen; i++) {
-        priority[i].code=i+18;
+        priority[i]=i+18;
     }
    
     setPriorities(&prioritylen, priority, "ClientConfig/Priority2.txt");
     
      prioritylen = 15;
       for (i = 0; i < prioritylen; i++) {
-        priority[i].code=i+3;
+        priority[i]=i+3;
     }
    
      
