@@ -100,8 +100,8 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(0x06); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x06);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x13); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x13);//TODO: automatizzare
 	
     
     //Sending server hello and open the communication to the client.
@@ -303,6 +303,7 @@ int main(int argc, const char *argv[]){
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
     
+    int_To_Bytes(dec_message_len + 5, length_bytes);
     printf("%d\n", dec_message_len);
     printf("DECRYPTED FINISHED:\n");
     printf("%02X ", client_message->type);

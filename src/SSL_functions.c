@@ -1877,7 +1877,8 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCARE IL MAX
     
     EVP_CipherUpdate(ctx, out_packet, out_packet_len, in_packet, in_packet_len);
-    EVP_CipherFinal_ex(ctx, out_packet, &tmp_len); //TODO non si capisce a che serve sta tmp_len
+    EVP_CipherFinal_ex(ctx, out_packet + *out_packet_len, &tmp_len); //TODO non si capisce a che serve sta tmp_len
+    *out_packet_len += tmp_len;
     EVP_CIPHER_CTX_free(ctx);
     
     return out_packet;
