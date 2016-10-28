@@ -1722,32 +1722,16 @@ uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t 
  * @return uint8_t *pre_master_secret
  
  */
-uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t *outlen){
+uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t *outlen, EVP_PKEY *private_key){
 
     uint8_t *plaintext;
-    FILE *certificate;
-    certificate = NULL;
-
     EVP_PKEY_CTX *ctx;
     
     
     /* NB: assumes key in, inlen are already set up
      * and that key is an RSA private key
      */
-    EVP_PKEY *private_key;
-    private_key = EVP_PKEY_new();
     
-    switch (private_key_type) {
-        case EVP_PKEY_RSA:
-            certificate = fopen("private_keys/RSA_server.key","rb");
-            break;
-        case EVP_PKEY_DSA:
-            certificate = fopen("private_keys/DSA_server.key","rb");
-            break;
-        default:
-            break;
-    }
-    private_key = PEM_read_PrivateKey(certificate, &private_key, NULL, NULL);
     ctx = EVP_PKEY_CTX_new(private_key, NULL);
     if (!ctx){}
 
@@ -1957,58 +1941,51 @@ uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
     }
 }
 uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey){
+    EVP_MD_CTX *mdctx = NULL;
+    mdctx = EVP_MD_CTX_create();
     
     uint8_t *signature;
+    uint8_t *hash;
+    int len;
+    size_t slen;
     SHA_CTX sha;
     MD5_CTX md5;
-    EVP_MD_CTX c;
-    uint8_t len;
 
-    
     signature = NULL;
-    
+    hash = NULL;
+
     //hash
-    SHA_Init(&sha);
-    SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-    SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-    SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-    SHA_Final(signature, &sha);
-            
-    MD5_Init(&md5);
-    MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-    MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-    MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-    MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-    MD5_Update(&md5, params, len_params*sizeof(uint8_t));
-    MD5_Final(signature, &md5);
-    SHA_Update(&sha, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-       
+    hash = (uint8_t*)calloc(36, sizeof(uint8_t));
     
-    EVP_MD_CTX_init(&c);
-    signature = malloc(EVP_PKEY_size(pKey));
-
-    EVP_SignInit(&c, type);
-
     switch (cipher->signature_algorithm){
         
         case RSA_s:
             
+            MD5_Init(&md5);
+            MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+            MD5_Update(&md5, params, len_params*sizeof(uint8_t));
+            MD5_Final(hash, &md5);
+            
+            SHA_Init(&sha);
+            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
+            SHA_Final(hash + 16, &sha);
             len = 36;
-            EVP_SignUpdate(&c, md5,16*sizeof(uint8_t));
-            EVP_SignUpdate(&c, sha,20*sizeof(uint8_t));
-            EVP_SignFinal(&c, signature, &len, pKey);
-            EVP_MD_CTX_cleanup(&c);
-            return signature;
             break;
         
         case DSA_s:
-            
+            SHA_Init(&sha);
+            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
+            SHA_Final(hash, &sha);
             len = 20;
-            EVP_SignUpdate(&c, sha,20*sizeof(uint8_t));
-            EVP_SignFinal(&c, signature, &len, pKey);
-            EVP_MD_CTX_cleanup(&c);
-            return signature;
             break;
         
         default:
@@ -2018,14 +1995,94 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
                
     }
     
-    
-    
-    
-    //firmare : posso riutilizzare la funzione encrypt
-    //devo passare la private key in input
+    EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pKey);
+    EVP_DigestSignUpdate(mdctx, hash, len);
+    EVP_DigestSignFinal(mdctx, NULL, &slen);
+    signature = OPENSSL_malloc(slen * sizeof(unsigned char));
+    EVP_DigestSignFinal(mdctx, signature, &slen);
+    //TODO RIV: slen non mi serve perchè dovrei estrarla dal certificato.
+    //TODO: freee
     
     return signature;
     
+}
+
+_Bool Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey){
+    EVP_MD_CTX *mdctx = NULL;
+    mdctx = EVP_MD_CTX_create();
+    
+    
+    uint8_t *hash;
+    size_t outlen;
+    int len;
+    uint8_t *decrypted_message = NULL;
+    
+    SHA_CTX sha;
+    MD5_CTX md5;
+    
+    hash = NULL;
+    
+    //hash
+    hash = (uint8_t*)calloc(36, sizeof(uint8_t));
+    len = 0;
+	
+    //RIVEDERE:
+    //DECIFRATURA ??????
+    
+    
+    
+    switch (cipher->signature_algorithm){
+            
+        case RSA_s:
+			//hash compute
+            MD5_Init(&md5);
+            MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
+            MD5_Update(&md5, params, len_params*sizeof(uint8_t));
+            MD5_Final(hash, &md5);
+            
+            SHA_Init(&sha);
+            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
+            SHA_Final(hash + 16, &sha);
+            len = 36;
+            break;
+            
+        case DSA_s:
+            decrypted_message = AsymDec(DSA_s, signature, len_params, &outlen, pubKey);
+            SHA_Init(&sha);
+            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
+            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
+            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
+            SHA_Final(hash, &sha);
+            len = 20;
+            break;
+            
+        default:
+            perror("key exchange algorithm not supported");
+            exit(1);
+            break;
+            
+    }
+    
+    EVP_DigestVerifyInit(mdctx, NULL, NULL, NULL, pubKey);
+    EVP_DigestVerifyUpdate(mdctx, hash, len);
+    
+    if(1 == EVP_DigestVerifyFinal(mdctx, signature, len_signature))
+    {
+    	printf("VERIFICA OK\n");
+        return true;
+    }
+    else
+    {
+        printf("VERIFICA FALLITA\n");
+        return false;
+    }
 }
 
 

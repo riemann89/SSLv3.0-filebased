@@ -123,8 +123,8 @@ int main(int argc, const char *argv[]){
     cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
-    cipher_suite_choosen = CodeToCipherSuite(0x13); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x13);//TODO: automatizzare
+    cipher_suite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x14);//TODO: automatizzare
     
     OpenCommunication(server);
     phase = 2;
@@ -174,7 +174,12 @@ int main(int argc, const char *argv[]){
                 }
                 
                 pub_key_server = BN_bin2bn(server_key_exchange->parameters + p_size + 1, p_size, NULL);
-                
+                ///////////////////
+                //check signature
+                //////////////////
+                _Bool verify;
+                int len_signature = p_size; //TODO: da automatizzare
+                verify = Verify_(cipher_suite_choosen, &client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, server_key_exchange->signature, len_signature, pubkey);
                 
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
@@ -233,7 +238,6 @@ int main(int argc, const char *argv[]){
                 client_key_exchange.len_parameters = DH_size(dh);
                 client_key_exchange.parameters = calloc(client_key_exchange.len_parameters, sizeof(uint8_t));
                 BN_bn2bin(dh->pub_key, client_key_exchange.parameters);
-                
                 
                 pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                 pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_server, dh);

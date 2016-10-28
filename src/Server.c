@@ -45,6 +45,7 @@ int main(int argc, const char *argv[]){
     ServerKeyExchange server_key_exchange;
     size_t pre_master_secret_size;
 	
+    EVP_PKEY *private_key;
     
     //Initialization
     master_secret = NULL;
@@ -100,8 +101,8 @@ int main(int argc, const char *argv[]){
     MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
-    ciphersuite_choosen = CodeToCipherSuite(0x13); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x13);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
+    certificate_type = CodeToCertificateType(0x14);//TODO: automatizzare
 	
     
     //Sending server hello and open the communication to the client.
@@ -161,23 +162,15 @@ int main(int argc, const char *argv[]){
         server_key_exchange.len_parameters = BN_num_bytes(dh->p) + BN_num_bytes(dh->g) + BN_num_bytes(dh->pub_key);
         //TODO: questi mi sa che non vanno allocati
         server_key_exchange.parameters = (uint8_t*)calloc(server_key_exchange.len_parameters, sizeof(uint8_t));
-        server_key_exchange.signature = (uint8_t*)calloc(ciphersuite_choosen->hash_size, sizeof(uint8_t));
         
         BN_bn2bin(dh->p, server_key_exchange.parameters);
         BN_bn2bin(dh->g, server_key_exchange.parameters + BN_num_bytes(dh->p));
         BN_bn2bin(dh->pub_key, server_key_exchange.parameters + BN_num_bytes(dh->p) + BN_num_bytes(dh->g));
         //creare la firma
         //TODO:
+        server_key_exchange.signature = Signature_(ciphersuite_choosen, client_hello, &server_hello, server_key_exchange.parameters, server_key_exchange.len_parameters, private_key);
         
-        
-        
-        //impacchettare
-        
-        //spedire e mettersi in attesa);
-        handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen); //bisogna spedire la server_key_exchange
-        /* sostiuire riga sopra con:
-         *handshake = ServerKeyExchangeToHandshake(&server_key_exchange,server_key_exchange);
-         */
+        handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen);
         record = HandshakeToRecordLayer(handshake);
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
@@ -222,7 +215,12 @@ int main(int argc, const char *argv[]){
 
                 	switch (ciphersuite_choosen->key_exchange_algorithm){
                     	case RSA_:
-                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, &pre_master_secret_size);
+                            private_key = EVP_PKEY_new();
+                            FILE *key_file;
+                            key_file = NULL;
+                            key_file = fopen("private_keys/RSA_server.key","rb");
+                            private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
+                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, &pre_master_secret_size, private_key);
                         	break;
                         case DH_:
                             pub_key_client = BN_new();
@@ -230,6 +228,8 @@ int main(int argc, const char *argv[]){
                             
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
+                            //VERIFIFARE LA SIGNATURE.
+                            
                             break;
                     	default:
                             perror("Client Key Exchange not supported");
@@ -240,7 +240,6 @@ int main(int argc, const char *argv[]){
                 
                 	SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
                 	MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
-
 
                     printf("MASTER KEY:generated\n");
                     for (int i=0; i< 48; i++){
@@ -360,13 +359,6 @@ int main(int argc, const char *argv[]){
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
-    
-    /*
-    printf("FINISHED:\n");
-    for(int i = 0; i<36; i++){
-        printf("%02X ", finished.hash[i]);
-    }
-    */
     
     /* MAC and ENCRYPTION*/
     handshake = FinishedToHandshake(&finished);
