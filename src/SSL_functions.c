@@ -406,7 +406,7 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exc
     Handshake *handshake;
     uint8_t *Bytes;
       
-    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + cipher_suite->hash_size, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + client_server_key_exchange->len_signature, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
         exit(1);
@@ -424,7 +424,7 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exc
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = SERVER_KEY_EXCHANGE;
-    handshake->length = 4 + client_server_key_exchange->len_parameters + cipher_suite->hash_size;
+    handshake->length = 4 + client_server_key_exchange->len_parameters + client_server_key_exchange->len_signature;
     handshake->content = Bytes;
     
     return handshake;
@@ -772,7 +772,7 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuit
     return client_server_key_exchange;
 }
 
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite){
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite, uint32_t len_signature){
     
     ServerKeyExchange *client_server_key_exchange;
     
@@ -788,7 +788,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
     }
     
     
-    client_server_key_exchange->len_parameters = handshake->length - 4 - cipher_suite->hash_size;
+    client_server_key_exchange->len_parameters = handshake->length - 4 - len_signature;
     
     client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
     
@@ -797,7 +797,7 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
         exit(1);
     }
     
-    client_server_key_exchange->signature = (uint8_t *)calloc(cipher_suite->hash_size, sizeof(uint8_t));
+    client_server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
     
     if (client_server_key_exchange->signature == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
@@ -806,6 +806,8 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuit
     
     memcpy(client_server_key_exchange->parameters, handshake->content,client_server_key_exchange->len_parameters);
     memcpy(client_server_key_exchange->signature, handshake->content + client_server_key_exchange->len_parameters , cipher_suite->hash_size);
+    
+    client_server_key_exchange->len_signature=len_signature;
     
     return client_server_key_exchange;
 }//TOCHECK
@@ -1950,7 +1952,6 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     size_t slen;
     SHA_CTX sha;
     MD5_CTX md5;
-
     signature = NULL;
     hash = NULL;
 
