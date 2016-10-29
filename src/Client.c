@@ -13,7 +13,7 @@ int main(int argc, const char *argv[]){
     //Declaration
     ClientServerHello client_hello, *server_hello;
     Handshake *handshake, *server_handshake;
-    RecordLayer *record, *server_message, *temp;
+    RecordLayer *record, *server_message, *temp,record2;
     Random random;
     ClientKeyExchange client_key_exchange;
     ServerKeyExchange *server_key_exchange;
@@ -32,7 +32,7 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint32_t sender_id;
     uint8_t len_hello, *key_block;
-    uint8_t *supported_ciphers,*enc_message, *dec_message,*mac;
+    uint8_t *supported_ciphers,*enc_message, *dec_message,*mac, *client_write_MAC_secret[16];
     DH *dh = NULL;
     BIGNUM *pub_key_server;
     size_t out_size;
@@ -360,6 +360,9 @@ int main(int argc, const char *argv[]){
     
     //compute MAC
     
+    for(int i=0;i<16; i++){
+        client_write_MAC_secret[i]=key_block[i];
+    }
     mac= MAC(cipher_suite_choosen,handshake,master_secret);
 
     //append MAC
@@ -369,11 +372,8 @@ int main(int argc, const char *argv[]){
     
     // update length
     temp->length= temp->length + sizeof(mac);
-    
-            
+                
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
-    
-    RecordLayer record2;
     
     record2.type = HANDSHAKE;
     record2.length = enc_message_len + 5;
