@@ -37,8 +37,8 @@ int main(int argc, const char *argv[]){
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t *cipher_key;
-    uint8_t *key_block,*dec_message,*enc_message;
+    uint8_t *cipher_key, server_write_MAC_secret[16];
+    uint8_t *key_block,*dec_message,*enc_message,*mac;
 	DH *dh;
     BIGNUM *pub_key_client;
     size_t out_size;
@@ -376,7 +376,22 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    // MANCA IL MAC
+        //compute MAC
+    
+    for(int i=0;i<16; i++){
+        server_write_MAC_secret[i]=key_block[i+16];
+    }
+    mac= MAC(ciphersuite_choosen,handshake,master_secret);
+
+    //append MAC
+    for(int i=0;i<sizeof(mac);i++){
+        temp->message[temp->length - 5 + i]=mac[i];
+    }
+    
+    // update length
+    temp->length= temp->length + sizeof(mac);
+    
+    
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     //.......MAC......
     
