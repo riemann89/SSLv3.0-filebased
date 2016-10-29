@@ -363,7 +363,7 @@ int main(int argc, const char *argv[]){
     for(int i=0;i<16; i++){
         client_write_MAC_secret[i]=key_block[i];
     }
-    mac= MAC(cipher_suite_choosen,handshake,master_secret);
+    mac= MAC(cipher_suite_choosen,handshake,client_write_MAC_secret);
 
     //append MAC
     for(int i=0;i<sizeof(mac);i++){
