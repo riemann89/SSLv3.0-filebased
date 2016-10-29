@@ -333,7 +333,7 @@ int main(int argc, const char *argv[]){
     }
     mac= MAC(ciphersuite_choosen,handshake,client_write_MAC_secret);
 
-    // now i should compare mac 1 and mac2 they should be equal
+    // TODO now i should compare mac 1 and mac2 they should be equal
     
     //CHANGE CIPHER SPEC send
     record = ChangeCipherSpecRecord();
