@@ -105,7 +105,7 @@ typedef struct{
 }CertificateVerify;
 
 typedef struct{
-    uint8_t hash[36];
+    uint8_t *hash;
 }Finished;
 
 

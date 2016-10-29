@@ -302,12 +302,12 @@ Handshake *HelloRequestToHandshake(){
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     //VARIABLE DECLARATION//
     uint8_t *cipher;
-    Handshake *handshake; 																		 	//returning variable
-    uint8_t timeB[4]; 																					//current time bytes representation
-    uint8_t session[4];			 																		//session bytes representation
-    uint8_t cipher_codes[client_server_hello->length-38]; // 38= Random(32)+session(4) + version(1) + length(1)
-    														//array of all ciphers supported
-    uint8_t *Bytes;							//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
+    Handshake *handshake;
+    uint8_t timeB[4];
+    uint8_t session[4];
+    uint8_t cipher_codes[client_server_hello->length-38];
+    
+    uint8_t *Bytes;
     
     //MEMORY ALLOCATION//
     Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t));
@@ -315,25 +315,25 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    handshake=(Handshake*)calloc(1,sizeof(handshake));								//handshake memory allocation
+    handshake=(Handshake*)calloc(1,sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    cipher = client_server_hello->ciphersuite_code;   //temporary vector containing all cipher codes - it is requested to perform following memcopy
+    cipher = client_server_hello->ciphersuite_code;
     for (int i=0;i<(client_server_hello->length-38);i++){  
         cipher_codes[i]= *(cipher+i);
     }
-    int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);   	    //unix_time 
-    int_To_Bytes(client_server_hello->sessionId, session);  								// session values to bytes transformation
-    Bytes[0]=client_server_hello->version;   														//serializing client/server_hello field into bytes data vector
+    int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);
+    int_To_Bytes(client_server_hello->sessionId, session);
+    Bytes[0]=client_server_hello->version;
     memcpy(Bytes+1 ,session, 4);
     memcpy(Bytes+5 ,timeB , 4);
     memcpy(Bytes+9, client_server_hello->random->random_bytes,28);
-    memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);       		//38= version(1)+length(1)+session(4)+random(32)
+    memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = client_server_hello->type;   												//handshake fields initialization
+    handshake->msg_type = client_server_hello->type;
     handshake->length = client_server_hello->length + 3;
     handshake->content = Bytes;
     return handshake;
@@ -346,25 +346,27 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
  */
 Handshake *CertificateToHandshake(Certificate *certificate){
     //VARIABLE DECLARATION//
-    Handshake *handshake; 																		 	//returning variable
-    //session bytes representation
-    uint8_t *Bytes;																								//Used to serialize various fields of ClientServerHello and then pass to Handshake->content field
+    Handshake *handshake;
+    
+    uint8_t *Bytes;
+    
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(certificate->len, sizeof(uint8_t));																								 //bytes data vector, as said Bytes is an array which represents client_server_hello
+    Bytes =(uint8_t*)calloc(certificate->len, sizeof(uint8_t));
+    
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    handshake=(Handshake*)calloc(1, sizeof(handshake));								//handshake memory allocation
+    handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes, certificate->X509_der, certificate->len);       		//38= version(1)+length(1)+session(4)+random(32)
+    memcpy(Bytes, certificate->X509_der, certificate->len);
     
     //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = CERTIFICATE;   												//handshake fields initialization
+    handshake->msg_type = CERTIFICATE;
     handshake->length = certificate->len + 4;
     handshake->content = Bytes;
     return handshake;
@@ -375,12 +377,12 @@ Handshake *CertificateToHandshake(Certificate *certificate){
  * @param ClientKeyExchange *client_key_exchange
  * @return Handshake *handshake
  */
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite){
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
 
     
-    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
         exit(1);
@@ -393,20 +395,27 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exc
     }
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
+    memcpy(Bytes, client_key_exchange->parameters, client_key_exchange->len_parameters);
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = CLIENT_KEY_EXCHANGE;
-    handshake->length = 4 + client_server_key_exchange->len_parameters;
+    handshake->length = 4 + client_key_exchange->len_parameters;
     handshake->content = Bytes;
     
     return handshake;
 }
-Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite){
+
+
+/**
+ * Serialize server_key_exchange into handshake
+ * @param ServerKeyExchange *server_key_exchange
+ * @return Handshake *handshake
+ */
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
       
-    Bytes = (uint8_t*)calloc(client_server_key_exchange->len_parameters + client_server_key_exchange->len_signature, sizeof(uint8_t));
+    Bytes = (uint8_t*)calloc(server_key_exchange->len_parameters + server_key_exchange->len_signature, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientKeyExchangeToHandshake operation");
         exit(1);
@@ -419,16 +428,16 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exc
     }
     
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    memcpy(Bytes, client_server_key_exchange->parameters, client_server_key_exchange->len_parameters);
-    memcpy(Bytes + client_server_key_exchange->len_parameters, client_server_key_exchange->signature, cipher_suite->hash_size);
+    memcpy(Bytes, server_key_exchange->parameters, server_key_exchange->len_parameters);
+    memcpy(Bytes + server_key_exchange->len_parameters, server_key_exchange->signature, server_key_exchange->len_signature);
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = SERVER_KEY_EXCHANGE;
-    handshake->length = 4 + client_server_key_exchange->len_parameters + client_server_key_exchange->len_signature;
+    handshake->length = 4 + server_key_exchange->len_parameters + server_key_exchange->len_signature;
     handshake->content = Bytes;
     
     return handshake;
-}//TOCHECK
+}
 
 /**
  * Serialize certificate_request into handshake

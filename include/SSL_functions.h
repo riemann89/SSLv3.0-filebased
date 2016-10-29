@@ -25,8 +25,8 @@ Handshake *CertificateToHandshake(Certificate *certificate);
 Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request);
 Handshake *ServerDoneToHandshake();
 Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify);
-Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite);
-Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *client_server_key_exchange, CipherSuite *cipher_suite);
+Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange);
+Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange);
 Handshake *FinishedToHandshake(Finished *finished);
 
 // hanshake -> message
