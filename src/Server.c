@@ -37,8 +37,8 @@ int main(int argc, const char *argv[]){
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t *cipher_key, server_write_MAC_secret[16];
-    uint8_t *key_block,*dec_message,*enc_message,*mac;
+    uint8_t *cipher_key, server_write_MAC_secret[16], client_write_MAC_secret[16];
+    uint8_t *key_block,*dec_message,*enc_message,*mac,*mac2;
 	DH *dh;
     BIGNUM *pub_key_client;
     size_t out_size;
@@ -315,6 +315,26 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
 
+    //TODO MAC verification
+    client_message->message=dec_message;
+    handshake= RecordToHandshake(client_message);
+            
+    if(ciphersuite_choosen->signature_algorithm==SHA1_){
+        handshake->length= handshake->length -20;
+    }
+    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
+        handshake->length= handshake->length -16;
+    }       
+    mac2 = handshake->content[handshake->length - 4]; 
+    
+    
+    for(int i=0;i<16; i++){
+        client_write_MAC_secret[i]=key_block[i];
+    }
+    mac= MAC(ciphersuite_choosen,handshake,client_write_MAC_secret);
+
+    // now i should compare mac 1 and mac2 they should be equal
+    
     //CHANGE CIPHER SPEC send
     record = ChangeCipherSpecRecord();
     sendPacketByte(record);
@@ -376,12 +396,12 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-        //compute MAC
+    //compute MAC
     
     for(int i=0;i<16; i++){
         server_write_MAC_secret[i]=key_block[i+16];
     }
-    mac= MAC(ciphersuite_choosen,handshake,master_secret);
+    mac= MAC(ciphersuite_choosen,handshake,server_write_MAC_secret);
 
     //append MAC
     for(int i=0;i<sizeof(mac);i++){
@@ -390,16 +410,14 @@ int main(int argc, const char *argv[]){
     
     // update length
     temp->length= temp->length + sizeof(mac);
-    
-    
+       
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
-    //.......MAC......
-    
+ 
     record = calloc(1, sizeof(RecordLayer));
     record->type = HANDSHAKE;
     record->version = std_version;
-	record->length = enc_message_len + 5; //TODO
-	record->message = enc_message;
+    record->length = enc_message_len + 5; //TODO
+    record->message = enc_message;
     
     sendPacketByte(record);
     
