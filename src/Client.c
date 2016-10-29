@@ -32,7 +32,7 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint32_t sender_id;
     uint8_t len_hello, *key_block;
-    uint8_t *supported_ciphers,*enc_message, *dec_message;
+    uint8_t *supported_ciphers,*enc_message, *dec_message,*mac;
     DH *dh = NULL;
     BIGNUM *pub_key_server;
     size_t out_size;
@@ -342,7 +342,7 @@ int main(int argc, const char *argv[]){
     /* MAC and ENCRYPTION*/
     
     
-    handshake = FinishedToHandshake(&finished);
+    handshake = FinishedToHandshake(&finished);   
     temp = HandshakeToRecordLayer(handshake);
     
     uint8_t length_bytes[4];
@@ -358,10 +358,21 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
-	//TODO: MANCA IL MAC
+    //compute MAC
     
-    // assembling encrypted packet
+    mac= MAC(cipher_suite_choosen,handshake,master_secret);
+
+    //append MAC
+    for(int i=0;i<sizeof(mac);i++){
+        temp->message[temp->length - 5 + i]=mac[i];
+    }
+    
+    // update length
+    temp->length= temp->length + sizeof(mac);
+    
+            
+    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
+    
     RecordLayer record2;
     
     record2.type = HANDSHAKE;
