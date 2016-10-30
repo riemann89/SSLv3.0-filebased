@@ -4,10 +4,7 @@ SSLv3.project
 SSLv3.0.workspace
 SSLv3.0.nbproject/
 SSLv3.0.build/
-SSLv3.0.dSYM/
 SSLv3.0.bancoprovadSYM/
-SSLv3.0.Client.dSYM/
-SSLv3.0.Server.dSYM/
 pino_test/main.c
 /tester.c
 .DS_Store
@@ -23,8 +20,6 @@ Client
 
 .DS_Store
 
-bancoprova.dSYM/Contents/Resources/DWARF/bancoprova
-
-Client.dSYM/Contents/Resources/DWARF/Client
-
-Server.dSYM/Contents/Resources/DWARF/Server
+build/
+*.o
+*.dSYM
