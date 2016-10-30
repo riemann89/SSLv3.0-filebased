@@ -90,7 +90,8 @@ int main(int argc, const char *argv[]){
     client_hello.ciphersuite_code = supported_ciphers;
     //modifica per inserire velocemente ciphers da clienthello cancellare le 3 rige seguenti per tornare al modello vecchio
     supported_ciphers = NULL;
-    supported_ciphers[0] = 5;   //inserire il codice corrispondente alla ciphers voluta
+    supported_ciphers = (uint8_t*)calloc(1, sizeof(uint8_t));
+    supported_ciphers[0] = 0x03;   //inserire il codice corrispondente alla ciphers voluta
     client_hello.ciphersuite_code = supported_ciphers;
     sender_id = client_hello.sessionId;
     
@@ -157,15 +158,14 @@ int main(int argc, const char *argv[]){
                 break;
             case SERVER_KEY_EXCHANGE:
 
-                server_key_exchange = HandshakeToServerKeyExchange(server_handshake,cipher_suite_choosen);
+                server_key_exchange = HandshakeToServerKeyExchange(server_handshake, EVP_PKEY_size(pubkey));
                 //TODO: controllo della firma
                 //.........................
                 
                 SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
                 
-                len_parameters = server_handshake->length - 4 - cipher_suite_choosen->hash_size;
-                p_size = (len_parameters - 1)/2;
+                p_size = (server_key_exchange->len_parameters - 1)/2;
                 
                 pub_key_server = BN_new();
                 dh = DH_new();
@@ -178,12 +178,9 @@ int main(int argc, const char *argv[]){
                 }
                 
                 pub_key_server = BN_bin2bn(server_key_exchange->parameters + p_size + 1, p_size, NULL);
-                ///////////////////
+                
                 //check signature
-                //////////////////
-                _Bool verify;
-                int len_signature = p_size; //TODO: da automatizzare
-                verify = Verify_(cipher_suite_choosen, &client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, server_key_exchange->signature, len_signature, pubkey);
+                Verify_(cipher_suite_choosen, &client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, server_key_exchange->signature, server_key_exchange->len_signature, pubkey);
                 
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
@@ -251,7 +248,7 @@ int main(int argc, const char *argv[]){
                 break;
         }
         
-        handshake = ClientKeyExchangeToHandshake(&client_key_exchange, cipher_suite_choosen);
+        handshake = ClientKeyExchangeToHandshake(&client_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         
         sendPacketByte(record);
@@ -335,6 +332,9 @@ int main(int argc, const char *argv[]){
     
     SHA1_Final(sha_fin, &sha);
     MD5_Final(md5_fin, &md5);
+    
+    //Finished allocation:
+    finished.hash = (uint8_t*)calloc(36, sizeof(uint8_t));
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));

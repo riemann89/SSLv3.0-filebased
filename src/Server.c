@@ -81,10 +81,12 @@ int main(int argc, const char *argv[]){
     client_hello = HandshakeToClientServerHello(client_handshake);
    
 
-    ciphersuite_code = chooseChipher(client_hello, "ServerConfig/All.txt");
+    //TODO: ciphersuite_code = chooseChipher(client_hello, "ServerConfig/All.txt");
+    
+    ciphersuite_code = 0x03;
     
     //Construction Server Hello
-    random.gmt_unix_time = (uint32_t)time(NULL); //TODO: rivedere se è corretto
+    random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
 
     server_hello.type = SERVER_HELLO;
@@ -167,10 +169,31 @@ int main(int argc, const char *argv[]){
         BN_bn2bin(dh->g, server_key_exchange.parameters + BN_num_bytes(dh->p));
         BN_bn2bin(dh->pub_key, server_key_exchange.parameters + BN_num_bytes(dh->p) + BN_num_bytes(dh->g));
         //creare la firma
-        //TODO:
+
+    	//TODO rivedere l'inizializzazione delle variabili
+        private_key = EVP_PKEY_new();
+        FILE *key_file;
+        key_file = NULL;
+        
+        switch (ciphersuite_choosen->signature_algorithm) {
+            case RSA_s:
+                key_file = fopen("private_keys/RSA_server.key","rb");
+                break;
+            case DSA_s:
+                key_file = fopen("private_keys/DSA_server.key","rb");
+            default:
+                perror("Error private key.");
+                exit(1);
+                break;
+        }
+		
+        private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
         server_key_exchange.signature = Signature_(ciphersuite_choosen, client_hello, &server_hello, server_key_exchange.parameters, server_key_exchange.len_parameters, private_key);
         
-        handshake = ServerKeyExchangeToHandshake(&server_key_exchange, ciphersuite_choosen);
+        printf("%d\n", EVP_PKEY_size(private_key));
+        server_key_exchange.len_signature = EVP_PKEY_size(private_key);
+        
+        handshake = ServerKeyExchangeToHandshake(&server_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
@@ -211,7 +234,7 @@ int main(int argc, const char *argv[]){
                     break;
                 case CLIENT_KEY_EXCHANGE:
                     len_parameters = client_handshake->length - 4;
-                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake, ciphersuite_choosen);
+                    client_key_exchange = HandshakeToClientKeyExchange(client_handshake);
 
                 	switch (ciphersuite_choosen->key_exchange_algorithm){
                     	case RSA_:
@@ -319,13 +342,13 @@ int main(int argc, const char *argv[]){
     client_message->message=dec_message;
     handshake= RecordToHandshake(client_message);
             
-    if(ciphersuite_choosen->signature_algorithm==SHA1_){
-        handshake->length= handshake->length -20;
+    if(ciphersuite_choosen->signature_algorithm == SHA1_){
+        handshake->length= handshake->length - 20;
     }
     else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        handshake->length= handshake->length -16;
+        handshake->length= handshake->length - 16;
     }       
-    mac2 = handshake->content[handshake->length - 4]; 
+    mac2 = &handshake->content[handshake->length - 4];
     
     
     for(int i=0;i<16; i++){
@@ -376,6 +399,8 @@ int main(int argc, const char *argv[]){
     
     SHA1_Final(sha_fin, &sha);
     MD5_Final(md5_fin, &md5);
+    
+    finished.hash = (uint8_t*)calloc(36, sizeof(uint8_t));
     
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));

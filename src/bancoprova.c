@@ -22,7 +22,7 @@ int main(int argc, const char *argv[]){
    
     
    uint8_t prioritylen = 7;
-   CipherSuite *priority = NULL;
+   uint8_t *priority = NULL;
    
    
    /* come fare altre liste

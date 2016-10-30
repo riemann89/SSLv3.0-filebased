@@ -263,8 +263,8 @@ void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange){
  * free memory allocated by finished
  * @param *finished
  */
-void FreeCertificateFinished(Finished *finished){
-    // free(finished->hash);            VA LIBERATO??
+void FreeFinished(Finished *finished){
+    free(finished->hash);
     free(finished);  
 }
 
@@ -750,7 +750,7 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
  * @return ServerKeyExchange *server_key_exchange
  */
 
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite *cipher_suite){
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake){
     
     ClientKeyExchange *client_server_key_exchange;
     
@@ -781,45 +781,42 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuit
     return client_server_key_exchange;
 }
 
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite, uint32_t len_signature){
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, uint32_t len_signature){
     
-    ServerKeyExchange *client_server_key_exchange;
+    ServerKeyExchange *server_key_exchange;
     
     if (handshake->msg_type != SERVER_KEY_EXCHANGE){
         perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
         exit(1);
     }
     
-    client_server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
-    if (client_server_key_exchange == NULL){
+    server_key_exchange = (ServerKeyExchange *)calloc(1, sizeof(ServerKeyExchange));
+    if (server_key_exchange == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
+    server_key_exchange->len_signature = len_signature;
+    server_key_exchange->len_parameters = handshake->length - 4 - len_signature;
     
-    client_server_key_exchange->len_parameters = handshake->length - 4 - len_signature;
+    server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
+    server_key_exchange->parameters = (uint8_t *)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
     
-    client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
-    
-    if (client_server_key_exchange->parameters == NULL){
+    if (server_key_exchange->parameters == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
-    client_server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
-    
-    if (client_server_key_exchange->signature == NULL){
+    if (server_key_exchange->signature == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
     
-    memcpy(client_server_key_exchange->parameters, handshake->content,client_server_key_exchange->len_parameters);
-    memcpy(client_server_key_exchange->signature, handshake->content + client_server_key_exchange->len_parameters , cipher_suite->hash_size);
+    memcpy(server_key_exchange->parameters, handshake->content, server_key_exchange->len_parameters);
+    memcpy(server_key_exchange->signature, handshake->content +  server_key_exchange->len_parameters , server_key_exchange->len_signature);
     
-    client_server_key_exchange->len_signature=len_signature;
-    
-    return client_server_key_exchange;
-}//TOCHECK
+    return server_key_exchange;
+}
 
 /**
  *  Parse handshake into finished
@@ -839,6 +836,8 @@ Finished *HandshakeToFinished(Handshake *handshake){
         perror("ERROR HandshakeToFinished: memory allocation leak.");
         exit(1);
     }
+    
+	finished->hash = (uint8_t*)calloc(36, sizeof(uint8_t));
     
     memcpy(finished->hash, handshake->content, 36);
     
@@ -1888,7 +1887,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
  * @param uint8_t *macWriteSecret
  * @return uint8_t *sha_fin or *md5_fin
  */
-uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
+uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret){//TODO: passare il keyblock
     
     MD5_CTX md5,md52;
     SHA_CTX sha, sha2;
@@ -1896,7 +1895,7 @@ uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
     uint32_t len = hand->length - 4;
     
     
-    if(cipher.signature_algorithm==SHA1_){
+    if(cipher->signature_algorithm==SHA1_){
         
         uint8_t *sha_fin;
         sha_fin = calloc(20, sizeof(uint8_t));
@@ -1920,7 +1919,7 @@ uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
         return sha_fin;
         
     }
-    else if(cipher.signature_algorithm==MD5_1){
+    else if(cipher->signature_algorithm==MD5_1){
         
         MD5_Init(&md5);
         MD5_Init(&md5);
@@ -1954,50 +1953,59 @@ uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret){
 
 
 uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey){
-    EVP_MD_CTX *mdctx = NULL;
+    
+    EVP_MD_CTX *mdctx;
     mdctx = EVP_MD_CTX_create();
+    EVP_MD_CTX_init(mdctx);
     
     uint8_t *signature;
-    uint8_t *hash;
-    int len;
+    uint8_t *data;
     size_t slen;
-    SHA_CTX sha;
-    MD5_CTX md5;
     signature = NULL;
-    hash = NULL;
-
-    //hash
-    hash = (uint8_t*)calloc(36, sizeof(uint8_t));
+    data = NULL;
+    uint8_t temp[4];
     
+    //hash
+    data = (uint8_t*)calloc(62 + len_params, sizeof(uint8_t));
+    signature = (uint8_t*)calloc(EVP_PKEY_size(pKey), sizeof(uint8_t));
+    
+    int_To_Bytes(client_hello->random->gmt_unix_time, temp);
+    data[0] = temp[1];
+    data[1] = temp[2];
+    data[2] = temp[3];
+    
+    for (int i = 0; i<28; i++) {
+        data[i+3] = client_hello->random->random_bytes[i];
+    }
+    
+    int_To_Bytes(server_hello->random->gmt_unix_time, temp);
+    data[31] = temp[1];
+    data[32] = temp[2];
+    data[33] = temp[3];
+    
+    for (int i = 0; i<28; i++) {
+        data[i+34] = server_hello->random->random_bytes[i];
+    }
+    
+    for (int i = 0; i<len_params; i++) {
+        data[62 + i] = params[i];
+    }
+    
+
     switch (cipher->signature_algorithm){
         
         case RSA_s:
+            EVP_SignInit_ex(mdctx, EVP_md5(), NULL);
+            EVP_SignUpdate(mdctx, data, 62 + len_params);
             
-            MD5_Init(&md5);
-            MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-            MD5_Update(&md5, params, len_params*sizeof(uint8_t));
-            MD5_Final(hash, &md5);
-            
-            SHA_Init(&sha);
-            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-            SHA_Final(hash + 16, &sha);
-            len = 36;
+            EVP_SignInit_ex(mdctx, EVP_sha1(), NULL);
+            EVP_SignUpdate(mdctx, data, 62 + len_params);
             break;
         
         case DSA_s:
-            SHA_Init(&sha);
-            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-            SHA_Final(hash, &sha);
-            len = 20;
+            EVP_DigestSignInit(mdctx, NULL, EVP_sha1(), NULL, pKey);
+            EVP_DigestSignUpdate(mdctx, data, 62 + len_params);
+            
             break;
         
         default:
@@ -2007,72 +2015,61 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
                
     }
     
-    EVP_DigestSignInit(mdctx, NULL, NULL, NULL, pKey);
-    EVP_DigestSignUpdate(mdctx, hash, len);
-    EVP_DigestSignFinal(mdctx, NULL, &slen);
-    signature = OPENSSL_malloc(slen * sizeof(unsigned char));
-    EVP_DigestSignFinal(mdctx, signature, &slen);
-    //TODO RIV: slen non mi serve perchè dovrei estrarla dal certificato.
+    EVP_SignFinal(mdctx, signature, &slen, pKey);
     //TODO: freee
     
     return signature;
     
 }
 
-_Bool Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey){
-    EVP_MD_CTX *mdctx = NULL;
+void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey){
+    EVP_MD_CTX *mdctx;
     mdctx = EVP_MD_CTX_create();
+    EVP_MD_CTX_init(mdctx);
     
-    
-    uint8_t *hash;
-    size_t outlen;
-    int len;
-    uint8_t *decrypted_message = NULL;
-    
-    SHA_CTX sha;
-    MD5_CTX md5;
-    
-    hash = NULL;
+    uint8_t *data;
+    data = NULL;
+    uint8_t temp[4];
     
     //hash
-    hash = (uint8_t*)calloc(36, sizeof(uint8_t));
-    len = 0;
-	
-    //RIVEDERE:
-    //DECIFRATURA ??????
+    data = (uint8_t*)calloc(62 + len_params, sizeof(uint8_t));
     
+    int_To_Bytes(client_hello->random->gmt_unix_time, temp);
+    data[0] = temp[1];
+    data[1] = temp[2];
+    data[2] = temp[3];
+    
+    for (int i = 0; i<28; i++) {
+        data[i+3] = client_hello->random->random_bytes[i];
+    }
+    
+    int_To_Bytes(server_hello->random->gmt_unix_time, temp);
+    data[31] = temp[1];
+    data[32] = temp[2];
+    data[33] = temp[3];
+    
+    for (int i = 0; i<28; i++) {
+        data[i+34] = server_hello->random->random_bytes[i];
+    }
+    
+    for (int i = 0; i<len_params; i++) {
+        data[62 + i] = params[i];
+    }
     
     
     switch (cipher->signature_algorithm){
             
         case RSA_s:
-			//hash compute
-            MD5_Init(&md5);
-            MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
-            MD5_Update(&md5, params, len_params*sizeof(uint8_t));
-            MD5_Final(hash, &md5);
+            EVP_VerifyInit_ex(mdctx, EVP_md5(), NULL);
+            EVP_VerifyUpdate(mdctx, data, 62 + len_params);
             
-            SHA_Init(&sha);
-            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-            SHA_Final(hash + 16, &sha);
-            len = 36;
+            EVP_VerifyInit_ex(mdctx, EVP_sha1(), NULL);
+            EVP_VerifyUpdate(mdctx, data, 62 + len_params);
             break;
             
         case DSA_s:
-            decrypted_message = AsymDec(DSA_s, signature, len_params, &outlen, pubKey);
-            SHA_Init(&sha);
-            SHA_Update(&sha, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, client_hello->random->random_bytes, 28*sizeof(uint8_t));
-            SHA_Update(&sha, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
-            SHA_Update(&sha, params, len_params*sizeof(uint8_t));
-            SHA_Final(hash, &sha);
-            len = 20;
+            EVP_VerifyInit_ex(mdctx, EVP_sha1(), NULL);
+            EVP_VerifyUpdate(mdctx, data, 62 + len_params);
             break;
             
         default:
@@ -2082,18 +2079,12 @@ _Bool Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServer
             
     }
     
-    EVP_DigestVerifyInit(mdctx, NULL, NULL, NULL, pubKey);
-    EVP_DigestVerifyUpdate(mdctx, hash, len);
-    
-    if(1 == EVP_DigestVerifyFinal(mdctx, signature, len_signature))
-    {
-    	printf("VERIFICA OK\n");
-        return true;
+    if(EVP_VerifyFinal(mdctx, signature, len_signature, pubKey) == 1){
+        printf("Signature correct.\n");
     }
-    else
-    {
-        printf("VERIFICA FALLITA\n");
-        return false;
+    else{
+        perror("Signature non corretta");
+        exit(1);
     }
 }
 

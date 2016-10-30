@@ -36,8 +36,8 @@ Certificate *HandshakeToCertificate(Handshake *handshake);
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);
 ServerDone *HandshakeToServerdone(Handshake *handshake);
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);
-ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake, CipherSuite *cipher_suite);
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, CipherSuite *cipher_suite,uint32_t len_signature);
+ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, uint32_t len_signature);
 Finished *HandshakeToFinished(Handshake *handshake);
 
 // record -> handshake
@@ -68,7 +68,7 @@ void FreeClientServerHello(ClientServerHello *client_server_hello);
 void FreeCertificate(Certificate *certificate);
 void FreeCertificateVerify(CertificateVerify *certificate_verify);
 void FreeServerHelloDone(ServerDone *server_done);
-void FreeCertificateFinished(Finished *finished);
+void FreeFinished(Finished *finished);
 void FreeClientKeyExchange(ClientKeyExchange *client_server_key_exchange);
 void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange);
 
@@ -94,7 +94,7 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
 uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state);
 
 /* AUTHENTICATION */
-uint8_t* MAC(CipherSuite cipher, Handshake *hand, uint8_t* macWriteSecret);
+uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret);
 uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey);
-_Bool Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey);
+void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey);
 
