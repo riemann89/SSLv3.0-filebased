@@ -74,23 +74,23 @@ int main(int argc, const char *argv[]){
     
     printRecordLayer(client_message);
     
-    SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
-    MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
+    SHA1_Update(&sha, client_message->message, sizeof(uint8_t)*(client_message->length-5));
+    MD5_Update(&md5, client_message->message, sizeof(uint8_t)*(client_message->length-5));
 
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
    
-
+	
     //TODO: ciphersuite_code = chooseChipher(client_hello, "ServerConfig/All.txt");
-    
-    ciphersuite_code = 0x03;
+    ciphersuite_code = 1;
     
     //Construction Server Hello
     random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
-
+	
     server_hello.type = SERVER_HELLO;
-    server_hello.length = 39;
+    server_hello.length = 39;//perchè è 39?
+    server_hello.version = 3;
     server_hello.random = &random;
     server_hello.sessionId = Bytes_To_Int(4, session_Id);
     server_hello.ciphersuite_code = &ciphersuite_code;
@@ -99,13 +99,13 @@ int main(int argc, const char *argv[]){
     handshake = ClientServerHelloToHandshake(&server_hello);
     record = HandshakeToRecordLayer(handshake);
     
-    SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
-    MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
+    SHA1_Update(&sha,record->message, sizeof(uint8_t)*(record->length-5));
+    MD5_Update(&md5,record->message, sizeof(uint8_t)*(record->length-5));
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
+    
     ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     certificate_type = CodeToCertificateType(0x14);//TODO: automatizzare
-	
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
@@ -168,7 +168,6 @@ int main(int argc, const char *argv[]){
         BN_bn2bin(dh->p, server_key_exchange.parameters);
         BN_bn2bin(dh->g, server_key_exchange.parameters + BN_num_bytes(dh->p));
         BN_bn2bin(dh->pub_key, server_key_exchange.parameters + BN_num_bytes(dh->p) + BN_num_bytes(dh->g));
-        //creare la firma
 
     	//TODO rivedere l'inizializzazione delle variabili
         private_key = EVP_PKEY_new();
@@ -198,7 +197,7 @@ int main(int argc, const char *argv[]){
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
-        printf("size paccheto:%d\n", record->length);
+
         sendPacketByte(record);
         printRecordLayer(record);
         OpenCommunication(client);
@@ -251,35 +250,40 @@ int main(int argc, const char *argv[]){
                             
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
-                            //VERIFIFARE LA SIGNATURE.
-                            
                             break;
                     	default:
                             perror("Client Key Exchange not supported");
                             exit(1);
                         	break;
                 	}
-                	master_secret = MasterSecretGen(pre_master_secret, 48, client_hello, &server_hello);
+                printf("PRE MASTER:\n");
+                for (int i = 0; i<pre_master_secret_size; i++) {
+                    printf("%02X ",pre_master_secret[i]);
+                }
+                printf("\n");
                 
-                	SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
-                	MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
+                
+                master_secret = MasterSecretGen(pre_master_secret, 48, client_hello, &server_hello);
+                
+                SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
+                MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
 
-                    printf("MASTER KEY:generated\n");
-                    for (int i=0; i< 48; i++){
-                        printf("%02X ", master_secret[i]);
-                    }
-                    printf("\n");
+                printf("MASTER KEY:generated\n");
+                for (int i=0; i< 48; i++){
+                    printf("%02X ", master_secret[i]);
+                }
+                printf("\n");
                     
-                    //KEYBLOCK GENERATION
-                    key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, &server_hello);
+                //KEYBLOCK GENERATION
+                key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, &server_hello);
                     
-                    printf("\nKEY BLOCK\n");
-                    for (int i=0; i< key_block_size; i++){
-                        printf("%02X ", key_block[i]);
-                    }
-                    printf("\n\n");
-                    phase = 4;//TODO: se usa il verify non funziona
-                    OpenCommunication(client);
+                printf("\nKEY BLOCK\n");
+                for (int i=0; i< key_block_size; i++){
+                    printf("%02X ", key_block[i]);
+                }
+                printf("\n\n");
+                phase = 4;//TODO: se usa il verify non funziona
+                OpenCommunication(client);
 
                     break;
                 case CERTIFICATE_VERIFY:

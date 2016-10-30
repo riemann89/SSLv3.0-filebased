@@ -81,22 +81,17 @@ int main(int argc, const char *argv[]){
     random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
     
+    client_hello.type = CLIENT_HELLO;
+    client_hello.length = 38 + len_hello;
     client_hello.version = 3;
     client_hello.random = &random;
-    client_hello.type = CLIENT_HELLO;
     client_hello.sessionId = 0;
     supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
-    client_hello.length = 38 + len_hello;
     client_hello.ciphersuite_code = supported_ciphers;
-    //modifica per inserire velocemente ciphers da clienthello cancellare le 3 rige seguenti per tornare al modello vecchio
-    supported_ciphers = NULL;
-    supported_ciphers = (uint8_t*)calloc(1, sizeof(uint8_t));
-    supported_ciphers[0] = 0x03;   //inserire il codice corrispondente alla ciphers voluta
-    client_hello.ciphersuite_code = supported_ciphers;
-    sender_id = client_hello.sessionId;
     
     //Wrapping
     handshake = ClientServerHelloToHandshake(&client_hello);
+    printf("%d/n", handshake->length);
     record = HandshakeToRecordLayer(handshake);
     
     //Sending client hello
@@ -242,7 +237,6 @@ int main(int argc, const char *argv[]){
                 
                 pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                 pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_server, dh);
-                
                 break;
             default:
                 break;
@@ -263,6 +257,12 @@ int main(int argc, const char *argv[]){
         FreeHandshake(handshake);
 
         //MASTER KEY COMPUTATION
+        
+        printf("PRE MASTER:\n");
+        for (int i = 0; i<pre_master_secret_size; i++) {
+            printf("%02X ",pre_master_secret[i]);
+        }
+        printf("\n");
         master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, &client_hello, server_hello);
         
         //TODO: rimuovere questi print
