@@ -130,7 +130,7 @@ typedef struct {
 
 typedef struct{
     uint8_t *parameters;
-    size_t len_parameters;
+    int len_parameters;
 }ClientKeyExchange;
 
 typedef struct{

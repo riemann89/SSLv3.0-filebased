@@ -43,7 +43,7 @@ int main(int argc, const char *argv[]){
     BIGNUM *pub_key_client;
     size_t out_size;
     ServerKeyExchange server_key_exchange;
-    size_t pre_master_secret_size;
+    int pre_master_secret_size;
 	
     EVP_PKEY *private_key;
     

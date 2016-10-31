@@ -1961,7 +1961,7 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     
     uint8_t *signature;
     uint8_t *data;
-    size_t slen;
+    unsigned int slen;
     signature = NULL;
     data = NULL;
     uint8_t temp[4];
