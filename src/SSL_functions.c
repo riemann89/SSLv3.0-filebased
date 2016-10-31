@@ -305,12 +305,12 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     Handshake *handshake;
     uint8_t timeB[4];
     uint8_t session[4];
-    uint8_t cipher_codes[client_server_hello->length-38];
+    uint8_t cipher_codes[client_server_hello->length - 38];
     
     uint8_t *Bytes;
     
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(client_server_hello->length,sizeof(uint8_t));
+    Bytes =(uint8_t*)calloc(client_server_hello->length, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -327,14 +327,16 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     }
     int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);
     int_To_Bytes(client_server_hello->sessionId, session);
+    
     Bytes[0]=client_server_hello->version;
+    
     memcpy(Bytes+1 ,session, 4);
     memcpy(Bytes+5 ,timeB , 4);
     memcpy(Bytes+9, client_server_hello->random->random_bytes,28);
     memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = client_server_hello->type;
-    handshake->length = client_server_hello->length + 3;
+    handshake->length = client_server_hello->length + 4;
     handshake->content = Bytes;
     return handshake;
 }
@@ -624,8 +626,9 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     
     memcpy(random->random_bytes, handshake->content + 9,28);
     memcpy(ciphers, handshake->content + 37, (handshake->length-41));
-        
-    client_server_hello->length = handshake->length-4;
+    
+    client_server_hello->type = handshake->msg_type;
+    client_server_hello->length = handshake->length - 4;
     client_server_hello->version = handshake->content[0];
     client_server_hello->sessionId = Bytes_To_Int(4, handshake->content + 1);
     client_server_hello->random = random;
@@ -1051,19 +1054,17 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
     PriorityList = fopen(filename, "rb");  
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
     fread(buffer, 32, 1, PriorityList);
-    //printf("%d\n",buffer[0]);
-    for(int i=1; i<(int)(buffer[0])+1; i++){
-        //printf("%d, %02X \n", i, buffer[i]);
-        for(int j=0;j<client_supported_list->length -38 ;j++){ 
-           //printf("    %d: %02X\n",j,client_supported_list->ciphersuite[j].code);
-            if(buffer[i]==client_supported_list->ciphersuite_code[j]){  
+    
+    for(int i=1; i< (buffer[0] +1); i++){
+        for(int j=0;j<client_supported_list->length -38 ;j++){
+            if(buffer[i] == client_supported_list->ciphersuite_code[j]){
                 choosen = buffer[i];
                 return choosen; 																									
             }
             
         }
     }
-    printf("\nError, uncompatibles chiphers\n");
+    perror("\nError, uncompatibles chiphers\n");
     exit(1);
 }
 

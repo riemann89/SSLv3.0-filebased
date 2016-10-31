@@ -81,19 +81,18 @@ int main(int argc, const char *argv[]){
     client_hello = HandshakeToClientServerHello(client_handshake);
    
 	
-    //TODO: ciphersuite_code = chooseChipher(client_hello, "ServerConfig/All.txt");
-    ciphersuite_code = 1;
+	ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1");
     
     //Construction Server Hello
     random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
-	
     server_hello.type = SERVER_HELLO;
-    server_hello.length = 39;//perchè è 39?
     server_hello.version = 3;
     server_hello.random = &random;
     server_hello.sessionId = Bytes_To_Int(4, session_Id);
     server_hello.ciphersuite_code = &ciphersuite_code;
+    server_hello.length = 39;
+    
 				
     //Wrapping
     handshake = ClientServerHelloToHandshake(&server_hello);
@@ -263,7 +262,7 @@ int main(int argc, const char *argv[]){
                 printf("\n");
                 
                 
-                master_secret = MasterSecretGen(pre_master_secret, 48, client_hello, &server_hello);
+                master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, &server_hello);
                 
                 SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
                 MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));

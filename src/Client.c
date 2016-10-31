@@ -80,18 +80,17 @@ int main(int argc, const char *argv[]){
     //Construction Client Hello
     random.gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random.random_bytes, 28);
-    
     client_hello.type = CLIENT_HELLO;
-    client_hello.length = 38 + len_hello;
     client_hello.version = 3;
     client_hello.random = &random;
     client_hello.sessionId = 0;
-    supported_ciphers = loadCipher("ClientConfig/Priority3.txt", &len_hello);
+    supported_ciphers = loadCipher("ClientConfig/Priority3", &len_hello);
     client_hello.ciphersuite_code = supported_ciphers;
+    client_hello.length = 38 + len_hello;
     
     //Wrapping
     handshake = ClientServerHelloToHandshake(&client_hello);
-    printf("%d/n", handshake->length);
+    printf("%d\n", handshake->length);
     record = HandshakeToRecordLayer(handshake);
     
     //Sending client hello
