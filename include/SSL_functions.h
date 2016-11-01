@@ -57,7 +57,8 @@ uint8_t *loadCipher(char* filename , uint8_t *len);
 CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code);
 CertificateType CodeToCertificateType(uint8_t ciphersuite_code);
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
-
+/* INIT FUNCTIONS*/
+ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, int ciphersuite_code_len);
 
 /* FREE FUNCTIONS */
 void FreeRecordLayer(RecordLayer *recordLayer);

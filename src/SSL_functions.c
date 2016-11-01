@@ -2,6 +2,7 @@
 #include <openssl/md5.h>
 #include <openssl/evp.h>
 #include <openssl/dh.h>
+#include <openssl/rand.h>
 
 
 /*****************************************FUNCTIONS***********************************************/
@@ -167,6 +168,38 @@ RecordLayer  *readchannel(){
     returning_record->message= buffer;
     return returning_record;
 }
+/***************************************INIT FUNCTIONS**********************************************/
+/**
+ * init a ClientServerHello structure
+ * @return ClientServerHello *client_server_hello
+ */
+ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, int ciphersuite_code_len){
+    ClientServerHello *client_server_hello;
+    Random *random;
+    
+    if((client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello))) == 0){
+        perror("ClientServerHello_init error: memory allocation leak.\n");
+        exit(1);
+    };
+    
+    if((random = (Random*)calloc(1, sizeof(Random))) == 0){
+        perror("ClientServerHello_init error: memory allocation leak.\n");
+        exit(1);
+    };
+	
+    random->gmt_unix_time = (uint32_t)time(NULL);
+    RAND_bytes(random->random_bytes, 28);
+    
+    client_server_hello->type = type;
+    client_server_hello->version = 3;
+    client_server_hello->random = random;
+    client_server_hello->sessionId = sessionId;
+    client_server_hello->ciphersuite_code = ciphersuite_code;
+    client_server_hello->length = 38 + ciphersuite_code_len;
+    
+    return client_server_hello;
+};
+
 
 /***************************************FREE FUNCTIONS**********************************************/
 /**
@@ -1896,7 +1929,7 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret){//TO
     uint32_t len = hand->length - 4;
     
     
-    if(cipher->signature_algorithm==SHA1_){
+    if(cipher->signature_algorithm == SHA1_){
         
         uint8_t *sha_fin;
         sha_fin = calloc(20, sizeof(uint8_t));
@@ -1920,7 +1953,7 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret){//TO
         return sha_fin;
         
     }
-    else if(cipher->signature_algorithm==MD5_1){
+    else if(cipher->signature_algorithm == MD5_1){
         
         MD5_Init(&md5);
         MD5_Init(&md5);

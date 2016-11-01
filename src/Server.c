@@ -21,11 +21,10 @@
 
 int main(int argc, const char *argv[]){
     //Declaration
-    ClientServerHello server_hello, *client_hello;
+    ClientServerHello *server_hello, *client_hello;
     Handshake *handshake, *client_handshake;
     RecordLayer *record, *client_message, *temp;
     ClientKeyExchange *client_key_exchange;
-    Random random;
     Certificate *certificate;
     CertificateVerify *certificate_verify;
     Finished finished;
@@ -37,7 +36,7 @@ int main(int argc, const char *argv[]){
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t *cipher_key, server_write_MAC_secret[16], client_write_MAC_secret[16];
+    uint8_t *cipher_key, client_write_MAC_secret[16];
     uint8_t *key_block,*dec_message,*enc_message,*mac,*mac2;
 	DH *dh;
     BIGNUM *pub_key_client;
@@ -80,22 +79,14 @@ int main(int argc, const char *argv[]){
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
    
-	
-	ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1");
-    
     //Construction Server Hello
-    random.gmt_unix_time = (uint32_t)time(NULL);
-    RAND_bytes(random.random_bytes, 28);
-    server_hello.type = SERVER_HELLO;
-    server_hello.version = 3;
-    server_hello.random = &random;
-    server_hello.sessionId = Bytes_To_Int(4, session_Id);
-    server_hello.ciphersuite_code = &ciphersuite_code;
-    server_hello.length = 39;
+    RAND_bytes(session_Id, 4);
+	ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1");
+    server_hello = ClientServerHello_init(SERVER_HELLO, Bytes_To_Int(4, session_Id), &ciphersuite_code, 1);
     
 				
     //Wrapping
-    handshake = ClientServerHelloToHandshake(&server_hello);
+    handshake = ClientServerHelloToHandshake(server_hello);
     record = HandshakeToRecordLayer(handshake);
     
     SHA1_Update(&sha,record->message, sizeof(uint8_t)*(record->length-5));
@@ -186,7 +177,7 @@ int main(int argc, const char *argv[]){
         }
 		
         private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
-        server_key_exchange.signature = Signature_(ciphersuite_choosen, client_hello, &server_hello, server_key_exchange.parameters, server_key_exchange.len_parameters, private_key);
+        server_key_exchange.signature = Signature_(ciphersuite_choosen, client_hello, server_hello, server_key_exchange.parameters, server_key_exchange.len_parameters, private_key);
         
         printf("%d\n", EVP_PKEY_size(private_key));
         server_key_exchange.len_signature = EVP_PKEY_size(private_key);
@@ -241,7 +232,7 @@ int main(int argc, const char *argv[]){
                             key_file = NULL;
                             key_file = fopen("private_keys/RSA_server.key","rb");
                             private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
-                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, &pre_master_secret_size, private_key);
+                            pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, (size_t*)&pre_master_secret_size, private_key);
                         	break;
                         case DH_:
                             pub_key_client = BN_new();
@@ -262,7 +253,7 @@ int main(int argc, const char *argv[]){
                 printf("\n");
                 
                 
-                master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, &server_hello);
+                master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, server_hello);
                 
                 SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
                 MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));
@@ -274,7 +265,7 @@ int main(int argc, const char *argv[]){
                 printf("\n");
                     
                 //KEYBLOCK GENERATION
-                key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, &server_hello);
+                key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, server_hello);
                     
                 printf("\nKEY BLOCK\n");
                 for (int i=0; i< key_block_size; i++){
@@ -357,7 +348,7 @@ int main(int argc, const char *argv[]){
     for(int i=0;i<16; i++){
         client_write_MAC_secret[i]=key_block[i];
     }
-    mac= MAC(ciphersuite_choosen,handshake,client_write_MAC_secret);
+    mac = MAC(ciphersuite_choosen,handshake,client_write_MAC_secret);
 
     // TODO now i should compare mac 1 and mac2 they should be equal
     
@@ -426,19 +417,30 @@ int main(int argc, const char *argv[]){
     
     //compute MAC
     
-    for(int i=0;i<16; i++){
-        server_write_MAC_secret[i]=key_block[i+16];
-    }
-    mac= MAC(ciphersuite_choosen,handshake,server_write_MAC_secret);
-
-    //append MAC
-    for(int i=0;i<sizeof(mac);i++){
-        temp->message[temp->length - 5 + i]=mac[i];
-    }
+    mac = MAC(ciphersuite_choosen,handshake, key_block + ciphersuite_choosen->hash_size);
     
+    //append MAC
+    
+    uint8_t message_with_mac[temp->length + ciphersuite_choosen->hash_size];
+    memcpy(message_with_mac, temp->message, temp->length);
+    memcpy(message_with_mac + temp->length, mac, ciphersuite_choosen->hash_size);
+
     // update length
-    temp->length= temp->length + sizeof(mac);
-       
+    temp->length= temp->length + ciphersuite_choosen->hash_size;
+    temp->message = message_with_mac;
+    
+    int_To_Bytes(temp->length, length_bytes);
+    printf("FINISHED:to sent\n");
+    printf("%02X ", temp->type);
+    printf("%02X ", temp->version.major);
+    printf("%02X ", temp->version.minor);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    for(int i=0; i<temp->length - 5; i++){
+        printf("%02X ", temp->message[i]);
+    }
+    printf("\n\n");
+    
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
  
     record = calloc(1, sizeof(RecordLayer));
