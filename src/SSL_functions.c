@@ -289,15 +289,15 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
         }
    
        
-        server_key_exchange->len_parameters = BN_num_bytes(*dh->p) + BN_num_bytes(*dh->g) + BN_num_bytes(*dh->pub_key);
+        server_key_exchange->len_parameters = BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g) + BN_num_bytes((*dh)->pub_key);
      
         //TODO: questi mi sa che non vanno allocati
         server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
        
       
-        BN_bn2bin(*dh->p, server_key_exchange->parameters);
-        BN_bn2bin(*dh->g, server_key_exchange->parameters + BN_num_bytes(*dh->p));
-        BN_bn2bin(*dh->pub_key, server_key_exchange->parameters + BN_num_bytes(*dh->p) + BN_num_bytes(*dh->g));
+        BN_bn2bin((*dh)->p, server_key_exchange->parameters);
+        BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
+        BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
     
     	//TODO rivedere l'inizializzazione delle variabili
         private_key = EVP_PKEY_new();    
