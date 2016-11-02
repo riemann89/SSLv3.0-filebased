@@ -200,7 +200,7 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     return client_server_hello;
 };
 
-ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate *certificate, ServerKeyExchange *server_key_exchange, uint8_t *premaster_secret, int *premaster_secret_size){
+ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate *certificate, ServerKeyExchange *server_key_exchange, uint8_t **premaster_secret, int *premaster_secret_size){
     
     ClientKeyExchange *client_key_exchange;
     uint8_t *premaster_secret_encrypted;
@@ -233,11 +233,11 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     switch (ciphersuite->key_exchange_algorithm) {
         case RSA_:
             *premaster_secret_size = 48;
-            premaster_secret = (uint8_t*)calloc(*premaster_secret_size, sizeof(uint8_t));
-            RAND_bytes(premaster_secret, *premaster_secret_size);
-            premaster_secret[0] = std_version.major;
-            premaster_secret[1] = std_version.minor;
-            premaster_secret_encrypted = AsymEnc(pubkey, premaster_secret, 48, (size_t*)&out_size);
+            *premaster_secret = (uint8_t*)calloc(*premaster_secret_size, sizeof(uint8_t));
+            RAND_bytes(*premaster_secret, *premaster_secret_size);
+            *premaster_secret[0] = std_version.major;
+            *premaster_secret[1] = std_version.minor;
+            premaster_secret_encrypted = AsymEnc(pubkey, *premaster_secret, 48, (size_t*)&out_size);
             
             client_key_exchange->parameters = premaster_secret_encrypted;
             client_key_exchange->len_parameters = out_size;
@@ -247,17 +247,12 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             client_key_exchange->len_parameters = DH_size(dh);
             client_key_exchange->parameters = calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
             BN_bn2bin(dh->pub_key, client_key_exchange->parameters);
-            premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
-            printf("dh size:%d\n", DH_size(dh));
-            *premaster_secret_size = DH_compute_key(premaster_secret, pub_key_server, dh);
-            printf("premast size:%d\n", *premaster_secret_size);
+            *premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
+            *premaster_secret_size = DH_compute_key(*premaster_secret, pub_key_server, dh);
             break;
         default:
             break;
     }
-    
-    
-    
     return client_key_exchange;
 }
 

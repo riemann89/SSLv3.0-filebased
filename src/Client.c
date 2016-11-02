@@ -26,7 +26,7 @@ int main(int argc, const char *argv[]){
     RSA * rsa;
     uint32_t len_parameters;
     int phase, key_block_size,enc_message_len,dec_message_len;
-    uint8_t *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
+    uint8_t **pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t len_hello, *key_block;
@@ -167,6 +167,7 @@ int main(int argc, const char *argv[]){
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
 		///CLIENT_KEY_EXCHANGE///
+        pre_master_secret = (uint8_t**)calloc(1, sizeof(uint8_t*));//TODO: rivedere
         client_key_exchange = ClientKeyExchange_init(ciphersuite_choosen, certificate, server_key_exchange, pre_master_secret, &pre_master_secret_size);
         handshake = ClientKeyExchangeToHandshake(client_key_exchange);
         record = HandshakeToRecordLayer(handshake);
@@ -184,10 +185,11 @@ int main(int argc, const char *argv[]){
         //MASTER KEY COMPUTATION
         printf("PRE MASTER:\n");
         for (int i = 0; i<pre_master_secret_size; i++) {
-            printf("%02X ", pre_master_secret[i]);
+            printf("%02X ", (*pre_master_secret)[i]);
         }
         printf("\n");
-        master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, server_hello);
+        
+        master_secret = MasterSecretGen(*pre_master_secret, pre_master_secret_size, client_hello, server_hello);
         
         //TODO: rimuovere questi print
         printf("MASTER KEY:generated\n");
