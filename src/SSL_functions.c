@@ -45,17 +45,17 @@ Talker CheckCommunication(){
     
     //VARIABLES DECLARATION
     FILE* token;
-    Talker authorized_talker;																													//returning variable
-    token = fopen("token.txt", "r");    																										//on token.txt is saved the current authorized talker 
+    Talker authorized_talker;
+    token = fopen("token.txt", "r");
     if(token == NULL) {
-        perror("Failed to open token.txt - CheckCommunication() operation\n");							//is the file empty?? it shouldn't
+        perror("Failed to open token.txt - CheckCommunication() operation\n");
         exit(1);
     }
 	//SEEK WICH ONE IS AUTHORIZETD TO TALK//
-    fscanf(token,"%u",&(authorized_talker));																						//read value from talker and insert it into the returning variable
-    fclose(token);																																		//Close file
+    fscanf(token,"%u",&(authorized_talker));
+    fclose(token);
     if (authorized_talker!=client && authorized_talker!=server) {
-        perror("Error in token.txt - nor client,nor server authorized\n");													//is the read value an acceptable value?? in case not return an error.
+        perror("Error in token.txt - nor client,nor server authorized\n");
         exit(1);
     }
     return authorized_talker;
@@ -199,6 +199,67 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     
     return client_server_hello;
 };
+
+ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate *certificate, ServerKeyExchange *server_key_exchange, uint8_t *premaster_secret, int *premaster_secret_size){
+    
+    ClientKeyExchange *client_key_exchange;
+    uint8_t *premaster_secret_encrypted;
+    int p_size, out_size;
+    EVP_PKEY *pubkey;
+    DH *dh = NULL;
+    BIGNUM *pub_key_server;
+    
+    pubkey = readCertificateParam(certificate);
+    p_size = (server_key_exchange->len_parameters - 1)/2;
+    
+    pub_key_server = BN_new();
+    dh = DH_new();
+    
+    dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
+    dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
+    if(DH_generate_key(dh) == 0){
+        perror("DH keys generation error.");
+        exit(1);
+    }
+    
+    pub_key_server = BN_bin2bn(server_key_exchange->parameters + p_size + 1, p_size, NULL);
+
+    if((client_key_exchange = (ClientKeyExchange*)calloc(1, sizeof(ClientKeyExchange))) == 0){
+        perror("ClientKeyExchange_init error: memory allocation leak.\n");
+        exit(1);
+    };
+
+    
+    switch (ciphersuite->key_exchange_algorithm) {
+        case RSA_:
+            *premaster_secret_size = 48;
+            premaster_secret = (uint8_t*)calloc(*premaster_secret_size, sizeof(uint8_t));
+            RAND_bytes(premaster_secret, *premaster_secret_size);
+            premaster_secret[0] = std_version.major;
+            premaster_secret[1] = std_version.minor;
+            premaster_secret_encrypted = AsymEnc(pubkey, premaster_secret, 48, (size_t*)&out_size);
+            
+            client_key_exchange->parameters = premaster_secret_encrypted;
+            client_key_exchange->len_parameters = out_size;
+            break;
+        case DH_:
+            
+            client_key_exchange->len_parameters = DH_size(dh);
+            client_key_exchange->parameters = calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
+            BN_bn2bin(dh->pub_key, client_key_exchange->parameters);
+            premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
+            printf("dh size:%d\n", DH_size(dh));
+            *premaster_secret_size = DH_compute_key(premaster_secret, pub_key_server, dh);
+            printf("premast size:%d\n", *premaster_secret_size);
+            break;
+        default:
+            break;
+    }
+    
+    
+    
+    return client_key_exchange;
+}
 
 
 /***************************************FREE FUNCTIONS**********************************************/
@@ -817,7 +878,7 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake){
     return client_server_key_exchange;
 }
 
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, uint32_t len_signature){
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificate *certificate){
     
     ServerKeyExchange *server_key_exchange;
     
@@ -831,6 +892,9 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, uint32_t l
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
+    
+    //EVP_PKEY *pkey = readCertificateParam(certificate);
+    uint32_t len_signature = 128;
     
     server_key_exchange->len_signature = len_signature;
     server_key_exchange->len_parameters = handshake->length - 4 - len_signature;
@@ -1538,15 +1602,18 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     
     X509 *cert_509;
     EVP_PKEY *pubkey;
-    
+    unsigned char *p;
     cert_509 = NULL;
+    int len;
     
-    cert_509 = d2i_X509(NULL, &(certificate->X509_der), certificate->len);
+    p = certificate->X509_der;
+    len = certificate->len;
+    cert_509 = d2i_X509(NULL, &p, len);
     
     if(cert_509 == NULL){
         perror("readCertificateParam Error: memory allocation leak.");
+        exit(1);
     }
-    
     pubkey = X509_get_pubkey(cert_509);
     return pubkey;
 }
@@ -2056,7 +2123,8 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     
 }
 
-void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey){
+void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, Certificate *certificate){
+    
     EVP_MD_CTX *mdctx;
     mdctx = EVP_MD_CTX_create();
     EVP_MD_CTX_init(mdctx);
@@ -2064,6 +2132,10 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
     uint8_t *data;
     data = NULL;
     uint8_t temp[4];
+    
+    EVP_PKEY *pubKey;
+    
+    pubKey = readCertificateParam(certificate);
     
     //hash
     data = (uint8_t*)calloc(62 + len_params, sizeof(uint8_t));

@@ -14,28 +14,24 @@ int main(int argc, const char *argv[]){
     ClientServerHello *client_hello, *server_hello;
     Handshake *handshake, *server_handshake;
     RecordLayer *record, *server_message, *temp, record2;
-    ClientKeyExchange client_key_exchange;
+    ClientKeyExchange *client_key_exchange;
     ServerKeyExchange *server_key_exchange;
     Certificate *certificate;
     CertificateRequest *certificate_request;
+    CipherSuite *ciphersuite_choosen;
     Finished finished;
     CertificateType certificate_type;
     Talker sender;
     int pre_master_secret_size;
-    EVP_PKEY * pubkey;
     RSA * rsa;
     uint32_t len_parameters;
     int phase, key_block_size,enc_message_len,dec_message_len;
-    uint8_t *pre_master_secret, *pre_master_secret_encrypted, *master_secret,*sha_1,*md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
+    uint8_t *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t len_hello, *key_block;
     uint8_t *supported_ciphers,*enc_message, *dec_message,*mac;
-    DH *dh = NULL;
-    BIGNUM *pub_key_server;
-    size_t out_size;
-    CipherSuite *cipher_suite_choosen;
-    int p_size;
+    int out_size;
     
     
     //Initialization
@@ -52,10 +48,8 @@ int main(int argc, const char *argv[]){
     server_message = NULL;
     certificate = NULL;
     certificate_request = NULL;
-    pubkey = NULL;
     rsa = NULL;
     pre_master_secret = NULL;
-    pre_master_secret_encrypted = NULL;
     master_secret = NULL;
     key_block = NULL;
     iv = NULL;
@@ -112,7 +106,7 @@ int main(int argc, const char *argv[]){
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
     
-    cipher_suite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     certificate_type = CodeToCertificateType(0x14);//TODO: automatizzare
     
     OpenCommunication(server);
@@ -133,8 +127,6 @@ int main(int argc, const char *argv[]){
                 SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
                 
-                pubkey = readCertificateParam(certificate);
-                
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
                 
@@ -142,51 +134,22 @@ int main(int argc, const char *argv[]){
                 break;
             case SERVER_KEY_EXCHANGE:
 
-                server_key_exchange = HandshakeToServerKeyExchange(server_handshake, EVP_PKEY_size(pubkey));
-                //TODO: controllo della firma
-                //.........................
+                server_key_exchange = HandshakeToServerKeyExchange(server_handshake, certificate);
                 
                 SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
                 MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
                 
-                p_size = (server_key_exchange->len_parameters - 1)/2;
-                
-                pub_key_server = BN_new();
-                dh = DH_new();
-                
-            	dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
-                dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
-                if(DH_generate_key(dh) == 0){
-                    perror("DH keys generation error.");
-                    exit(1);
-                }
-                
-                pub_key_server = BN_bin2bn(server_key_exchange->parameters + p_size + 1, p_size, NULL);
-                
-                //check signature
-                Verify_(cipher_suite_choosen, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, server_key_exchange->signature, server_key_exchange->len_signature, pubkey);
+                Verify_(ciphersuite_choosen, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, server_key_exchange->signature, server_key_exchange->len_signature, certificate);
                 
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
-                
-                OpenCommunication(server);
-                break;
-            case CERTIFICATE_REQUEST:
-                certificate_request = HandshakeToCertificateRequest(server_handshake);
-                
-                SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
-                MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
-                
-                FreeRecordLayer(server_message);
-                FreeHandshake(server_handshake);
-                //FreeCertificateRequest(certificate_request);
                 
                 OpenCommunication(server);
                 break;
             case SERVER_DONE:
                 
-                SHA1_Update(&sha,server_message->message, sizeof(uint8_t)*(server_message->length-5));
-                MD5_Update(&md5,server_message->message, sizeof(uint8_t)*(server_message->length-5));
+                SHA1_Update(&sha, server_message->message, sizeof(uint8_t)*(server_message->length-5));
+                MD5_Update(&md5, server_message->message, sizeof(uint8_t)*(server_message->length-5));
                 
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
@@ -203,42 +166,15 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
-        ///CERTIFICATE///
-
 		///CLIENT_KEY_EXCHANGE///
-        switch (cipher_suite_choosen->key_exchange_algorithm) {
-            case RSA_:
-                pre_master_secret_size = 48;
-                pre_master_secret = (uint8_t*)calloc(pre_master_secret_size, sizeof(uint8_t));
-                RAND_bytes(pre_master_secret, pre_master_secret_size);
-                pre_master_secret[0] = std_version.major;
-                pre_master_secret[1] = std_version.minor;
-                pre_master_secret_encrypted = AsymEnc(pubkey, pre_master_secret, 48, &out_size);
-                printf("%zu\n", out_size);
-                
-                client_key_exchange.parameters = pre_master_secret_encrypted;
-                client_key_exchange.len_parameters = out_size;
-                break;
-            case DH_:
-                client_key_exchange.len_parameters = DH_size(dh);
-                client_key_exchange.parameters = calloc(client_key_exchange.len_parameters, sizeof(uint8_t));
-                BN_bn2bin(dh->pub_key, client_key_exchange.parameters);
-                
-                pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
-                pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_server, dh);
-                break;
-            default:
-                break;
-        }
-        
-        handshake = ClientKeyExchangeToHandshake(&client_key_exchange);
+        client_key_exchange = ClientKeyExchange_init(ciphersuite_choosen, certificate, server_key_exchange, pre_master_secret, &pre_master_secret_size);
+        handshake = ClientKeyExchangeToHandshake(client_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         
         sendPacketByte(record);
         printRecordLayer(record);
         OpenCommunication(server);
 
-        
         SHA1_Update(&sha,record->message, sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message, sizeof(uint8_t)*(record->length-5));
                 
@@ -246,10 +182,9 @@ int main(int argc, const char *argv[]){
         FreeHandshake(handshake);
 
         //MASTER KEY COMPUTATION
-        
         printf("PRE MASTER:\n");
         for (int i = 0; i<pre_master_secret_size; i++) {
-            printf("%02X ",pre_master_secret[i]);
+            printf("%02X ", pre_master_secret[i]);
         }
         printf("\n");
         master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, server_hello);
@@ -262,17 +197,13 @@ int main(int argc, const char *argv[]){
         printf("\n\n");
         
         //KEYBLOCK GENERATION
-        key_block = KeyBlockGen(master_secret, cipher_suite_choosen, &key_block_size, client_hello, server_hello);
+        key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, server_hello);
 		
         printf("KEY BLOCK\n");
         for (int i=0; i< key_block_size; i++){
             printf("%02X ", key_block[i]);
         }
         printf("\n\n");
-        
-        ///CERTIFICATE_VERIFY///
-        //OpenCommunication(server);        
-        //while(CheckCommunication() == server){};
         phase = 4;
     }
     
@@ -335,14 +266,14 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     
     //compute MAC
-    mac = MAC(cipher_suite_choosen, handshake, key_block);
+    mac = MAC(ciphersuite_choosen, handshake, key_block);
     
-    uint8_t message_with_mac[temp->length + cipher_suite_choosen->hash_size];
+    uint8_t message_with_mac[temp->length + ciphersuite_choosen->hash_size];
     memcpy(message_with_mac, temp->message, temp->length);
-    memcpy(message_with_mac + temp->length, mac, cipher_suite_choosen->hash_size);
+    memcpy(message_with_mac + temp->length, mac, ciphersuite_choosen->hash_size);
     
     // update length
-    temp->length= temp->length + cipher_suite_choosen->hash_size;
+    temp->length= temp->length + ciphersuite_choosen->hash_size;
     temp->message = message_with_mac;
     
     uint8_t length_bytes[4];
@@ -358,7 +289,7 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, cipher_suite_choosen, key_block, client, 1);
+    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, client, 1);
     
     record2.type = HANDSHAKE;
     record2.length = enc_message_len + 5;
@@ -411,7 +342,7 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    dec_message = DecEncryptPacket(server_message->message, server_message->length - 5, &dec_message_len, cipher_suite_choosen, key_block, server, 0);
+    dec_message = DecEncryptPacket(server_message->message, server_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, server, 0);
     
     int_To_Bytes(dec_message_len + 5, length_bytes);
     printf("FINISHED DECRYPTED\n");

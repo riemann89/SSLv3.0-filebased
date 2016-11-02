@@ -37,7 +37,7 @@ CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake);
 ServerDone *HandshakeToServerdone(Handshake *handshake);
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake);
 ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake);
-ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, uint32_t len_signature);
+ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificate *certificate);
 Finished *HandshakeToFinished(Handshake *handshake);
 
 // record -> handshake
@@ -59,12 +59,11 @@ CertificateType CodeToCertificateType(uint8_t ciphersuite_code);
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename);
 /* INIT FUNCTIONS*/
 ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, int ciphersuite_code_len);
+ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate *certificate, ServerKeyExchange *server_key_exchange, uint8_t *premaster_secret, int *premaster_secret_size);
 
 /* FREE FUNCTIONS */
 void FreeRecordLayer(RecordLayer *recordLayer);
-
 void FreeHandshake(Handshake *handshake);
-
 void FreeClientServerHello(ClientServerHello *client_server_hello);
 void FreeCertificate(Certificate *certificate);
 void FreeCertificateVerify(CertificateVerify *certificate_verify);
@@ -97,5 +96,5 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
 /* AUTHENTICATION */
 uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret);
 uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey);
-void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, EVP_PKEY *pubKey);
+void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, Certificate *certificate);
 
