@@ -38,7 +38,7 @@ int main(int argc, const char *argv[]){
     SHA_CTX sha;
     uint8_t *cipher_key, client_write_MAC_secret[16];
     uint8_t *key_block,*dec_message,*enc_message,*mac,*mac2;
-	DH *dh;
+    DH *dh, **dhp;
     BIGNUM *pub_key_client;
     size_t out_size;
     ServerKeyExchange *server_key_exchange;
@@ -53,7 +53,8 @@ int main(int argc, const char *argv[]){
     certificate = NULL;
     dec_message = NULL;
     enc_message=NULL;
-    dh = NULL;
+    dh=NULL;
+    dhp = &dh;
     private_key = NULL;
     ciphersuite_code = 0;
     prioritylen = 10;
@@ -146,7 +147,7 @@ int main(int argc, const char *argv[]){
     if (ciphersuite_choosen->key_exchange_algorithm == DH_){
         
         printf("choosen a DH algorithm \n");
-        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello,dh);
+        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello,dhp);
         handshake = ServerKeyExchangeToHandshake(server_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         
