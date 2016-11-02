@@ -3,13 +3,20 @@
 #include <openssl/evp.h>
 #include <openssl/dh.h>
 #include <openssl/rand.h>
+#include <openssl/bn.h>
+
 
 /*****************************************FUNCTIONS***********************************************/
 
 //CHANNEL FUNCTIONS
+
+/*
+ It allows the communication to the indicated talker: (0 - client, 1 - server, as defined in Talker enum)
+ */
+
 /**
  * Gives to talker the right to write on the main channel,
- * It writes an ID on the file token.txt (0 - client, 1 - server, as defined in Talker enum)
+ * It writes an ID on the file token.txt
  * @param Talker talker
  */
 void OpenCommunication(Talker talker){
@@ -165,10 +172,6 @@ RecordLayer  *readchannel(){
 /***************************************INIT FUNCTIONS**********************************************/
 /**
  * init a ClientServerHello structure
- * @param HandshakeType type
- * @param uint32_t sessionId
- * @param uint8_t *ciphersuite_code
- * @param int ciphersuite_code_len
  * @return ClientServerHello *client_server_hello
  */
 ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, int ciphersuite_code_len){
@@ -198,16 +201,7 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     return client_server_hello;
 };
 
-/**
- * init a ClientKeyExchange structure by Certificate message
- * @param Ciphersuite *ciphersuite
- * @param Certificate *certificate
- * @param ServerKeyExchange *server_key_exchange
- * @param uint8_t **premaster_secret
- * @param int *premaster_secret_size
- * @return ClientKeyExchange *client_key_exchange
- */
-ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate *certificate, ServerKeyExchange *server_key_exchange, uint8_t **premaster_secret, int *premaster_secret_size){
+ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate *certificate, ServerKeyExchange *server_key_exchange, uint8_t *premaster_secret, int *premaster_secret_size){
     
     ClientKeyExchange *client_key_exchange;
     uint8_t *premaster_secret_encrypted;
@@ -240,11 +234,11 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     switch (ciphersuite->key_exchange_algorithm) {
         case RSA_:
             *premaster_secret_size = 48;
-            *premaster_secret = (uint8_t*)calloc(*premaster_secret_size, sizeof(uint8_t));
-            RAND_bytes(*premaster_secret, *premaster_secret_size);
-            *premaster_secret[0] = std_version.major;
-            *premaster_secret[1] = std_version.minor;
-            premaster_secret_encrypted = AsymEnc(pubkey, *premaster_secret, 48, (size_t*)&out_size);
+            premaster_secret = (uint8_t*)calloc(*premaster_secret_size, sizeof(uint8_t));
+            RAND_bytes(premaster_secret, *premaster_secret_size);
+            premaster_secret[0] = std_version.major;
+            premaster_secret[1] = std_version.minor;
+            premaster_secret_encrypted = AsymEnc(pubkey, premaster_secret, 48, (size_t*)&out_size);
             
             client_key_exchange->parameters = premaster_secret_encrypted;
             client_key_exchange->len_parameters = out_size;
@@ -254,15 +248,66 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             client_key_exchange->len_parameters = DH_size(dh);
             client_key_exchange->parameters = calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
             BN_bn2bin(dh->pub_key, client_key_exchange->parameters);
-            *premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
-            *premaster_secret_size = DH_compute_key(*premaster_secret, pub_key_server, dh);
+            premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
+            printf("dh size:%d\n", DH_size(dh));
+            *premaster_secret_size = DH_compute_key(premaster_secret, pub_key_server, dh);
+            printf("premast size:%d\n", *premaster_secret_size);
             break;
         default:
             break;
-    }
+    }    
     return client_key_exchange;
 }
 
+ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *private_key, ClientServerHello client_hello, ClientServerHello server_hello ){
+    
+    ServerKeyExchange *server_key_exchange;
+    DH *dh;
+    FILE *key_file;
+       if((server_key_exchange = (ServerKeyExchange*)calloc(1, sizeof(ServerKeyExchange))) == 0){
+        perror("ClientKeyExchange_init error: memory allocation leak.\n");
+        exit(1);
+    };
+
+        //dh = DH_new();//TODO: remember to free
+        dh = get_dh2048();
+        if(DH_generate_key(dh) == 0){
+            perror("DH keys generarion error.");
+            exit(1);
+        }
+        
+        server_key_exchange->len_parameters = BN_num_bytes(dh->p) + BN_num_bytes(dh->g) + BN_num_bytes(dh->pub_key);
+        //TODO: questi mi sa che non vanno allocati
+        server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
+        
+        BN_bn2bin(dh->p, server_key_exchange->parameters);
+        BN_bn2bin(dh->g, server_key_exchange->parameters + BN_num_bytes(dh->p));
+        BN_bn2bin(dh->pub_key, server_key_exchange->parameters + BN_num_bytes(dh->p) + BN_num_bytes(dh->g));
+
+    	//TODO rivedere l'inizializzazione delle variabili
+        private_key = EVP_PKEY_new();
+        key_file = NULL;
+        
+        switch (ciphersuite->signature_algorithm) {
+            case RSA_s:
+                key_file = fopen("private_keys/RSA_server.key","rb");
+                break;
+            case DSA_s:
+                key_file = fopen("private_keys/DSA_server.key","rb");
+            default:
+                perror("Error private key.");
+                exit(1);
+                break;
+        }
+		
+        private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
+        server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange.parameters, server_key_exchange.len_parameters, private_key);
+        
+        printf("%d\n", EVP_PKEY_size(private_key));
+        server_key_exchange->len_signature = EVP_PKEY_size(private_key);
+        
+        return server_key_exchange;
+}
 
 /***************************************FREE FUNCTIONS**********************************************/
 /**
@@ -1511,7 +1556,7 @@ CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
 }
 
 /**
- * BaseFunction that computes number_of_MD5 MD5 hash of the principal argument concatenated with random of Client and Server Hello //TODO
+ * TODO
  * @param int numer_of_MD5
  * @param uint8_t *principal_argument
  * @param int principal_argument_size
@@ -1604,7 +1649,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     
     X509 *cert_509;
     EVP_PKEY *pubkey;
-    const unsigned char *p;
+    unsigned char *p;
     cert_509 = NULL;
     int len;
     
@@ -1641,7 +1686,7 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, int pre_master_len, ClientS
     return master_secret;
 }
 /**
- * Generate key_block
+ * Generate key_block (TODO) (any better description?)
  * @param uint8_t *master_secret
  * @param CipherSuite *cipher_suite
  * @param int *size
@@ -1671,7 +1716,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         //KeyBlock temp
         key_block_size_temp = 2*(cipher_suite->hash_size + cipher_suite->key_material);
         key_block_size_temp = key_block_size_temp + (16 -key_block_size_temp % 16); //made a multiple of 16
-        key_block = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);
+        key_block = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);//TODO da controllare
         
         //final write key
         //client
@@ -1730,12 +1775,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
     
     
 }
-
-/**
- * Initialize a DH struct containing a prime p and a group generator g.
- * @return uint8_t *dh
- */
-
+//TODO
 DH *get_dh2048(){
     static unsigned char dh2048_p[]={
         0xC5,0x36,0x72,0xCF,0x5A,0xA4,0x02,0xDA,0x0B,0xD2,0x49,0xE9,
@@ -1778,12 +1818,14 @@ DH *get_dh2048(){
 //Asymmetric
 
 /**
- * encrypts plaintext using public_key
+ * encrypts pKey (pre-master-secret) with using the algorithm algorithm TODO
  * @param EVP_KEY *pKey
- * @param uint8_t *plaintext
- * @param size_t inlen
- * @param size_t *outlen
- * @return uint8_t *ciphertext
+ * @param KeyExchangeAlgorithm algorithm
+ * @param uint8_t *pre_master_secret
+ * @param int in_size
+ * @param int *out_size
+ * @return uint8_t *pre_master_secret_encrypted
+
  */
 uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t *outlen){
    
@@ -1829,14 +1871,13 @@ uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t 
     *out_size = RSA_public_encrypt(in_size, plaintext, ciphertext, rsa, RSA_PKCS1_PADDING);
     */
 }
-
 /**
- * decrypt ciphertext using private_key
+ * decrypt pre master secret TODO
  * @param KeyExchangeAlgorithm alg
- * @param uint8_t *ciphertext
- * @param size_t inlen
+ * @param uint8_t *enc_pre_master_secret
+ * @param int in_size
  * @param int *out_size
- * @return uint8_t *plaintext
+ * @return uint8_t *pre_master_secret
  
  */
 uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t *outlen, EVP_PKEY *private_key){
@@ -1876,8 +1917,9 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
 	//TODO: free e controlli
     return plaintext;
 
-}//TODO
+}
 
+//Symmetric TODO: TO CHECK
 /**
  * decrypt an enciphred packet 
  * @param uint8_t *in_packet
@@ -2057,16 +2099,7 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret){//TO
     }
 }
 
-/**
- * compute the SSL signature of params array of size len_params by private key pKey
- * @param CipherSuite *cipher
- * @param ClientServerHello *client_hello
- * @param ClientServerHello *server_hello
- * @param uint8_t *params
- * @param int *len_params
- * @param EVP_PKEY *pKey
- * @return uint8_t *signature
- */
+
 uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey){
     
     EVP_MD_CTX *mdctx;
@@ -2137,18 +2170,6 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     
 }
 
-/**
- * verify the SSL signature of params array of size len_params by certificate
- * @param CipherSuite *cipher
- * @param ClientServerHello *client_hello
- * @param ClientServerHello *server_hello
- * @param uint8_t *params
- * @param int *len_params
- * @param uin8_t *signature
- * @param int *len_signature
- * @param Certificate *certificate
- * @return uint8_t *signature
- */
 void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, Certificate *certificate){
     
     EVP_MD_CTX *mdctx;
