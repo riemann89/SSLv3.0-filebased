@@ -144,7 +144,44 @@ int main(int argc, const char *argv[]){
     //SERVER KEY EXCHANGE
     if (ciphersuite_choosen->key_exchange_algorithm == DH_){
         
-        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen,private_key,client_hello,server_hello);
+        //dh = DH_new();//TODO: remember to free
+        dh = get_dh2048();
+        if(DH_generate_key(dh) == 0){
+            perror("DH keys generarion error.");
+            exit(1);
+        }
+        
+        server_key_exchange.len_parameters = BN_num_bytes(dh->p) + BN_num_bytes(dh->g) + BN_num_bytes(dh->pub_key);
+        //TODO: questi mi sa che non vanno allocati
+        server_key_exchange.parameters = (uint8_t*)calloc(server_key_exchange.len_parameters, sizeof(uint8_t));
+        
+        BN_bn2bin(dh->p, server_key_exchange.parameters);
+        BN_bn2bin(dh->g, server_key_exchange.parameters + BN_num_bytes(dh->p));
+        BN_bn2bin(dh->pub_key, server_key_exchange.parameters + BN_num_bytes(dh->p) + BN_num_bytes(dh->g));
+
+    	//TODO rivedere l'inizializzazione delle variabili
+        private_key = EVP_PKEY_new();
+        FILE *key_file;
+        key_file = NULL;
+        
+        switch (ciphersuite_choosen->signature_algorithm) {
+            case RSA_s:
+                key_file = fopen("private_keys/RSA_server.key","rb");
+                break;
+            case DSA_s:
+                key_file = fopen("private_keys/DSA_server.key","rb");
+            default:
+                perror("Error private key.");
+                exit(1);
+                break;
+        }
+		
+        private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
+        server_key_exchange.signature = Signature_(ciphersuite_choosen, client_hello, server_hello, server_key_exchange.parameters, server_key_exchange.len_parameters, private_key);
+        
+        printf("%d\n", EVP_PKEY_size(private_key));
+        server_key_exchange.len_signature = EVP_PKEY_size(private_key);
+        
         handshake = ServerKeyExchangeToHandshake(&server_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         
