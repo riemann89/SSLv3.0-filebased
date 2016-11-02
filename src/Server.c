@@ -54,6 +54,7 @@ int main(int argc, const char *argv[]){
     dec_message = NULL;
     enc_message=NULL;
     dh = NULL;
+    private_key = NULL;
     ciphersuite_code = 0;
     prioritylen = 10;
     phase = 0;
@@ -145,10 +146,8 @@ int main(int argc, const char *argv[]){
     if (ciphersuite_choosen->key_exchange_algorithm == DH_){
         
         printf("choosen a DH algorithm \n");
-        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen,private_key,client_hello,server_hello);
-        printf("function ok");
-        
-        handshake = ServerKeyExchangeToHandshake(&server_key_exchange);
+        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello);
+        handshake = ServerKeyExchangeToHandshake(server_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         
         
