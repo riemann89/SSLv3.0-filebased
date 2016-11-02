@@ -146,7 +146,7 @@ int main(int argc, const char *argv[]){
     if (ciphersuite_choosen->key_exchange_algorithm == DH_){
         
         printf("choosen a DH algorithm \n");
-        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello);
+        server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello,dh);
         handshake = ServerKeyExchangeToHandshake(server_key_exchange);
         record = HandshakeToRecordLayer(handshake);
         

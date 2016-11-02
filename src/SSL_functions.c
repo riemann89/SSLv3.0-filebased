@@ -263,15 +263,15 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     return client_key_exchange;
 }
 
-ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *private_key, ClientServerHello *client_hello, ClientServerHello *server_hello ){
+ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *private_key, ClientServerHello *client_hello, ClientServerHello *server_hello, DH *dh ){
     
     printf("ServerKeyExchange_init \n \n");
     ServerKeyExchange *server_key_exchange;
-    DH *dh;
     FILE *key_file;
     
-    dh =NULL;
     key_file=NULL;
+    
+    
        if((server_key_exchange = (ServerKeyExchange*)calloc(1, sizeof(ServerKeyExchange))) == 0){
         perror("ClientKeyExchange_init error: memory allocation leak.\n");
         exit(1);
@@ -287,6 +287,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
             exit(1);
         }
    
+       
         server_key_exchange->len_parameters = BN_num_bytes(dh->p) + BN_num_bytes(dh->g) + BN_num_bytes(dh->pub_key);
      
         //TODO: questi mi sa che non vanno allocati
@@ -311,9 +312,11 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
                 break;
         }	
         private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
-        server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key);
         printf("%d\n", EVP_PKEY_size(private_key));
         server_key_exchange->len_signature = EVP_PKEY_size(private_key);
+        server_key_exchange->signature = (uint8_t*)calloc(server_key_exchange->len_signature,sizeof(uint8_t));
+        server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key);
+        
         return server_key_exchange;
 }
 
