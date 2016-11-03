@@ -1,44 +1,7 @@
 COSE DA SISTEMARE:
 
-1. Lavorare alla funzione di Signature_ : io l'ho solo iniziata. Informazioni utili sono al link: https://www.openssl.org/docs/manmaster/crypto/EVP_PKEY_sign.html
-
-Note: la struttura EVP è un involucro per le chiavi o cifrari. Permette di decidere a runtime quale algoritmo e chiave utilizzare (per esempio RSA). Guarda come ho fatto la funzione AsymmetricEncryption
-
-Il procedimento è simile: invece di usare EVP_encrypt(chiave pubblica) utilizzi EVP_sign(chiave privata). Le chiavi private stanno nell'apposita cartella.
-
-- stampare anche i record layer.
-
-in generale: rivedere i TODO se sono superflui o sbagliati
-
-Nel Client:
-
-- estrarre la cipher_suite choosen dal server hello  (spero funzioni vedi circa riga 126,127 del client.c)
-
-
-- TODO nel codice.
-
-Nel Server:
-- TODO nel codice.
-
-Nell SSLfunctions:
-- TODO: ALLOCO IL MAX
-
-
-
-Structure:
-
-- encryptPreMaster //cambiare il nome
-- mancano delle free?
-- partizionare il file delle function?
-- il padding pare lo faccia in automatico.
-- getAlgorithm si può rimuovere
-- It is a fatal error if a finished message is not preceeded by a
-   change cipher spec message at the appropriate point in the handshake.
--controllare il makefile
-
-- CERTIFICATE VERIFY 
-- Verifica delle FREE 
-- estrare la len_parameters dal certificato
-- aggiungere altre ciphersuite .
-
-- Sistemare i commenti (DA ASSEGNARE)izzat
+- rivedere le funzioni delle FREE e il loro uso nel codice.
+- init FINISHED
+- init CERTIFICATE
+- trovare un modo per far testare al professore le varie ciphersuite.
+- controllare la funzione che scrive su TOKEN.txt (a volte ci sono caratteri diversi da 0 o 1)
