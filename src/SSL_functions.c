@@ -18,7 +18,7 @@ void OpenCommunication(Talker talker){
 
     //CHECKING INPUT//
     if (talker!=client && talker!=server) {
-        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)");
+        perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)\n");
         exit(1);
     }
     //AUTHORIZING SELECTED TALKER//
@@ -49,7 +49,7 @@ Talker CheckCommunication(){
     fscanf(token,"%u",&(authorized_talker));
     fclose(token);
     if (authorized_talker!=client && authorized_talker!=server) {
-        perror("Error in token.txt - nor client,nor server authorized\n");
+        perror("Error in token.txt - nor client,nor server authorized \n");
         exit(1);
     }
     return authorized_talker;

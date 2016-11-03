@@ -1,8 +1,7 @@
 COSE DA SISTEMARE:
 
 - rivedere le funzioni delle FREE e il loro uso nel codice.
-- init FINISHED 
-- init CERTIFICATE (ermes)
+- init FINISHED (ermes)
 - trovare un modo per far testare al professore le varie ciphersuite.
 - controllare la funzione che scrive su TOKEN.txt (a volte ci sono caratteri diversi da 0 o 1)
-- Fixare Bug in server dopo la stampa del KEYBLOCK (si presenta solo a volte, legato al random??)
+

@@ -214,9 +214,9 @@ int main(int argc, const char *argv[]){
                     printf("%02X ", key_block[i]);
                 }
                 printf("\n\n");
-                phase = 4;//TODO: se usa il verify non funziona
+                
                 OpenCommunication(client);
-
+                phase = 4;//TODO: se usa il verify non funziona
                     break;
                 case CERTIFICATE_VERIFY:
                     certificate_verify = HandshakeToCertificateVerify(client_handshake);
@@ -224,18 +224,19 @@ int main(int argc, const char *argv[]){
                     SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
                     OpenCommunication(client);
+                    printf("cert verify");
+                    CheckCommunication();
                     break;
             	default:
                     perror("ERROR: Unattended message in phase 3.\n");
                     exit(1);
                     break;
-            }
-        
+            }    
     }
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     
     //CHANGE CIPHER SPEC read
-    while(CheckCommunication() == client)
+    while(CheckCommunication() == client){}
     client_message = readchannel();
     
     printRecordLayer(client_message);
