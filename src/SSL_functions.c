@@ -235,8 +235,7 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
         perror("ClientKeyExchange_init error: memory allocation leak.\n");
         exit(1);
     };
-
-    
+     
     switch (ciphersuite->key_exchange_algorithm) {
         case RSA_:
             *premaster_secret_size = 48;
@@ -265,7 +264,6 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
 
 ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *private_key, ClientServerHello *client_hello, ClientServerHello *server_hello, DH **dh ){
     
-    printf("ServerKeyExchange_init \n \n");
     ServerKeyExchange *server_key_exchange;
     FILE *key_file;
     
@@ -276,25 +274,19 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
         perror("ClientKeyExchange_init error: memory allocation leak.\n");
         exit(1);
     }
-    printf("memory allocated\n");
-    
-
         //dh = DH_new();//TODO: remember to free
-    
         *dh = get_dh2048();
     
         if(DH_generate_key(*dh) == 0){
             perror("DH keys generarion error.");
             exit(1);
         }
-   
-       
+    
         server_key_exchange->len_parameters = BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g) + BN_num_bytes((*dh)->pub_key);
      
         //TODO: questi mi sa che non vanno allocati
         server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
-       
-      
+          
         BN_bn2bin((*dh)->p, server_key_exchange->parameters);
         BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
         BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
@@ -321,7 +313,34 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
         return server_key_exchange;
 }
 
-
+Certificate *Certificate_init(CipherSuite *ciphersuite){
+    
+    Certificate *certificate;
+    
+    switch (ciphersuite->key_exchange_algorithm){
+        case RSA_:
+            //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
+            certificate = loadCertificate("certificates/RSA_server.crt");
+            break;
+        case DH_:
+            switch (ciphersuite->signature_algorithm) {
+                case RSA_s:
+                    certificate = loadCertificate("certificates/RSA_server.crt");
+                    break;
+                case DSA_s:
+                    certificate = loadCertificate("certificates/DSA_server.crt");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            perror("Certificate error: type not supported.");
+            exit(1);
+            break;
+        }
+    return certificate;
+}
 
 
 /***************************************FREE FUNCTIONS**********************************************/

@@ -107,30 +107,7 @@ int main(int argc, const char *argv[]){
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}
     
-    //CERTIFICATE
-    switch (ciphersuite_choosen->key_exchange_algorithm){
-        case RSA_:
-            //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
-            certificate = loadCertificate("certificates/RSA_server.crt");
-            break;
-        case DH_:
-            switch (ciphersuite_choosen->signature_algorithm) {
-                case RSA_s:
-                    certificate = loadCertificate("certificates/RSA_server.crt");
-                    break;
-                case DSA_s:
-                    certificate = loadCertificate("certificates/DSA_server.crt");
-                    break;
-                default:
-                    break;
-            }
-            break;
-        default:
-            perror("Certificate error: type not supported.");
-            exit(1);
-            break;
-        }
-
+    certificate = Certificate_init(ciphersuite_choosen);
     handshake = CertificateToHandshake(certificate);
     record = HandshakeToRecordLayer(handshake);
        
@@ -146,12 +123,9 @@ int main(int argc, const char *argv[]){
     //SERVER KEY EXCHANGE
     if (ciphersuite_choosen->key_exchange_algorithm == DH_){
         
-        printf("choosen a DH algorithm \n");
         server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello,dhp);
         handshake = ServerKeyExchangeToHandshake(server_key_exchange);
         record = HandshakeToRecordLayer(handshake);
-        
-        
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message,sizeof(uint8_t)*(record->length-5));
