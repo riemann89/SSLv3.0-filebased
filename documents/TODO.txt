@@ -4,4 +4,4 @@ COSE DA SISTEMARE:
 - init FINISHED (ermes)
 - trovare un modo per far testare al professore le varie ciphersuite.
 - controllare la funzione che scrive su TOKEN.txt (a volte ci sono caratteri diversi da 0 o 1)
-
+- finished presenta quattro 0 stran(probabile qualche lunghezza errata inserita)
