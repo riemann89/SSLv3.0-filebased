@@ -342,7 +342,6 @@ Certificate *Certificate_init(CipherSuite *ciphersuite){
     return certificate;
 }
 
-
 /***************************************FREE FUNCTIONS**********************************************/
 /**
  * free memory allocated by recordLayer

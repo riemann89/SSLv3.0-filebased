@@ -329,7 +329,7 @@ int main(int argc, const char *argv[]){
     
     MD5_Update(&md5, master_secret,sizeof(uint8_t)*48);
     MD5_Update(&md5, pad_2,sizeof(uint8_t)*48);
-    MD5_Update(&md5, sha_1,sizeof(uint8_t)*16);
+    MD5_Update(&md5, md5_1,sizeof(uint8_t)*16);
     
     md5_fin = calloc(16, sizeof(uint8_t));
     sha_fin = calloc(20, sizeof(uint8_t));
