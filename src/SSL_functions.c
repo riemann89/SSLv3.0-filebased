@@ -378,7 +378,7 @@ void FreeHandshake(Handshake *handshake){
  * @param *client_server_hello
  */
 void FreeClientServerHello(ClientServerHello *client_server_hello){
-    free(client_server_hello->ciphersuite_code);//TODO Rivedere
+    free(client_server_hello->ciphersuite_code);
     free(client_server_hello->random);
     free(client_server_hello);
 }

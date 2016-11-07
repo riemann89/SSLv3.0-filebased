@@ -81,6 +81,9 @@ int main(int argc, const char *argv[]){
     client_handshake = RecordToHandshake(client_message);
     client_hello = HandshakeToClientServerHello(client_handshake);
    
+    FreeRecordLayer(client_message);
+    FreeHandshake(client_handshake);
+    
     //Construction Server Hello
     RAND_bytes(session_Id, 4);
 	ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1");
@@ -102,10 +105,15 @@ int main(int argc, const char *argv[]){
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
     printRecordLayer(record);
+    
+    FreeHandshake(handshake);
+    FreeRecordLayer(record);
+    
     OpenCommunication(client);
     
     ///////////////////////////////////////////////////////////////PHASE 2//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}
+    
     
     certificate = Certificate_init(ciphersuite_choosen);
     handshake = CertificateToHandshake(certificate);
@@ -116,6 +124,11 @@ int main(int argc, const char *argv[]){
     
     sendPacketByte(record);
     printRecordLayer(record);
+    
+    FreeCertificate(certificate);
+    FreeHandshake(handshake);
+    FreeRecordLayer(record);
+    
     OpenCommunication(client);
     while(CheckCommunication() == client){}
 	
@@ -132,6 +145,11 @@ int main(int argc, const char *argv[]){
 
         sendPacketByte(record);
         printRecordLayer(record);
+        
+        FreeServerKeyExchange(server_key_exchange);
+        FreeHandshake(handshake);
+        FreeRecordLayer(record);
+        
         OpenCommunication(client);
         while(CheckCommunication() == client){}
     }
@@ -147,6 +165,10 @@ int main(int argc, const char *argv[]){
     
     sendPacketByte(record);
     printRecordLayer(record);
+    
+    FreeHandshake(handshake);
+    FreeRecordLayer(record);
+    
     OpenCommunication(client);
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
@@ -188,13 +210,13 @@ int main(int argc, const char *argv[]){
                             exit(1);
                         	break;
                 	}
+                        FreeClientKeyExchange(client_key_exchange);
                 printf("PRE MASTER:\n");
                 for (int i = 0; i<pre_master_secret_size; i++) {
                     printf("%02X ",pre_master_secret[i]);
                 }
                 printf("\n");
-                
-                
+                                
                 master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, server_hello);
                 
                 SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
@@ -232,6 +254,8 @@ int main(int argc, const char *argv[]){
                     exit(1);
                     break;
             }    
+            FreeRecordLayer(client_message);
+            FreeHandshake(client_handshake);
     }
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
     
@@ -240,6 +264,8 @@ int main(int argc, const char *argv[]){
     client_message = readchannel();
     
     printRecordLayer(client_message);
+    
+    FreeRecordLayer(client_message);
     
     //FINISHED read
     OpenCommunication(client);
@@ -275,17 +301,22 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
 
-    //TODO MAC verification
+    //TODO MAC verification                                     handshke + mac -> handshake.content = content + mac 
     client_message->message=dec_message;
+   
+    
+    
+    
     handshake= RecordToHandshake(client_message);
+    FreeRecordLayer(client_message);
             
-    if(ciphersuite_choosen->signature_algorithm == SHA1_){
-        handshake->length= handshake->length - 20;
+    mac2=NULL;
+    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
+        mac2= dec_message[dec_message_len - 20];
     }
     else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        handshake->length= handshake->length - 16;
+        mac2= dec_message[dec_message_len - 16];                                  
     }       
-    mac2 = &handshake->content[handshake->length - 4];
     
     
     for(int i=0;i<16; i++){
@@ -295,10 +326,15 @@ int main(int argc, const char *argv[]){
 
     // TODO now i should compare mac 1 and mac2 they should be equal
     
+    FreeHandshake(handshake);
+    
+    
+    
     //CHANGE CIPHER SPEC send
     record = ChangeCipherSpecRecord();
     sendPacketByte(record);
     printRecordLayer(record);
+    FreeRecordLayer(record);
     
     OpenCommunication(client);
     
@@ -361,6 +397,7 @@ int main(int argc, const char *argv[]){
     //compute MAC
     
     mac = MAC(ciphersuite_choosen,handshake, key_block + ciphersuite_choosen->hash_size);
+    FreeHandshake(handshake);
     
     //append MAC
     
@@ -385,6 +422,7 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
+    
  
     record = calloc(1, sizeof(RecordLayer));
     record->type = HANDSHAKE;
@@ -406,8 +444,13 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
+    FreeRecordLayer(record);
+    FreeClientServerHello(client_hello);
+    //FreeClientServerHello(server_hello);
+    
     OpenCommunication(client);
-
+    
+    //FreeRecordLayer(temp);
    	
 	return 0;
 }
