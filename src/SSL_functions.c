@@ -171,9 +171,10 @@ RecordLayer  *readchannel(){
  * @param int ciphersuite_code_len
  * @return ClientServerHello *client_server_hello
  */
-ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, int ciphersuite_code_len){
+ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, uint8_t ciphersuite_code_len){
     ClientServerHello *client_server_hello;
     Random *random;
+    uint8_t *cipher;
     
     if((client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello))) == 0){
         perror("ClientServerHello_init error: memory allocation leak.\n");
@@ -185,6 +186,13 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
         exit(1);
     };
 	
+    if((cipher = (uint8_t*)calloc(ciphersuite_code_len, sizeof(uint8_t))) == 0){
+        perror("ClientServerHello_init error: memory allocation leak.\n");
+        exit(1);
+    };
+    
+    memcpy(cipher, ciphersuite_code, ciphersuite_code_len);
+    
     random->gmt_unix_time = (uint32_t)time(NULL);
     RAND_bytes(random->random_bytes, 28);
     
@@ -192,7 +200,7 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     client_server_hello->version = 3;
     client_server_hello->random = random;
     client_server_hello->sessionId = sessionId;
-    client_server_hello->ciphersuite_code = ciphersuite_code;
+    client_server_hello->ciphersuite_code = cipher;
     client_server_hello->length = 38 + ciphersuite_code_len;
     
     return client_server_hello;

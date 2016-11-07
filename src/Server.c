@@ -315,7 +315,7 @@ int main(int argc, const char *argv[]){
         mac2= dec_message[dec_message_len - 20];
     }
     else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        mac2= dec_message[dec_message_len - 16];                                  
+        mac2= dec_message[dec_message_len - 16];
     }       
     
     
@@ -446,7 +446,7 @@ int main(int argc, const char *argv[]){
     
     FreeRecordLayer(record);
     FreeClientServerHello(client_hello);
-    //FreeClientServerHello(server_hello);
+    FreeClientServerHello(server_hello);
     
     OpenCommunication(client);
     
