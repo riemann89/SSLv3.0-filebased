@@ -317,6 +317,8 @@ Certificate *Certificate_init(CipherSuite *ciphersuite){
     
     Certificate *certificate;
     
+    certificate = NULL;
+    
     switch (ciphersuite->key_exchange_algorithm){
         case RSA_:
             //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
@@ -331,11 +333,13 @@ Certificate *Certificate_init(CipherSuite *ciphersuite){
                     certificate = loadCertificate("certificates/DSA_server.crt");
                     break;
                 default:
+                    perror("Certificate error: signature algorithm type not supported.");
+                    exit(1);
                     break;
             }
             break;
         default:
-            perror("Certificate error: type not supported.");
+            perror("Certificate error: certificate type not supported.");
             exit(1);
             break;
         }
@@ -1657,11 +1661,11 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
 /*************************************** CERTIFICATES ******************************************************/
 
 /**
- * write certificate over a file named "cert_out-crt"
+ * write certificate over a file named "cert_out.crt"
  * @param X509 *certificate
  * @return int exit_value  
  */
-int writeCertificate(X509* certificate){
+void writeCertificate(X509* certificate){
     /* Per leggere il der
     X509 *res= NULL;
     d2i_X509(&res, &buf, *len);
@@ -1669,8 +1673,16 @@ int writeCertificate(X509* certificate){
     
     FILE* file_cert;
     
-    file_cert=fopen("cert_out.crt", "w+");
-    return PEM_write_X509(file_cert, certificate);
+    file_cert = fopen("cert_out.crt", "w+");
+    
+    if (file_cert == NULL){
+        perror("writeCertificate error");
+        exit(1);
+    }
+    
+    PEM_write_X509(file_cert, certificate);
+    
+    fclose(file_cert);
 }
 
 /**
@@ -1683,6 +1695,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     X509 *cert_509;
     EVP_PKEY *pubkey;
     const unsigned char *p;
+    
     cert_509 = NULL;
     int len;
     
@@ -1695,6 +1708,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
         exit(1);
     }
     pubkey = X509_get_pubkey(cert_509);
+    
     return pubkey;
 }
 
@@ -1712,7 +1726,7 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, int pre_master_len, ClientS
     master_secret = BaseFunction(3, pre_master_secret, pre_master_len, client_hello, server_hello);
     
     if (master_secret == NULL) {
-        perror("MasterSecretGen Error: memory allocation leak.");
+        perror("MasterSecretGen Error: memory leak.");
         exit(1);
     }
     
@@ -1802,6 +1816,11 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         memcpy(key_block + 2*(cipher_suite->hash_size) + 32, client_write_iv, 16);
         memcpy(key_block + 2*(cipher_suite->hash_size) + 48, server_write_iv, 16);
         
+        free(final_client_write_key);
+        free(final_server_write_key);
+        free(client_write_iv);
+        free(server_write_iv);
+        
     }
     
     return key_block;
@@ -1844,11 +1863,15 @@ DH *get_dh2048(){
     };
     DH *dh;
 
-    if ((dh=DH_new()) == NULL) return(NULL);
-    dh->p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
-    dh->g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
-    if ((dh->p == NULL) || (dh->g == NULL))
-    { DH_free(dh); return(NULL); }
+    if ((dh=DH_new()) == NULL){
+        return(NULL);
+    }
+    dh->p = BN_bin2bn(dh2048_p, sizeof(dh2048_p),NULL);
+    dh->g = BN_bin2bn(dh2048_g, sizeof(dh2048_g),NULL);
+    if ((dh->p == NULL) || (dh->g == NULL)){
+        DH_free(dh);
+        return(NULL);
+    }
     return(dh);
 }
 
@@ -1879,33 +1902,33 @@ uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t 
             exit(1);}
     /* Error */
     if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){
-            exit(1);}
+        perror("Asymmetric Encryption error - setting rsa key.");
+        exit(1);
+    }
     /* Error */
                 
     /* Determine buffer length */
     if (EVP_PKEY_encrypt(ctx, NULL, outlen, plaintext, inlen) <= 0){
         exit(1);}
     /* Error */
-                    
-    ciphertext = OPENSSL_malloc(outlen);
     
-    if (!ciphertext){
-        exit(1);}
+    //ciphertext = OPENSSL_malloc(outlen);
+    ciphertext = (uint8_t*)calloc(*outlen, sizeof(uint8_t));
+    
     /* malloc failure */
-        
+    if (!ciphertext){
+        perror("Asymmetric Encryption error - memory allocation leak.");
+        exit(1);
+    }
+	
+    /*Encryption Error */
     if (EVP_PKEY_encrypt(ctx, ciphertext, outlen, plaintext, inlen) <= 0){
-        exit(1);}
-    /* Error */
-    
-    
-    /* Encrypted data is outlen bytes written to buffer out */
-    
+        perror("Asymmetric Encryption error - encryption leak.");
+        exit(1);
+    }
+
+    EVP_PKEY_CTX_free(ctx);
     return ciphertext;
-    /*
-    EVP_PKEY_encrypt
-    ciphertext = (uint8_t*)calloc(EVP_PKEY_size(public_key), sizeof(uint8_t));
-    *out_size = RSA_public_encrypt(in_size, plaintext, ciphertext, rsa, RSA_PKCS1_PADDING);
-    */
 }
 
 /**
@@ -1922,36 +1945,51 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
     uint8_t *plaintext;
     EVP_PKEY_CTX *ctx;
     
-    
-    /* NB: assumes key in, inlen are already set up
-     * and that key is an RSA private key
-     */
-    
     ctx = EVP_PKEY_CTX_new(private_key, NULL);
-    if (!ctx){}
+    if (!ctx){
+    
+    }
 
-    if (EVP_PKEY_decrypt_init(ctx) <= 0){}
+    if (EVP_PKEY_decrypt_init(ctx) <= 0){
+    
+    }
     
     switch (private_key_type) {//TODO: posso eliminare i due switch?
         case EVP_PKEY_RSA:
-            if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){}
+            if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){
+                perror("Asymmetric Decryption error - setting rsa key.");
+                exit(1);
+            }
             break;
         case EVP_PKEY_DSA:
             //TODO: da gestire
             break;
         default:
-            perror("");
+            perror("Asymmetric Decryption error - private key type unrecognized.");
+            exit(1);
             break;
     }
 	
-    if (EVP_PKEY_decrypt(ctx, NULL, outlen, plaintext, inlen) <= 0){}
+    if (EVP_PKEY_decrypt(ctx, NULL, outlen, plaintext, inlen) <= 0){
+        perror("Asymmetric Decryption error - encryption leak.");
+        exit(1);
+    }
                     
-    plaintext = OPENSSL_malloc(outlen);
+    //plaintext = OPENSSL_malloc(outlen);
+    plaintext = (uint8_t*)calloc(*outlen, sizeof(uint8_t));
     
-    if (!plaintext){}
+    if (!plaintext){
+        perror("Asymmetric Decryption error - allocation meamory leak.");
+        exit(1);
+    }
         
-    if (EVP_PKEY_decrypt(ctx, plaintext, outlen, ciphertext, inlen) <= 0){}
-	//TODO: free e controlli
+    if (EVP_PKEY_decrypt(ctx, plaintext, outlen, ciphertext, inlen) <= 0){
+        perror("Asymmetric Decryption error - decryption leak.");
+        exit(1);
+    }
+	
+    EVP_PKEY_CTX_free(ctx);
+    
     return plaintext;
 
 }//TODO
@@ -2055,8 +2093,9 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCARE IL MAX
     
     EVP_CipherUpdate(ctx, out_packet, out_packet_len, in_packet, in_packet_len);
-    EVP_CipherFinal_ex(ctx, out_packet + *out_packet_len, &tmp_len); //TODO non si capisce a che serve sta tmp_len
+    EVP_CipherFinal_ex(ctx, out_packet + *out_packet_len, &tmp_len);
     *out_packet_len += tmp_len;
+    
     EVP_CIPHER_CTX_free(ctx);
     
     return out_packet;
@@ -2071,9 +2110,9 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
  * @param uint8_t *macWriteSecret
  * @return uint8_t *sha_fin or *md5_fin
  */
-uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret){//TODO: passare il keyblock
+uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TODO: passare il keyblock
     
-    MD5_CTX md5,md52;
+    MD5_CTX md5, md52;
     SHA_CTX sha, sha2;
     uint64_t seq_num = 1;
     uint32_t len = hand->length - 4;
@@ -2148,15 +2187,16 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t* macWriteSecret){//TO
 uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey){
     
     EVP_MD_CTX *mdctx;
-    mdctx = EVP_MD_CTX_create();
-    EVP_MD_CTX_init(mdctx);
-    
     uint8_t *signature;
     uint8_t *data;
+    uint8_t temp[4];
     unsigned int slen;
+    
     signature = NULL;
     data = NULL;
-    uint8_t temp[4];
+    mdctx = NULL;
+    
+    mdctx = EVP_MD_CTX_create();
     
     //hash
     data = (uint8_t*)calloc(62 + len_params, sizeof(uint8_t));
@@ -2209,7 +2249,9 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     }
     
     EVP_SignFinal(mdctx, signature, &slen, pKey);
-    //TODO: freee
+    
+    free(data);
+    EVP_MD_CTX_destroy(mdctx);
     
     return signature;
     
@@ -2230,14 +2272,12 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
 void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, uint8_t *signature, int len_signature, Certificate *certificate){
     
     EVP_MD_CTX *mdctx;
-    mdctx = EVP_MD_CTX_create();
-    EVP_MD_CTX_init(mdctx);
-    
     uint8_t *data;
-    data = NULL;
     uint8_t temp[4];
-    
     EVP_PKEY *pubKey;
+    
+    data = NULL;
+    mdctx = EVP_MD_CTX_create();
     
     pubKey = readCertificateParam(certificate);
     
@@ -2296,6 +2336,9 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
         perror("Signature non corretta");
         exit(1);
     }
+    
+    EVP_MD_CTX_destroy(mdctx);
+    free(data);
 }
 
 

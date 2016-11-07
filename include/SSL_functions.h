@@ -76,7 +76,7 @@ void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange);
 
 /* CERTIFICATE */
 Certificate* loadCertificate(char * cert_name);
-int writeCertificate(X509* certificate);
+void writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
 DH *get_dh2048();
 
