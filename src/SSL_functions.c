@@ -1227,6 +1227,28 @@ void printRecordLayer(RecordLayer *record_layer){
 
 }
 
+
+void printHandshake(Handshake *handshake){
+    uint8_t length_bytes[4];
+    
+    int_To_Bytes(handshake->length, length_bytes);
+    
+    printf("\n HANDSHAKE \n");
+    printf("%02X ", handshake->msg_type);
+    printf("%02X ", length_bytes[0]);
+    printf("%02X ", length_bytes[1]);
+    printf("%02X ", length_bytes[2]);
+    printf("%02X ", length_bytes[3]);
+    
+    for(int i=0; i<handshake->length - 4; i++){
+        printf("%02X ", handshake->content[i]);
+    }
+    printf("\n\n");
+
+
+}
+
+
 /**
  * compare the client_supported_list of ciphersuite containded in ClientHello with the ones contained in the *filename,
  * which is the file whose content is the list of chipher supported by server.

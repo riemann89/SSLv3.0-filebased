@@ -50,3 +50,25 @@ uint32_t Bytes_To_Int(int len, uint8_t  *t_Bytes){
 	}
 	return res;
 }
+
+
+/**
+ * compares Byte vectors first and second from the start up to length
+ * returns 1 if they are equal 0 otherwise
+ * @param first  
+ * @param second
+ * @param length
+ * @return 0 or 1
+ */
+uint8_t ByteCompare(uint8_t *first, uint8_t *second, uint8_t length){
+    
+    printf("HI GUYS!!\n");
+    
+    for(int i =0; i<length ; i++){
+        
+     if(first[i]  != second[i]) {
+            return 1;
+        }
+    }   
+    return 0;
+}

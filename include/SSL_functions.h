@@ -51,6 +51,7 @@ RecordLayer *ChangeCipherSpecRecord();
 
 //print package
 void printRecordLayer(RecordLayer *record_layer);
+void printHandshake(Handshake *handshake);
 
 /* CIPHERSUITE */
 uint8_t *loadCipher(char* filename , uint8_t *len);
