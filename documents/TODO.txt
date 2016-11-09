@@ -1,5 +1,8 @@
 COSE DA SISTEMARE:
 
+- MAC nel client
 - rivedere le funzioni delle FREE e il loro uso nel codice.
 - trovare un modo per far testare al professore le varie ciphersuite.
-- finished presenta quattro 0 stran(probabile qualche lunghezza errata inserita)  (penso di averlo risolto oggi (ermes))
+- pad dipendono da sha e md5 (le costanti da definire sono 4 invece che 2) vedere l’rfc.
+- DecEncryptPacket - testare se tutte le ciphersuite che supportianmo cifrano/decifrano correttamente.
+- AsymDec TODO del dsa
