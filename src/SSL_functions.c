@@ -2038,7 +2038,7 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
 uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet_len, CipherSuite *cipher_suite, uint8_t* key_block, Talker key_talker, int state){
     
     uint8_t *out_packet;
-    EVP_CIPHER_CTX *ctx;
+    EVP_CIPHER_CTX ctx;
     uint8_t *key, *iv;
     uint8_t shift1, shift2;
     
@@ -2049,14 +2049,15 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     iv = NULL;
     out_packet = NULL;
     
-    ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX_init(&ctx);
+    
     if (cipher_suite->exportable) {
         if (key_talker == server) {
             shift1 = 16;
             shift2 = 16;
         }
         key = key_block + (2*cipher_suite->hash_size + shift1);
-        iv = key + (32 + shift2);
+        iv = key + 32;
         
     }
     else{
@@ -2076,12 +2077,12 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
         case RC4:
             switch (cipher_suite->key_material) {
                 case 5:
-                    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
-                    EVP_CIPHER_CTX_set_key_length(ctx, 40);
+                    EVP_CipherInit_ex(&ctx, EVP_rc4(), NULL, key, iv, state);
+                    EVP_CIPHER_CTX_set_key_length(&ctx, 40);
                     break;
                 case 16:
                     //beta
-                    EVP_CipherInit_ex(ctx, EVP_rc4(), NULL, key, iv, state);
+                    EVP_CipherInit_ex(&ctx, EVP_rc4(), NULL, key, iv, state);
                     break;
                     
                 default:
@@ -2092,24 +2093,26 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
             break;
             
         case RC2:
-            EVP_CipherInit_ex(ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
+            EVP_CipherInit_ex(&ctx, EVP_rc2_40_cbc(), NULL, key, iv, state);
             break;
         
         case IDEA:
-            EVP_CipherInit_ex(ctx, EVP_idea_cbc(), NULL, key, iv, state);
+            EVP_CipherInit_ex(&ctx, EVP_idea_cbc(), NULL, key, iv, state);
             break;
         
         case DES40:
-            EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
-            EVP_CIPHER_CTX_set_key_length(ctx, 40);
+            EVP_CipherInit_ex(&ctx, EVP_des_cbc(), NULL, NULL, NULL, state);
+            EVP_CIPHER_CTX_set_key_length(&ctx, 40);
+            EVP_CipherInit_ex(&ctx, EVP_des_cbc(), NULL, key, iv, state);
+            
             break;
         
         case DES:
-            EVP_CipherInit_ex(ctx, EVP_des_cbc(), NULL, key, iv, state);
+            EVP_CipherInit_ex(&ctx, EVP_des_cbc(), NULL, key, iv, state);
             break;
         
         case DES3: //TODO da sistemare
-            EVP_CipherInit_ex(ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
+            EVP_CipherInit_ex(&ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
 
             break;
         
@@ -2122,11 +2125,11 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     
     out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCARE IL MAX
     
-    EVP_CipherUpdate(ctx, out_packet, out_packet_len, in_packet, in_packet_len);
-    EVP_CipherFinal_ex(ctx, out_packet + *out_packet_len, &tmp_len);
+    EVP_CipherUpdate(&ctx, out_packet, out_packet_len, in_packet, in_packet_len);
+    EVP_CipherFinal_ex(&ctx, out_packet + *out_packet_len, &tmp_len);
     *out_packet_len += tmp_len;
     
-    EVP_CIPHER_CTX_free(ctx);
+    EVP_CIPHER_CTX_cleanup(&ctx);
     
     return out_packet;
     

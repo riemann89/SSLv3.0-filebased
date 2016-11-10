@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]){
     uint8_t **pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t len_hello, *key_block, client_write_MAC_secret[16], server_write_MAC_secret[16];
+    uint8_t len_hello, *key_block, *client_write_MAC_secret, *server_write_MAC_secret;
     uint8_t *supported_ciphers,*enc_message, *dec_message,*mac,*mac2;
     int out_size;
     
@@ -269,28 +269,17 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     
     //compute MAC
-           
-   
-      for(int i=0;i<16; i++){
-        client_write_MAC_secret[i]=key_block[i];
-    }
+    client_write_MAC_secret = NULL;
+    server_write_MAC_secret = NULL;
+    
+    client_write_MAC_secret = key_block;
     
     mac = MAC(ciphersuite_choosen, handshake, client_write_MAC_secret);
-
-    printf("\n\nMAC read:\n");
     
-    for(int i =0; i<20 ; i++){      
-        printf("%02X ", mac[i]);     
-    }  
-    printf("\n\n"); 
-    
-    uint8_t message_with_mac[temp->length + ciphersuite_choosen->hash_size];
+    uint8_t *message_with_mac;
+    message_with_mac = (uint8_t*)calloc(temp->length + ciphersuite_choosen->hash_size - 5, sizeof(uint8_t));
     memcpy(message_with_mac, temp->message, temp->length);
     memcpy(message_with_mac +temp->length - 5 , mac, ciphersuite_choosen->hash_size);
-    
-   
-    
-    
     
     // update length
     temp->length= temp->length + ciphersuite_choosen->hash_size;
@@ -329,8 +318,10 @@ int main(int argc, const char *argv[]){
         printf("%02X ", record2.message[i]);
     }
     printf("\n\n");
+    ////////////////////
+    //TODO: FINO A QUA TUTTO OK -> posso eliminare record2
+	////////////////////
     
-	
     //FreeRecordLayer(record);
     //FreeHandshake(handshake);
     free(sha_1);
@@ -371,53 +362,38 @@ int main(int argc, const char *argv[]){
     printf("%02X ", server_message->version.minor);
     printf("%02X ", length_bytes[2]);
     printf("%02X ", length_bytes[3]);
-    for(int i=0; i < dec_message_len; i++){
+    for(int i = 0; i < dec_message_len; i++){
         printf("%02X ", dec_message[i]);
     }
     printf("\n\n");
     
     
     //MAC verification                                   
-    server_message->message=dec_message;
-       
-    handshake= RecordToHandshake(server_message);
-    FreeRecordLayer(server_message);
-    handshake->length = dec_message_len;        
+    server_message->message = dec_message;
     
-    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
-        mac2= &dec_message[dec_message_len - 20];
-        handshake->length = handshake->length- 20;
-    }
-    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        mac2= &dec_message[dec_message_len - 16];
-        handshake->length = handshake->length- 16;
-    }       
+    handshake = RecordToHandshake(server_message);
+    handshake->length = dec_message_len;
     
-    for(int i=0;i<16; i++){
-        server_write_MAC_secret[i]=key_block[i+ ciphersuite_choosen->hash_size];
-    }
-    mac = MAC(ciphersuite_choosen,handshake,key_block + ciphersuite_choosen->hash_size);
+    uint8_t *mac_test;
+    
+    mac_test = NULL;
+    
+    handshake->length = handshake->length - ciphersuite_choosen->hash_size;
+	
+    server_write_MAC_secret = key_block + ciphersuite_choosen->hash_size;
+    
+    mac = dec_message + (dec_message_len - ciphersuite_choosen->hash_size);
+    
+    mac_test = MAC(ciphersuite_choosen, handshake, server_write_MAC_secret);
     printHandshake(handshake);
     
  
-    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
-        if(ByteCompare(mac,mac2,20)==0){
-            printf("\nmac verified\n");
-        }
-        else{
-            printf("\nmac not verified\n");
-            exit(1);
-        }
+    if(ByteCompare(mac, mac_test, ciphersuite_choosen->hash_size)==0){
+        printf("\nmac verified\n");
+    }else{
+        printf("\nmac not verified\n");
+        exit(1);
     }
-    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        if(ByteCompare(mac,mac2,16)==0){
-            printf("\nmac verified");
-        }
-        else{
-            printf("\nmac not verified");
-            exit(1);
-        }
-    }  
     
     
     //FreeRecordLayer(server_message);

@@ -36,8 +36,8 @@ int main(int argc, const char *argv[]){
     uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t *cipher_key, client_write_MAC_secret[16];
-    uint8_t *key_block,*dec_message,*enc_message,*mac,*mac2;
+    uint8_t *cipher_key;
+    uint8_t *key_block,*dec_message,*enc_message, *mac, *mac_test;
     DH *dh, **dhp;
     BIGNUM *pub_key_client;
     size_t out_size;
@@ -289,7 +289,6 @@ int main(int argc, const char *argv[]){
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
     
     int_To_Bytes(dec_message_len + 5, length_bytes);
-    printf("%d\n", dec_message_len);
     printf("DECRYPTED FINISHED:\n");
     printf("%02X ", client_message->type);
     printf("%02X ", client_message->version.major);
@@ -302,46 +301,31 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
 
     //MAC verification                                   
-    client_message->message=dec_message;
-       
-    handshake= RecordToHandshake(client_message);
-    FreeRecordLayer(client_message);
+    client_message->message = dec_message;
+    handshake = RecordToHandshake(client_message);
+    //FreeRecordLayer(client_message);
     handshake->length = dec_message_len;        
     
-    mac2=NULL;
-    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
-        mac2= &dec_message[dec_message_len - 20];
-        handshake->length = handshake->length- 20;
-    }
-    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        mac2= &dec_message[dec_message_len - 16];
-        handshake->length = handshake->length- 16;
-    }       
-       
-    for(int i=0;i<16; i++){
-        client_write_MAC_secret[i]=key_block[i];
-    }
-    mac = MAC(ciphersuite_choosen,handshake,client_write_MAC_secret);
- 
-    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
-        if(ByteCompare(mac,mac2,20)==0){
-            printf("\nmac verified\n");
-        }
-        else{
-            printf("\nmac not verified\n");
-            exit(1);
-        }
-    }
-    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        if(ByteCompare(mac,mac2,16)==0){
-            printf("\nmac verified");
-        }
-        else{
-            printf("\nmac not verified");
-            exit(1);
-        }
-    }  
+    mac_test = NULL;
+    handshake->length = handshake->length - ciphersuite_choosen->hash_size;
     
+    uint8_t *client_write_MAC_secret, *server_write_MAC_secret;
+    client_write_MAC_secret = NULL;
+    server_write_MAC_secret = NULL;
+    
+    client_write_MAC_secret = key_block;
+	
+    mac = dec_message + (dec_message_len - ciphersuite_choosen->hash_size);
+    mac_test = MAC(ciphersuite_choosen, handshake, client_write_MAC_secret);
+    
+    if(ByteCompare(mac, mac_test, ciphersuite_choosen->hash_size)==0){
+        printf("\nmac verified\n");
+    }
+    else{
+        printf("\nmac not verified\n");
+        exit(1);
+    	}
+
     FreeHandshake(handshake);
      
     //CHANGE CIPHER SPEC send
@@ -396,32 +380,19 @@ int main(int argc, const char *argv[]){
     handshake = FinishedToHandshake(&finished);
     temp = HandshakeToRecordLayer(handshake);
     
-    int_To_Bytes(temp->length, length_bytes);
-    printf("FINISHED:to sent\n");
-    printf("%02X ", temp->type);
-    printf("%02X ", temp->version.major);
-    printf("%02X ", temp->version.minor);
-    printf("%02X ", length_bytes[2]);
-    printf("%02X ", length_bytes[3]);
-    for(int i=0; i<temp->length - 5; i++){
-        printf("%02X ", temp->message[i]);
-    }
-    printf("\n\n");
-    
     //compute MAC
     
-    mac = MAC(ciphersuite_choosen,handshake, key_block + ciphersuite_choosen->hash_size);
+    mac = MAC(ciphersuite_choosen, handshake, key_block + ciphersuite_choosen->hash_size);
     printHandshake(handshake);
-    FreeHandshake(handshake);
+    //FreeHandshake(handshake);
     
     //append MAC
-    
-    uint8_t message_with_mac[temp->length + ciphersuite_choosen->hash_size];
-    memcpy(message_with_mac, temp->message, temp->length);
+    uint8_t* message_with_mac = (uint8_t*)calloc(temp->length + ciphersuite_choosen->hash_size, sizeof(uint8_t));
+    memcpy(message_with_mac, temp->message, temp->length - 5);
     memcpy(message_with_mac + temp->length - 5, mac, ciphersuite_choosen->hash_size);
 
     // update length
-    temp->length= temp->length + ciphersuite_choosen->hash_size;
+    temp->length = temp->length + ciphersuite_choosen->hash_size;
     temp->message = message_with_mac;
     
     int_To_Bytes(temp->length, length_bytes);
@@ -438,30 +409,26 @@ int main(int argc, const char *argv[]){
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     
- 
-    record = calloc(1, sizeof(RecordLayer));
-    record->type = HANDSHAKE;
-    record->version = std_version;
-    record->length = enc_message_len + 5; //TODO
-    record->message = enc_message;
+    temp->message = enc_message;
+    temp->length = enc_message_len + 5;
     
-    sendPacketByte(record);
+    sendPacketByte(temp);
     
-    int_To_Bytes(record->length, length_bytes);
+    int_To_Bytes(temp->length, length_bytes);
     printf("ENCRYPED FINISHED: sent\n");
-    printf("%02X ", record->type);
-    printf("%02X ", record->version.major);
-    printf("%02X ", record->version.minor);
+    printf("%02X ", temp->type);
+    printf("%02X ", temp->version.major);
+    printf("%02X ", temp->version.minor);
     printf("%02X ", length_bytes[2]);
     printf("%02X ", length_bytes[3]);
-    for(int i=0; i<record->length - 5; i++){
-        printf("%02X ", record->message[i]);
+    for(int i=0; i<temp->length - 5; i++){
+        printf("%02X ", temp->message[i]);
     }
     printf("\n\n");
     
-    FreeRecordLayer(record);
-    FreeClientServerHello(client_hello);
-    FreeClientServerHello(server_hello);
+    //FreeRecordLayer(record);
+    //FreeClientServerHello(client_hello);
+    //FreeClientServerHello(server_hello);
     
     OpenCommunication(client);
     
