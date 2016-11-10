@@ -62,6 +62,7 @@ uint32_t Bytes_To_Int(int len, uint8_t  *t_Bytes){
  */
 uint8_t ByteCompare(uint8_t *first, uint8_t *second, uint8_t length){
     
+    printf("\nhi people\n");
     for(int i =0; i<length ; i++){
         
      if(first[i]  != second[i]) {

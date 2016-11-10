@@ -411,13 +411,14 @@ int main(int argc, const char *argv[]){
     //compute MAC
     
     mac = MAC(ciphersuite_choosen,handshake, key_block + ciphersuite_choosen->hash_size);
+    printHandshake(handshake);
     FreeHandshake(handshake);
     
     //append MAC
     
     uint8_t message_with_mac[temp->length + ciphersuite_choosen->hash_size];
     memcpy(message_with_mac, temp->message, temp->length);
-    memcpy(message_with_mac + temp->length, mac, ciphersuite_choosen->hash_size);
+    memcpy(message_with_mac + temp->length - 5, mac, ciphersuite_choosen->hash_size);
 
     // update length
     temp->length= temp->length + ciphersuite_choosen->hash_size;

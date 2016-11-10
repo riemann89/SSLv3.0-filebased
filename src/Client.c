@@ -29,14 +29,15 @@ int main(int argc, const char *argv[]){
     uint8_t **pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t len_hello, *key_block, client_write_MAC_secret[16];
-    uint8_t *supported_ciphers,*enc_message, *dec_message,*mac;
+    uint8_t len_hello, *key_block, client_write_MAC_secret[16], server_write_MAC_secret[16];
+    uint8_t *supported_ciphers,*enc_message, *dec_message,*mac,*mac2;
     int out_size;
     
     
     //Initialization
     pre_master_secret_size = 0;
     out_size = 0;
+    mac2=NULL;
     dec_message_len = 0;
     dec_message = NULL;
     enc_message_len = 0;
@@ -374,6 +375,50 @@ int main(int argc, const char *argv[]){
         printf("%02X ", dec_message[i]);
     }
     printf("\n\n");
+    
+    
+    //MAC verification                                   
+    server_message->message=dec_message;
+       
+    handshake= RecordToHandshake(server_message);
+    FreeRecordLayer(server_message);
+    handshake->length = dec_message_len;        
+    
+    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
+        mac2= &dec_message[dec_message_len - 20];
+        handshake->length = handshake->length- 20;
+    }
+    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
+        mac2= &dec_message[dec_message_len - 16];
+        handshake->length = handshake->length- 16;
+    }       
+    
+    for(int i=0;i<16; i++){
+        server_write_MAC_secret[i]=key_block[i+ ciphersuite_choosen->hash_size];
+    }
+    mac = MAC(ciphersuite_choosen,handshake,key_block + ciphersuite_choosen->hash_size);
+    printHandshake(handshake);
+    
+ 
+    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
+        if(ByteCompare(mac,mac2,20)==0){
+            printf("\nmac verified\n");
+        }
+        else{
+            printf("\nmac not verified\n");
+            exit(1);
+        }
+    }
+    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
+        if(ByteCompare(mac,mac2,16)==0){
+            printf("\nmac verified");
+        }
+        else{
+            printf("\nmac not verified");
+            exit(1);
+        }
+    }  
+    
     
     //FreeRecordLayer(server_message);
     //FreeHandshake(server_handshake);
