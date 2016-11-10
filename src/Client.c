@@ -274,8 +274,6 @@ int main(int argc, const char *argv[]){
         client_write_MAC_secret[i]=key_block[i];
     }
     
-    printf("handshake of mac");
-    printHandshake(handshake);
     mac = MAC(ciphersuite_choosen, handshake, client_write_MAC_secret);
 
     printf("\n\nMAC read:\n");

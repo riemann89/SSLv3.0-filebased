@@ -301,35 +301,49 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
 
-    //TODO MAC verification                                     handshke + mac -> handshake.content = content + mac 
+    //MAC verification                                   
     client_message->message=dec_message;
-   
-    
-    
-    
+       
     handshake= RecordToHandshake(client_message);
     FreeRecordLayer(client_message);
-            
+    handshake->length = dec_message_len;        
+    
     mac2=NULL;
     if(ciphersuite_choosen->signature_algorithm == SHA1_){        
-        mac2= dec_message[dec_message_len - 20];
+        mac2= &dec_message[dec_message_len - 20];
+        handshake->length = handshake->length- 20;
     }
     else if(ciphersuite_choosen->signature_algorithm==MD5_1){
-        mac2= dec_message[dec_message_len - 16];
+        mac2= &dec_message[dec_message_len - 16];
+        handshake->length = handshake->length- 16;
     }       
-    
-    
+       
     for(int i=0;i<16; i++){
         client_write_MAC_secret[i]=key_block[i];
     }
     mac = MAC(ciphersuite_choosen,handshake,client_write_MAC_secret);
-
-    // TODO now i should compare mac 1 and mac2 they should be equal
+ 
+    if(ciphersuite_choosen->signature_algorithm == SHA1_){        
+        if(ByteCompare(mac,mac2,20)==0){
+            printf("\nmac verified\n");
+        }
+        else{
+            printf("\nmac not verified\n");
+            exit(1);
+        }
+    }
+    else if(ciphersuite_choosen->signature_algorithm==MD5_1){
+        if(ByteCompare(mac,mac2,16)==0){
+            printf("\nmac verified");
+        }
+        else{
+            printf("\nmac not verified");
+            exit(1);
+        }
+    }  
     
     FreeHandshake(handshake);
-    
-    
-    
+     
     //CHANGE CIPHER SPEC send
     record = ChangeCipherSpecRecord();
     sendPacketByte(record);
