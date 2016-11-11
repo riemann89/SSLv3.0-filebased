@@ -1744,6 +1744,7 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
     SHA_CTX sha;
     uint8_t *md5_1, *sha_1;
     
+    
     buffer=NULL;
     letter=0;
     md5_1=NULL;
