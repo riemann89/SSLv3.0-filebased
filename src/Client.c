@@ -103,7 +103,7 @@ int main(int argc, const char *argv[]){
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
     
-    ciphersuite_choosen = CodeToCipherSuite(0x03); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
     
     OpenCommunication(server);
     phase = 2;

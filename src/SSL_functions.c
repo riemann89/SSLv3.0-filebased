@@ -331,6 +331,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
                 break;
             case DSA_s:
                 key_file = fopen("private_keys/DSA_server.key","rb");
+                break;
             default:
                 perror("Error private key.");
                 exit(1);
