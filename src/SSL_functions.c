@@ -248,20 +248,6 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     out_size = 0;
     
     pubkey = readCertificateParam(certificate);
-    p_size = (server_key_exchange->len_parameters - 1)/2;
-    
-    pub_key_server = BN_new();
-    dh = DH_new();
-    
-    dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
-    dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
-    
-    if(DH_generate_key(dh) == 0){
-        perror("DH keys generation error.");
-        exit(1);
-    }
-    
-    pub_key_server = BN_bin2bn(server_key_exchange->parameters + p_size + 1, p_size, NULL);
 
     if((client_key_exchange = (ClientKeyExchange*)calloc(1, sizeof(ClientKeyExchange))) == 0){
         perror("ClientKeyExchange_init error: memory allocation leak.\n");
@@ -273,14 +259,28 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             *premaster_secret_size = 48;
             *premaster_secret = (uint8_t*)calloc(*premaster_secret_size, sizeof(uint8_t));
             RAND_bytes(*premaster_secret, *premaster_secret_size);
-            *premaster_secret[0] = std_version.major;
-            *premaster_secret[1] = std_version.minor;
+            *(*premaster_secret) = std_version.major;
+            *(*premaster_secret + 1) = std_version.minor;
             premaster_secret_encrypted = AsymEnc(pubkey, *premaster_secret, 48, (size_t*)&out_size);
             
             client_key_exchange->parameters = premaster_secret_encrypted;
             client_key_exchange->len_parameters = out_size;
             break;
         case DH_:
+            p_size = (server_key_exchange->len_parameters - 1)/2;
+            
+            pub_key_server = BN_new();
+            dh = DH_new();
+            
+            dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
+            dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
+            
+            if(DH_generate_key(dh) == 0){
+                perror("DH keys generation error.");
+                exit(1);
+            }
+            
+            pub_key_server = BN_bin2bn(server_key_exchange->parameters + p_size + 1, p_size, NULL);
             
             client_key_exchange->len_parameters = DH_size(dh);
             client_key_exchange->parameters = calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
@@ -454,19 +454,23 @@ void FreeCertificateVerify(CertificateVerify *certificate_verify){
  * free memory allocated by server_key_exchange
  * @param *client_key_exchange
  */
-void FreeClientKeyExchange(ClientKeyExchange *client_server_key_exchange){
-    free(client_server_key_exchange->parameters);
-    free(client_server_key_exchange);
+void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange){
+    if(client_key_exchange != NULL){
+    	free(client_key_exchange->parameters);
+        free(client_key_exchange);
+    }
 }
 
 /**
  * free memory allocated by server_key_exchange
  * @param *server_key_exchange
  */
-void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange){
-    free(client_server_key_exchange->parameters);
-    free(client_server_key_exchange->signature);
-    free(client_server_key_exchange);
+void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange){
+    if(server_key_exchange != NULL){
+    	free(server_key_exchange->parameters);
+    	free(server_key_exchange->signature);
+        free(server_key_exchange);
+    }
 }
 
 /**
@@ -2221,7 +2225,7 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
     uint32_t len = hand->length - 4;
     
     
-    if(cipher->signature_algorithm == SHA1_){
+    if(cipher->hash_algorithm == SHA1_){
         
         uint8_t *sha_fin;
         sha_fin = calloc(20, sizeof(uint8_t));
@@ -2245,7 +2249,7 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
         return sha_fin;
         
     }
-    else if(cipher->signature_algorithm == MD5_1){
+    else if(cipher->hash_algorithm == MD5_1){
         
         MD5_Init(&md5);
         MD5_Init(&md5);

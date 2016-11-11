@@ -72,8 +72,8 @@ void FreeCertificate(Certificate *certificate);
 void FreeCertificateVerify(CertificateVerify *certificate_verify);
 void FreeServerHelloDone(ServerDone *server_done);
 void FreeFinished(Finished *finished);
-void FreeClientKeyExchange(ClientKeyExchange *client_server_key_exchange);
-void FreeServerKeyExchange(ServerKeyExchange *client_server_key_exchange);
+void FreeClientKeyExchange(ClientKeyExchange *client_key_exchange);
+void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange);
 
 /* CERTIFICATE */
 Certificate* loadCertificate(char * cert_name);
