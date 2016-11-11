@@ -1252,6 +1252,7 @@ Handshake *RecordToHandshake(RecordLayer *record){
  * @param RecordLayer *record_layer
  */
 void printRecordLayer(RecordLayer *record_layer){
+    
     uint8_t length_bytes[4];
     
     switch (record_layer->type) {
@@ -1308,11 +1309,12 @@ void printRecordLayer(RecordLayer *record_layer){
         printf("%02X ", record_layer->message[i]);
     }
     printf("\n\n");
-
-
 }
 
-
+/**
+ * print in console the handshake pointed
+ * @param Handshake handshake
+ */
 void printHandshake(Handshake *handshake){
     uint8_t length_bytes[4];
     
@@ -1329,8 +1331,6 @@ void printHandshake(Handshake *handshake){
         printf("%02X ", handshake->content[i]);
     }
     printf("\n\n");
-
-
 }
 
 
@@ -1343,9 +1343,14 @@ void printHandshake(Handshake *handshake){
  * @return uint8_t chosenChipher
  */
 uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
+    
     FILE* PriorityList;
     uint8_t choosen;   	 																		
     uint8_t *buffer;
+    
+    PriorityList=NULL;
+    buffer=NULL;
+    choosen =0;
     
     PriorityList = fopen(filename, "rb");  
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
@@ -1355,12 +1360,15 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
         for(int j=0;j<client_supported_list->length -38 ;j++){
             if(buffer[i] == client_supported_list->ciphersuite_code[j]){
                 choosen = buffer[i];
+                fclose(PriorityList);
+                free(buffer);
                 return choosen; 																									
             }
             
         }
     }
     perror("\nError, uncompatibles chiphers\n");
+    fclose(PriorityList);
     exit(1);
 }
 
@@ -1376,11 +1384,15 @@ uint8_t *loadCipher(char* filename, uint8_t *len){
        
     FILE* CipherList;
     uint8_t *buffer;
+    
+    CipherList=NULL;
+    buffer=NULL;
 
     CipherList = fopen(filename, "rb");
     
    	if (CipherList == NULL){
         perror("loadCipher error: memory allocation leak.");
+        fclose(CipherList);
         exit(1);
     }
     
@@ -1391,12 +1403,14 @@ uint8_t *loadCipher(char* filename, uint8_t *len){
     
     return buffer;    
 } 
+
 /**
  * From the code of a ciphersuite decide if it match with RSA_, DIFFIE_HELLMAN or FORTEZZA.
  * @param uint8_t cipher_code
  * @return KeyExchangeAlgorithm 
  */
 KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
+    
     if(cipher_code> 0 && cipher_code < 11)
         return RSA_;
     if(cipher_code > 10 && cipher_code< 28)
@@ -1415,9 +1429,9 @@ KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
  * @return CipherSuite *cipher_suite
  */
 CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
-    //INIZIALIZZARE CipherSuite
-    
+   
     CipherSuite *cipher_suite;
+    cipher_suite=NULL;
     
     cipher_suite = (CipherSuite*)calloc(1, sizeof(CipherSuite));
     
@@ -1678,7 +1692,13 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             break;
     }
     return cipher_suite;
-	}
+}
+
+/**
+ * Given a ciphersuite code returns the type of the correspondant certificate
+ * @param uint8_t ciphersuite_code
+ * @return CertificateType a type
+ */
 CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
     
     if (ciphersuite_code<= 0x0A && ciphersuite_code>=0x01){
@@ -1723,6 +1743,11 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t *md5_1, *sha_1;
+    
+    buffer=NULL;
+    letter=0;
+    md5_1=NULL;
+    sha_1=NULL;
     
     letter = 65;
     buffer = calloc(16*numer_of_MD5, sizeof(uint8_t));
