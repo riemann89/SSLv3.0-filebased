@@ -10,7 +10,6 @@
 
 
 int main(int argc, const char *argv[]){
-    //Declaration
     ClientServerHello *client_hello, *server_hello;
     Handshake *handshake, *server_handshake;
     RecordLayer *record, *server_message, *temp, record2;
@@ -22,49 +21,57 @@ int main(int argc, const char *argv[]){
     Finished finished;
     CertificateType certificate_type;
     Talker sender;
-    int pre_master_secret_size;
+    int pre_master_secret_size, out_size, phase, key_block_size, enc_message_len, dec_message_len;
     RSA * rsa;
-    uint32_t len_parameters;
-    int phase, key_block_size,enc_message_len,dec_message_len;
-    uint8_t **pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key;
+    uint8_t **pre_master_secret;
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t len_hello, *key_block, *client_write_MAC_secret, *server_write_MAC_secret;
-    uint8_t *supported_ciphers,*enc_message, *dec_message,*mac,*mac2;
-    int out_size;
+    uint8_t len_hello;
+    uint8_t *supported_ciphers, *enc_message, *dec_message, *mac, *mac2, *key_block, *client_write_MAC_secret, *server_write_MAC_secret, *master_secret, *sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key, *mac_test;
+    uint32_t len_parameters;
     
-    
-    //Initialization
-    pre_master_secret_size = 0;
-    out_size = 0;
-    mac2=NULL;
-    dec_message_len = 0;
-    dec_message = NULL;
-    enc_message_len = 0;
-    enc_message=NULL;
+    client_hello = NULL;
     server_hello = NULL;
     handshake = NULL;
     server_handshake = NULL;
     record = NULL;
     server_message = NULL;
+    temp = NULL;
+    client_key_exchange = NULL;
+    server_key_exchange = NULL;
     certificate = NULL;
     certificate_request = NULL;
-    rsa = NULL;
-    pre_master_secret = NULL;
-    master_secret = NULL;
-    key_block = NULL;
-    iv = NULL;
-    cipher_key = NULL;
-    len_parameters = 0;
-    len_hello = 0;
+    ciphersuite_choosen = NULL;
+    pre_master_secret_size = 0;
+    out_size = 0;
     phase = 0;
     key_block_size = 0;
-    certificate_type = 0;
-    temp = NULL;
-    server_key_exchange= NULL;
+    enc_message_len = 0;
+    dec_message_len = 0;
+    rsa = NULL;
+    pre_master_secret = NULL;
+    len_hello = 0;
+    supported_ciphers = NULL;
+    enc_message = NULL;
+    dec_message = NULL;
+    mac = NULL;
+    mac2 = NULL;
+    key_block = NULL;
+    client_write_MAC_secret = NULL;
+    server_write_MAC_secret = NULL;
+    master_secret = NULL;
+    sha_1 = NULL;
+    md5_1 = NULL;
+    sha_fin = NULL;
+    md5_fin = NULL;
+    iv = NULL;
+    cipher_key = NULL;
+    mac_test = NULL;
+    len_parameters = 0;
     sender = client;
     SHA1_Init(&sha);
     MD5_Init(&md5);
+    // TODO: finished, record2, certificate type,
 
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
@@ -385,10 +392,6 @@ int main(int argc, const char *argv[]){
     
     handshake = RecordToHandshake(server_message);
     handshake->length = dec_message_len;
-    
-    uint8_t *mac_test;
-    
-    mac_test = NULL;
     
     handshake->length = handshake->length - ciphersuite_choosen->hash_size;
 	
