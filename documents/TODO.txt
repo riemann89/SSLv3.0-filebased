@@ -1,6 +1,8 @@
 COSE DA SISTEMARE:
 
-- rivedere le funzioni delle FREE e il loro uso nel codice.
+- rivedere le funzioni delle FREE e il loro uso nel codice.(ermes)
+- provare tutte le ciphersuite
+
+
+// da fare alla fine
 - trovare un modo per far testare al professore le varie ciphersuite.
-- finished presenta quattro 0 stran(probabile qualche lunghezza errata inserita)  (penso di averlo risolto oggi (ermes))
-- controllare client decription del finished  (errore sistematico nei primi due byte del message (14 00 -> 34 01) il resto è apposto)
