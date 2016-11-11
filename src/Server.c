@@ -25,48 +25,63 @@ int main(int argc, const char *argv[]){
     Handshake *handshake, *client_handshake;
     RecordLayer *record, *client_message, *temp;
     ClientKeyExchange *client_key_exchange;
+    ServerKeyExchange *server_key_exchange;
     Certificate *certificate;
     CertificateVerify *certificate_verify;
     Finished finished;
     CipherSuite *ciphersuite_choosen;
     CertificateType certificate_type;
     Talker sender;
-    int phase, key_block_size, len_parameters,dec_message_len,enc_message_len;
-
-    uint8_t prioritylen, ciphersuite_code, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
+    int phase, key_block_size, len_parameters,dec_message_len, enc_message_len, pre_master_secret_size;
+    uint8_t ciphersuite_code;
+    uint8_t *key_block,*dec_message,*enc_message, *mac, *mac_test, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t *cipher_key;
-    uint8_t *key_block,*dec_message,*enc_message, *mac, *mac_test;
     DH *dh, **dhp;
     BIGNUM *pub_key_client;
-    size_t out_size;
-    ServerKeyExchange *server_key_exchange;
-    int pre_master_secret_size;
-	
     EVP_PKEY *private_key;
     
     //Initialization
-    master_secret = NULL;
-    cipher_key = NULL;
-    key_block = NULL;
+    server_hello = NULL;
+    client_hello = NULL;
+    handshake = NULL;
+    client_handshake = NULL;
+    record = NULL;
+    client_message = NULL;
+    temp = NULL;
+    client_key_exchange = NULL;
+    server_key_exchange = NULL;
     certificate = NULL;
-    dec_message = NULL;
-    enc_message=NULL;
-    dh=NULL;
-    dhp = &dh;
-    private_key = NULL;
-    ciphersuite_code = 0;
-    prioritylen = 10;
-    phase = 0;
+    ciphersuite_choosen = NULL;
     certificate_type = 0;
+    sender = server;
+    phase = 0;
+    key_block_size = 0;
+    len_parameters = 0;
     dec_message_len = 0;
     enc_message_len = 0;
-    out_size = 0;
     pre_master_secret_size = 0;
-    sender = server;
+    ciphersuite_code = 0;
+    key_block = NULL;
+    dec_message = NULL;
+    enc_message = NULL;
+    mac = NULL;
+    mac_test = NULL;
+    pre_master_secret = NULL;
+    sha_1 = NULL;
+    md5_1 = NULL;
+    sha_fin = NULL;
+    md5_fin = NULL;
+    master_secret = NULL;
     SHA1_Init(&sha);
     MD5_Init(&md5);
+    dh = NULL;
+    dhp = &dh;
+    pub_key_client = NULL;
+    private_key = NULL;
+
+
+    
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
     while(CheckCommunication() == client){}

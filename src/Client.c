@@ -16,19 +16,16 @@ int main(int argc, const char *argv[]){
     ClientKeyExchange *client_key_exchange;
     ServerKeyExchange *server_key_exchange;
     Certificate *certificate;
-    CertificateRequest *certificate_request;
     CipherSuite *ciphersuite_choosen;
     Finished finished;
     CertificateType certificate_type;
     Talker sender;
-    int pre_master_secret_size, out_size, phase, key_block_size, enc_message_len, dec_message_len;
-    RSA * rsa;
+    int pre_master_secret_size, phase, key_block_size, enc_message_len, dec_message_len;
     uint8_t **pre_master_secret;
     MD5_CTX md5;
     SHA_CTX sha;
     uint8_t len_hello;
-    uint8_t *supported_ciphers, *enc_message, *dec_message, *mac, *mac2, *key_block, *client_write_MAC_secret, *server_write_MAC_secret, *master_secret, *sha_1, *md5_1, *sha_fin, *md5_fin, *iv, *cipher_key, *mac_test;
-    uint32_t len_parameters;
+    uint8_t *supported_ciphers, *enc_message, *dec_message, *mac, *mac2, *key_block, *client_write_MAC_secret, *server_write_MAC_secret, *master_secret, *sha_1, *md5_1, *sha_fin, *md5_fin, *mac_test;
     
     client_hello = NULL;
     server_hello = NULL;
@@ -40,15 +37,12 @@ int main(int argc, const char *argv[]){
     client_key_exchange = NULL;
     server_key_exchange = NULL;
     certificate = NULL;
-    certificate_request = NULL;
     ciphersuite_choosen = NULL;
     pre_master_secret_size = 0;
-    out_size = 0;
     phase = 0;
     key_block_size = 0;
     enc_message_len = 0;
     dec_message_len = 0;
-    rsa = NULL;
     pre_master_secret = NULL;
     len_hello = 0;
     supported_ciphers = NULL;
@@ -64,14 +58,10 @@ int main(int argc, const char *argv[]){
     md5_1 = NULL;
     sha_fin = NULL;
     md5_fin = NULL;
-    iv = NULL;
-    cipher_key = NULL;
     mac_test = NULL;
-    len_parameters = 0;
     sender = client;
     SHA1_Init(&sha);
     MD5_Init(&md5);
-    // TODO: finished, record2, certificate type,
 
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
