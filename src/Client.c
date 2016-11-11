@@ -193,8 +193,8 @@ int main(int argc, const char *argv[]){
         }
         printf("\n");
         
-        master_secret = MasterSecretGen(*pre_master_secret, pre_master_secret_size, client_hello, server_hello
-        free(pre_master_secret);
+        master_secret = MasterSecretGen(*pre_master_secret, pre_master_secret_size, client_hello, server_hello);
+        //free(&pre_master_secret);//TODO:rivedere
         
         //TODO: rimuovere questi print
         printf("MASTER KEY:generated\n");
@@ -223,7 +223,6 @@ int main(int argc, const char *argv[]){
     sendPacketByte(record);
     printRecordLayer(record);
 
-    
     FreeRecordLayer(record);
     OpenCommunication(server);
     
@@ -274,14 +273,12 @@ int main(int argc, const char *argv[]){
     free(md5_fin);
     free(sha_fin);
     
-    
+
     /* MAC and ENCRYPTION*/
     
     
     handshake = FinishedToHandshake(&finished);   
     temp = HandshakeToRecordLayer(handshake);
-    
-    FreeFinished(finished);
     
     //compute MAC
     client_write_MAC_secret = NULL;
@@ -337,18 +334,12 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    FreeRecordLayer(record2);
-    
     ////////////////////
     //TODO: FINO A QUA TUTTO OK -> posso eliminare record2
 	////////////////////
     
     //FreeRecordLayer(record);
     //FreeHandshake(handshake);
-    free(sha_1);
-    free(md5_1);
-    free(sha_fin);
-    free(md5_fin);
     
     OpenCommunication(server);
     while(CheckCommunication() == server){};
