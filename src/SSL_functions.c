@@ -907,7 +907,6 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     certificate->len = certificate_len;
     certificate->X509_der = buffer;
     
-    
     return certificate;
 }
 
@@ -1004,6 +1003,8 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake){
     
     ClientKeyExchange *client_server_key_exchange;
     
+    client_server_key_exchange=NULL;
+    
     if (handshake->msg_type != CLIENT_KEY_EXCHANGE){
         perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
         exit(1);
@@ -1014,18 +1015,15 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
-    
-    
-    client_server_key_exchange->len_parameters = handshake->length - 4;
-    
+      
+    client_server_key_exchange->len_parameters = handshake->length - 4; 
     client_server_key_exchange->parameters = (uint8_t *)calloc(client_server_key_exchange->len_parameters, sizeof(uint8_t));
     
     if (client_server_key_exchange->parameters == NULL){
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
-    
-    
+      
     memcpy(client_server_key_exchange->parameters, handshake->content, client_server_key_exchange->len_parameters);
     
     return client_server_key_exchange;
@@ -1034,6 +1032,8 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake){
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificate *certificate){
     
     ServerKeyExchange *server_key_exchange;
+    
+    server_key_exchange=NULL;
     
     if (handshake->msg_type != SERVER_KEY_EXCHANGE){
         perror("ERROR HandshakeToClientKeyExchange: handshake does not contain a client key message.");
@@ -1046,12 +1046,10 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificat
         exit(1);
     }
     
-    //EVP_PKEY *pkey = readCertificateParam(certificate);
     uint32_t len_signature = 128;
     
     server_key_exchange->len_signature = len_signature;
-    server_key_exchange->len_parameters = handshake->length - 4 - len_signature;
-    
+    server_key_exchange->len_parameters = handshake->length - 4 - len_signature;  
     server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
     server_key_exchange->parameters = (uint8_t *)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
     
@@ -1077,7 +1075,10 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificat
  * @return Finished *finished
  */
 Finished *HandshakeToFinished(Handshake *handshake){
+    
     Finished *finished;
+    
+    finished=NULL;
    
     if (handshake->msg_type != FINISHED){
         perror("ERROR HandshakeToFinished: handshake does not contain a finished message.");
@@ -1085,19 +1086,18 @@ Finished *HandshakeToFinished(Handshake *handshake){
     }
     
     finished = (Finished *)calloc(1, sizeof(Finished));
+    
     if (finished == NULL){
         perror("ERROR HandshakeToFinished: memory allocation leak.");
         exit(1);
     }
     
-	finished->hash = (uint8_t*)calloc(36, sizeof(uint8_t));
+    finished->hash = (uint8_t*)calloc(36, sizeof(uint8_t));
     
     memcpy(finished->hash, handshake->content, 36);
     
     return finished;
-
-
-}//TOCHECK
+}
 
 /**
  *  Parse handshake into certificate_request
@@ -1105,36 +1105,39 @@ Finished *HandshakeToFinished(Handshake *handshake){
  * @return CertificateRequest *certificate_request
  */
 CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
+ 
  CertificateRequest *certificate_request;
  uint8_t *buffer;
  int buffer_len;
  
+ certificate_request=NULL;
+ buffer=NULL;
+ buffer_len=0;
+ 
  if (handshake->msg_type != CERTIFICATE_REQUEST){
- perror("ERROR HandshakeToCertificateRequest: handshake does not contain a certificate request message.");
- exit(1);
+    perror("ERROR HandshakeToCertificateRequest: handshake does not contain a certificate request message.");
+    exit(1);
  }
  
  buffer_len = handshake->length - 4;
  
  certificate_request = (CertificateRequest *)calloc(1, sizeof(CertificateRequest));
  if (certificate_request == NULL){
- perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
- exit(1);
+    perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
+    exit(1);
  }
  
  buffer = (uint8_t *)calloc(buffer_len, sizeof(uint8_t));
  if (buffer == NULL){
- perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
- exit(1);
+    perror("ERROR HandshakeToCertificateRequest: memory allocation leak.");
+    exit(1);
  }
  
  memcpy(buffer, handshake->content, buffer_len);
- 
- //certificate->len = certificate_len;
- //certificate->X509_der = buffer;
+ free(buffer);
  
  return certificate_request;
- } //TODO Rivedere: non riesco a rappresentare le liste, rivedere anche la struttura certificate_request.
+}
 
 /***************************************HANDSHAKE TO/FROM RECORDLAYER******************************************************/
 
@@ -1149,6 +1152,10 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     uint8_t length24[4];
     RecordLayer *recordlayer;  																										//returning variable
     int len;
+    
+    Bytes=NULL;
+    recordlayer=NULL;
+    len=0;
     
     //MEMORY ALLOCATION//
     Bytes =(uint8_t*)calloc(handshake->length,sizeof(uint8_t)); 			    								//bytes data vector allocation
@@ -1172,6 +1179,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     recordlayer->version=std_version;
     recordlayer->length=handshake->length+5;
     recordlayer->message=Bytes;
+    
     return recordlayer;
 }
 
@@ -1184,10 +1192,15 @@ RecordLayer *ChangeCipherSpecRecord(){
     RecordLayer *recordlayer;
     uint8_t *byte;
     
+    recordlayer=NULL;
+    byte=NULL;
+    
+    //MEMORY ALLOCATION
     byte = (uint8_t*)calloc(1, sizeof(uint8_t)); 
     recordlayer = (RecordLayer*)calloc(1, sizeof(RecordLayer));    
     byte[0] = 1;
     
+    //RECORDLAYER CONSTRUCTION
     recordlayer->type= CHANGE_CIPHER_SPEC;
     recordlayer->version= std_version;
     recordlayer->length= 6;
@@ -1205,6 +1218,10 @@ Handshake *RecordToHandshake(RecordLayer *record){
     Handshake *result;
     uint8_t *buffer;
     
+    result=NULL;
+    buffer=NULL;
+    
+    //MEMORY ALLOCATION
     result = calloc(1, sizeof(Handshake));
     buffer = (uint8_t*)malloc((record->length - 9)*sizeof(uint8_t));
     
@@ -1214,13 +1231,13 @@ Handshake *RecordToHandshake(RecordLayer *record){
         return NULL;
     }
     
+    //HANDSHAKE CONSTRUCTION
     memcpy(buffer,  record->message + 4, record->length - 9);
     result->length = record->length - 5;
     result->msg_type = record->message[0];
     result->content = buffer;
 
-    return result;
-    
+    return result;   
 }
 
 /**
