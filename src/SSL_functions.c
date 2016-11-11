@@ -824,9 +824,7 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
         }
     
     hello_request = (HelloRequest*)calloc(1, sizeof(HelloRequest));
-  
-    
-    
+
     if (hello_request == NULL){
         perror("ERROR HandshakeToHelloRequest: memory allocation leak.");
         exit(1);
@@ -841,13 +839,14 @@ HelloRequest *HandshakeToHelloRequest(Handshake *handshake){
  * @return ClientServerHello client_server_hello
  */
 ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
+   
     ClientServerHello *client_server_hello;
     uint8_t *ciphers;
     Random *random;
     
     client_server_hello = NULL;
     ciphers = NULL;
-    random = NULL;
+    random = NULL;   
     
     ciphers = (uint8_t*)calloc(handshake->length - 41, sizeof(uint8_t));
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
@@ -883,6 +882,10 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     uint8_t *buffer;
     int certificate_len;
     
+    certificate=NULL;
+    buffer=NULL;
+    certificate_len=0;
+    
     if (handshake->msg_type != CERTIFICATE){
         perror("ERROR HandshakeToCertificate: handshake does not contain a certificate message.");
         exit(1);
@@ -904,6 +907,7 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
     certificate->len = certificate_len;
     certificate->X509_der = buffer;
     
+    
     return certificate;
 }
 
@@ -913,7 +917,10 @@ Certificate *HandshakeToCertificate(Handshake *handshake){
  * @return ServerDone *server_done
  */
 ServerDone *HandshakeToServerdone(Handshake *handshake){
+    
     ServerDone *server_done;
+    
+    server_done=NULL;
     
     if (handshake->msg_type != SERVER_DONE){
         perror("ERROR HandshakeToServerDone: handshake does not contain a server done message.");
@@ -928,7 +935,6 @@ ServerDone *HandshakeToServerdone(Handshake *handshake){
     }
     
     return server_done;
-
 };//TOCHECK
 
 /**
@@ -937,9 +943,14 @@ ServerDone *HandshakeToServerdone(Handshake *handshake){
  * @return CertificateVerify certificate_verify
  */
 CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
+    
     CertificateVerify *certificate_verify;
     uint8_t *signature;
     int signature_len;
+    
+    certificate_verify=NULL;
+    signature=NULL;
+    signature_len=0;
     
     if (handshake->msg_type != CERTIFICATE_VERIFY){
         perror("ERROR HandshakeToCertificateVerify: handshake does not contain a certificate verify message.");
