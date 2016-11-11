@@ -13,17 +13,17 @@
  * @param Talker talker
  */
 void OpenCommunication(Talker talker){
-    //VARIABLE DECLARATION//
     FILE* token;
-
-    //CHECKING INPUT//
+	
+    //check the type of talker
     if (talker!=client && talker!=server) {
         perror("Error in OpenCommunication -  Error in talker input (nor client, nor server input)\n");
         exit(1);
     }
-    //AUTHORIZING SELECTED TALKER//
-    token=fopen("token.txt", "w");
-    if(token == NULL) {
+	
+    //open the file token.txt and write who is authorized to communicate on the the file SSLchannelbyte.txt
+    token = fopen("token.txt", "w");
+    if(token == NULL){
         perror("Errore in apertura del file");
         exit(1);
     }
@@ -36,18 +36,19 @@ void OpenCommunication(Talker talker){
  * @return Talker authorized_talker
  */
 Talker CheckCommunication(){
-    
-    //VARIABLES DECLARATION
     FILE* token;
     Talker authorized_talker;
+    
     token = fopen("token.txt", "r");
     if(token == NULL) {
         perror("Failed to open token.txt - CheckCommunication() operation\n");
         exit(1);
     }
-	//SEEK WICH ONE IS AUTHORIZETD TO TALK//
+    
+	// seek which is authorized to talk on the channel
     fscanf(token,"%u",&(authorized_talker));
     fclose(token);
+    
     if (authorized_talker!=client && authorized_talker!=server) {
         perror("Error in token.txt - nor client,nor server authorized \n");
         exit(1);
@@ -65,13 +66,18 @@ Talker CheckCommunication(){
 Certificate* loadCertificate(char * cert_name){
     
     Certificate *certificate;
-    certificate = calloc(1,sizeof(certificate));
-    X509* certificate_x509 = NULL;
+    X509* certificate_x509;
     uint8_t *buf;
-    FILE* certificate_file;    
+    FILE* certificate_file;
+    
+    certificate = NULL;
+    certificate_x509 = NULL;
+    buf = NULL;
+    certificate_file = NULL;
     int len = 0;
     
-    buf = NULL;
+    certificate = calloc(1,sizeof(certificate));
+    
     certificate_file = fopen(cert_name, "r");
     
     if (certificate_file == NULL){
@@ -84,44 +90,43 @@ Certificate* loadCertificate(char * cert_name){
     
     certificate->X509_der = buf;
     certificate->len = len;
+    
+    fclose(certificate_file);
+    
     return certificate;
 }
 
 /**
- * writes a record on SSLchannel.txt file
+ * writes a record packet on SSLchannel.txt file
  * @param RecordLayer *record_layer
  */
 void sendPacketByte(RecordLayer *record_layer){
-	
-    //Variables Declarations//
     FILE* SSLchannel;
-    uint8_t length16[4],*message,*length,*Mversion,*mversion;
-    ContentType *type;
-    int_To_Bytes(record_layer->length, length16);
+    uint8_t length16[4];
     
-    //Channel Operations//
-    SSLchannel=fopen("SSLchannelbyte.txt", "wb");															 		
+    SSLchannel = NULL;
+    
+    int_To_Bytes(record_layer->length, length16);
+
+    SSLchannel = fopen("SSLchannelbyte.txt", "wb");
+    
     if (SSLchannel == NULL) {
         perror("Failed to open SSLchannel.txt - sendPacket operation\n");							
         exit(1);
     }
-    //extracting fields from record_layer, loading into temporary variables//
-    type=&record_layer->type;
-    length=&length16[2];
-    message=record_layer->message;
-    Mversion=&record_layer->version.major;
-    mversion=&record_layer->version.minor;
-    fwrite(type,sizeof(uint8_t),sizeof(uint8_t),SSLchannel);
-    fwrite(Mversion,sizeof(uint8_t),1,SSLchannel);
-    fwrite(mversion,sizeof(uint8_t),1,SSLchannel);
-    fwrite(length,sizeof(uint8_t),2,SSLchannel);
-    for (int i=0; i<(record_layer->length-5); i++) {
-        fwrite((message+i),sizeof(uint8_t),1,SSLchannel);
+    
+    //writing record layer parameters on SSLchannel
+    fwrite(&record_layer->type, sizeof(uint8_t), sizeof(uint8_t), SSLchannel);
+    fwrite(&record_layer->version.major, sizeof(uint8_t), 1, SSLchannel);
+    fwrite(&record_layer->version.minor, sizeof(uint8_t), 1, SSLchannel);
+    fwrite(length16 + 2, sizeof(uint8_t), 2, SSLchannel);
+    
+    for (int i = 0; i<(record_layer->length-5); i++) {
+        fwrite(record_layer->message + i, sizeof(uint8_t), 1, SSLchannel);
     }
-    //channel closure
+
     fclose(SSLchannel);
 }
-
 
 /**
  * Read the file SSLchannelbyte.txt and parse it into a record layer structure
@@ -129,15 +134,20 @@ void sendPacketByte(RecordLayer *record_layer){
  */
 RecordLayer  *readchannel(){
     uint8_t *buffer;
-    uint8_t record_header[5];//rivedere
+    uint8_t record_header[5];
     FILE* SSLchannel;
     uint16_t packet_size;
+    
     RecordLayer *returning_record;
-    ContentType type;
     ProtocolVersion version;
     
+    buffer = NULL;
+    SSLchannel = NULL;
+    packet_size = 0;
+    returning_record = NULL;
+    
     SSLchannel = fopen("SSLchannelbyte.txt", "rb");
-    if(SSLchannel==NULL)
+    if(SSLchannel == NULL)
     {
         printf("Error unable to read the SSLchannel\n");
         exit(1);
@@ -148,18 +158,19 @@ RecordLayer  *readchannel(){
     
     buffer = (uint8_t*)calloc(packet_size - 5, sizeof(uint8_t));
     fseek(SSLchannel, SEEK_SET, 5);
-    fread(buffer,sizeof(uint8_t),(packet_size-5)*sizeof(uint8_t), SSLchannel);// load file into buffer
+    fread(buffer, sizeof(uint8_t), (packet_size - 5)*sizeof(uint8_t), SSLchannel);// load file into buffer
     
-    returning_record = calloc(6, sizeof(uint8_t));
+    returning_record = calloc(1, sizeof(RecordLayer));
     
-    type = record_header[0];
-    returning_record->type = type;
-    
+    returning_record->type = record_header[0];
     version.major = record_header[1];
     version.minor = record_header[2];
     returning_record->version = version;
     returning_record->length = packet_size;
-    returning_record->message= buffer;
+    returning_record->message = buffer;
+    
+    fclose(SSLchannel);
+    
     return returning_record;
 }
 /***************************************INIT FUNCTIONS**********************************************/
@@ -175,6 +186,10 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     ClientServerHello *client_server_hello;
     Random *random;
     uint8_t *cipher;
+    
+    client_server_hello = NULL;
+    random = NULL;
+    cipher = NULL;
     
     if((client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello))) == 0){
         perror("ClientServerHello_init error: memory allocation leak.\n");
@@ -221,8 +236,16 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     uint8_t *premaster_secret_encrypted;
     int p_size, out_size;
     EVP_PKEY *pubkey;
-    DH *dh = NULL;
+    DH *dh;
     BIGNUM *pub_key_server;
+    
+    client_key_exchange = NULL;
+    premaster_secret_encrypted = NULL;
+    pubkey = NULL;
+    dh = NULL;
+    pub_key_server = NULL;
+    p_size = 0;
+    out_size = 0;
     
     pubkey = readCertificateParam(certificate);
     p_size = (server_key_exchange->len_parameters - 1)/2;
@@ -232,6 +255,7 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     
     dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
     dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
+    
     if(DH_generate_key(dh) == 0){
         perror("DH keys generation error.");
         exit(1);
@@ -486,44 +510,48 @@ Handshake *HelloRequestToHandshake(){
  * @return Handshake *handshake
  */
 Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
-    //VARIABLE DECLARATION//
-    uint8_t *cipher;
+
     Handshake *handshake;
     uint8_t timeB[4];
     uint8_t session[4];
-    uint8_t cipher_codes[client_server_hello->length - 38];
-    
     uint8_t *Bytes;
     
-    //MEMORY ALLOCATION//
+    handshake = NULL;
+    Bytes = NULL;
+	
     Bytes =(uint8_t*)calloc(client_server_hello->length, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
+    
     handshake=(Handshake*)calloc(1,sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
-    cipher = client_server_hello->ciphersuite_code;
-    for (int i=0;i<(client_server_hello->length-38);i++){  
-        cipher_codes[i]= *(cipher+i);
+
+    
+    if (client_server_hello->length <= 38) {
+        perror("clien_server_hello lenght error.");
+        exit(1);
     }
+    
     int_To_Bytes(client_server_hello->random->gmt_unix_time, timeB);
     int_To_Bytes(client_server_hello->sessionId, session);
     
-    Bytes[0]=client_server_hello->version;
+    Bytes[0] = client_server_hello->version;
     
-    memcpy(Bytes+1 ,session, 4);
-    memcpy(Bytes+5 ,timeB , 4);
-    memcpy(Bytes+9, client_server_hello->random->random_bytes,28);
-    memcpy(Bytes+37, cipher_codes,client_server_hello->length-38);
+    memcpy(Bytes + 1 ,session, 4);
+    memcpy(Bytes + 5 ,timeB , 4);
+    memcpy(Bytes + 9, client_server_hello->random->random_bytes, 28);
+    memcpy(Bytes + 37, client_server_hello->ciphersuite_code, client_server_hello->length - 38);
+    
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = client_server_hello->type;
     handshake->length = client_server_hello->length + 4;
     handshake->content = Bytes;
+    
     return handshake;
 }
 
@@ -533,30 +561,31 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
  * @return Handshake *handshake
  */
 Handshake *CertificateToHandshake(Certificate *certificate){
-    //VARIABLE DECLARATION//
     Handshake *handshake;
-    
     uint8_t *Bytes;
     
-    //MEMORY ALLOCATION//
+    handshake = NULL;
+    Bytes = NULL;
+    
     Bytes =(uint8_t*)calloc(certificate->len, sizeof(uint8_t));
     
     if (Bytes == NULL) {
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
+    
     handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    
     memcpy(Bytes, certificate->X509_der, certificate->len);
     
-    //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = CERTIFICATE;
     handshake->length = certificate->len + 4;
     handshake->content = Bytes;
+    
     return handshake;
 }
 
@@ -568,7 +597,9 @@ Handshake *CertificateToHandshake(Certificate *certificate){
 Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
-
+	
+    handshake = NULL;
+    Bytes = NULL;
     
     Bytes = (uint8_t*)calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
     if (Bytes == NULL) {
@@ -602,6 +633,9 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
 Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
     Handshake *handshake;
     uint8_t *Bytes;
+    
+    handshake = NULL;
+    Bytes = NULL;
       
     Bytes = (uint8_t*)calloc(server_key_exchange->len_parameters + server_key_exchange->len_signature, sizeof(uint8_t));
     if (Bytes == NULL) {
@@ -615,11 +649,11 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
         exit(1);
     }
     
-    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    //copying parameters into bytes
     memcpy(Bytes, server_key_exchange->parameters, server_key_exchange->len_parameters);
     memcpy(Bytes + server_key_exchange->len_parameters, server_key_exchange->signature, server_key_exchange->len_signature);
     
-    //HANDSHAKE CONSTRUCTION//
+    //hanshake construction
     handshake->msg_type = SERVER_KEY_EXCHANGE;
     handshake->length = 4 + server_key_exchange->len_parameters + server_key_exchange->len_signature;
     handshake->content = Bytes;
@@ -663,22 +697,30 @@ Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request
     return handshake;
 }
 
+
+/**
+ * generate an handshake containing a server done message
+ * @return Handshake *handshake
+ */
 Handshake *ServerDoneToHandshake(){
-    //VARIABLE DECLARATION//
+
     Handshake *handshake;
     uint8_t* Bytes;
     
-    //MEMORY ALLOCATION//
+    handshake = NULL;
     Bytes = NULL;
+    
     handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
         exit(1);
     }
-    //HANDSHAKE CONSTRUCTION//
-    handshake->msg_type = SERVER_DONE;//handshake fields initialization
+    
+    //hanshake construction
+    handshake->msg_type = SERVER_DONE;
     handshake->length = 4;
     handshake->content = Bytes;
+    
     return handshake;
 }
 
@@ -739,24 +781,28 @@ Handshake *FinishedToHandshake(Finished *finished){
     Handshake *handshake;
     uint8_t *Bytes;
     
+    handshake = NULL;
+    Bytes = NULL;
+    
     Bytes = (uint8_t*)calloc(36, sizeof(uint8_t));
     if (Bytes == NULL) {
         perror("ERROR FinishedToHandshake: Failed to create Bytes pointer");
         exit(1);
     }
+    
     handshake=(Handshake*)calloc(1, sizeof(handshake));
     if (handshake == NULL) {
         perror("ERROR FinishedToHandshake: Failed to create Handshake pointer");
         exit(1);
     }
     
-    //CONTENT BYTES DATA VECTOR CONSTRUCTION//
+    //copying data into bytes
     
-    memcpy(Bytes, finished->hash, 36); //MD5 + SHA1
+    memcpy(Bytes, finished->hash, 36); //size(MD5) + size(SHA1)
     
-    //HANDSHAKE CONSTRUCTION//
+    //hanshake construction
     handshake->msg_type = FINISHED;
-    handshake->length = 4 + 36;
+    handshake->length = 40;
     handshake->content = Bytes;
     
     return handshake;
@@ -799,7 +845,11 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     uint8_t *ciphers;
     Random *random;
     
-    ciphers = (uint8_t*)calloc(handshake->length-41, sizeof(uint8_t));
+    client_server_hello = NULL;
+    ciphers = NULL;
+    random = NULL;
+    
+    ciphers = (uint8_t*)calloc(handshake->length - 41, sizeof(uint8_t));
     client_server_hello = (ClientServerHello*)calloc(1, sizeof(ClientServerHello));
     random = (Random*)calloc(1,sizeof(Random));   
     random->gmt_unix_time = Bytes_To_Int(4, handshake->content + 5);
@@ -821,7 +871,7 @@ ClientServerHello *HandshakeToClientServerHello(Handshake *handshake){
     client_server_hello->ciphersuite_code = ciphers;
 
     return client_server_hello;
-}//RIVEDERE da completare
+}
 
 /**
  *  Parse handshake into certificate
@@ -1729,6 +1779,8 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     cert_509 = NULL;
     int len;
     
+    //TODO: controllo su p?
+    
     p = certificate->X509_der;
     len = certificate->len;
     cert_509 = d2i_X509(NULL, &p, len);
@@ -1981,23 +2033,13 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
     }
 
     if (EVP_PKEY_decrypt_init(ctx) <= 0){
-    
+        perror("Asymmetric Decryption error - ctx init not performed.");
+        exit(1);
     }
     
-    switch (private_key_type) {//TODO: posso eliminare i due switch?
-        case EVP_PKEY_RSA:
-            if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){
-                perror("Asymmetric Decryption error - setting rsa key.");
-                exit(1);
-            }
-            break;
-        case EVP_PKEY_DSA:
-            //TODO: da gestire
-            break;
-        default:
-            perror("Asymmetric Decryption error - private key type unrecognized.");
-            exit(1);
-            break;
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0){
+        perror("Asymmetric Decryption error - setting rsa key.");
+        exit(1);
     }
 	
     if (EVP_PKEY_decrypt(ctx, NULL, outlen, plaintext, inlen) <= 0){
@@ -2022,7 +2064,7 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
     
     return plaintext;
 
-}//TODO
+}
 
 /**
  * decrypt an enciphred packet 
