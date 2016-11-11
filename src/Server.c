@@ -30,7 +30,6 @@ int main(int argc, const char *argv[]){
     CertificateVerify *certificate_verify;
     Finished finished;
     CipherSuite *ciphersuite_choosen;
-    CertificateType certificate_type;
     Talker sender;
     int phase, key_block_size, len_parameters,dec_message_len, enc_message_len, pre_master_secret_size;
     uint8_t ciphersuite_code;
@@ -53,7 +52,6 @@ int main(int argc, const char *argv[]){
     server_key_exchange = NULL;
     certificate = NULL;
     ciphersuite_choosen = NULL;
-    certificate_type = 0;
     sender = server;
     phase = 0;
     key_block_size = 0;
@@ -114,8 +112,7 @@ int main(int argc, const char *argv[]){
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
     
-    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x14);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x03); //TODO: riga su...
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);

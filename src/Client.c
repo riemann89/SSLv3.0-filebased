@@ -18,7 +18,6 @@ int main(int argc, const char *argv[]){
     Certificate *certificate;
     CipherSuite *ciphersuite_choosen;
     Finished finished;
-    CertificateType certificate_type;
     Talker sender;
     int pre_master_secret_size, phase, key_block_size, enc_message_len, dec_message_len;
     uint8_t **pre_master_secret;
@@ -104,8 +103,7 @@ int main(int argc, const char *argv[]){
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
     
-    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
-    certificate_type = CodeToCertificateType(0x14);//TODO: automatizzare
+    ciphersuite_choosen = CodeToCipherSuite(0x03); //TODO: riga su...
     
     OpenCommunication(server);
     phase = 2;
@@ -122,8 +120,8 @@ int main(int argc, const char *argv[]){
             case CERTIFICATE:
                 certificate = HandshakeToCertificate(server_handshake);
                 
-                SHA1_Update(&sha,server_message->message,sizeof(uint8_t)*(server_message->length-5));
-                MD5_Update(&md5,server_message->message,sizeof(uint8_t)*(server_message->length-5));
+                SHA1_Update(&sha,server_message->message, sizeof(uint8_t)*(server_message->length-5));
+                MD5_Update(&md5,server_message->message, sizeof(uint8_t)*(server_message->length-5));
                 
                 FreeRecordLayer(server_message);
                 FreeHandshake(server_handshake);
@@ -164,6 +162,7 @@ int main(int argc, const char *argv[]){
     
     ///////////////////////////////////////////////////////////////PHASE 3//////////////////////////////////////////////////////////
     while(phase == 3){
+        
 		///CLIENT_KEY_EXCHANGE///
         pre_master_secret = (uint8_t**)calloc(1, sizeof(uint8_t*));//TODO: rivedere
         client_key_exchange = ClientKeyExchange_init(ciphersuite_choosen, certificate, server_key_exchange, pre_master_secret, &pre_master_secret_size);
@@ -332,7 +331,7 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     ////////////////////
-    //TODO: FINO A QUA TUTTO OK -> posso eliminare record2
+    //TODO:posso eliminare record2
 	////////////////////
     
     //FreeRecordLayer(record);
