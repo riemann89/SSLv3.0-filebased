@@ -179,7 +179,10 @@ int main(int argc, const char *argv[]){
 
         SHA1_Update(&sha,record->message, sizeof(uint8_t)*(record->length-5));
         MD5_Update(&md5,record->message, sizeof(uint8_t)*(record->length-5));
-                
+        
+        FreeClientKeyExchange(client_key_exchange);
+        FreeServerKeyExchange(server_key_exchange);
+        FreeCertificate(certificate);
         FreeRecordLayer(record);
         FreeHandshake(handshake);
 
@@ -190,7 +193,8 @@ int main(int argc, const char *argv[]){
         }
         printf("\n");
         
-        master_secret = MasterSecretGen(*pre_master_secret, pre_master_secret_size, client_hello, server_hello);
+        master_secret = MasterSecretGen(*pre_master_secret, pre_master_secret_size, client_hello, server_hello
+        free(pre_master_secret);
         
         //TODO: rimuovere questi print
         printf("MASTER KEY:generated\n");
@@ -208,6 +212,9 @@ int main(int argc, const char *argv[]){
         }
         printf("\n\n");
         phase = 4;
+        FreeClientServerHello(client_hello);
+        FreeClientServerHello(server_hello);
+        
     }
     
     ///////////////////////////////////////////////////////////////PHASE 4//////////////////////////////////////////////////////////
@@ -262,11 +269,19 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
+    free(sha_1);
+    free(md5_1);
+    free(md5_fin);
+    free(sha_fin);
+    
+    
     /* MAC and ENCRYPTION*/
     
     
     handshake = FinishedToHandshake(&finished);   
     temp = HandshakeToRecordLayer(handshake);
+    
+    FreeFinished(finished);
     
     //compute MAC
     client_write_MAC_secret = NULL;
@@ -300,6 +315,9 @@ int main(int argc, const char *argv[]){
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, client, 1);
     
+    FreeRecordLayer(temp);
+    FreeHandshake(handshake);
+    
     record2.type = HANDSHAKE;
     record2.length = enc_message_len + 5;
     record2.version = std_version;
@@ -318,6 +336,9 @@ int main(int argc, const char *argv[]){
         printf("%02X ", record2.message[i]);
     }
     printf("\n\n");
+    
+    FreeRecordLayer(record2);
+    
     ////////////////////
     //TODO: FINO A QUA TUTTO OK -> posso eliminare record2
 	////////////////////
@@ -396,10 +417,10 @@ int main(int argc, const char *argv[]){
     }
     
     
-    //FreeRecordLayer(server_message);
-    //FreeHandshake(server_handshake);
-    //FreeFinished(server_finished);
+    FreeRecordLayer(server_message);
+    FreeHandshake(handshake);
     free(master_secret);
+    free(key_block);
 
     return 0;
     
