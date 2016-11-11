@@ -1244,6 +1244,8 @@ Handshake *RecordToHandshake(RecordLayer *record){
     return result;   
 }
 
+
+
 /**
  * print in console the record layer pointed
  * @param RecordLayer *record_layer
