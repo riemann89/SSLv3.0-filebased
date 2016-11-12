@@ -1810,6 +1810,7 @@ void writeCertificate(X509* certificate){
      */
     
     FILE* file_cert;
+    file_cert=NULL;
     
     file_cert = fopen("cert_out.crt", "w+");
     
@@ -1833,10 +1834,11 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     X509 *cert_509;
     EVP_PKEY *pubkey;
     const unsigned char *p;
-    
-    cert_509 = NULL;
     int len;
     
+    cert_509 = NULL;
+    pubkey=NULL;
+    len=0;
     //TODO: controllo su p?
     
     p = certificate->X509_der;
@@ -1861,7 +1863,9 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
  * @return uint8_t *master_secret
  */
 uint8_t *MasterSecretGen(uint8_t *pre_master_secret, int pre_master_len, ClientServerHello *client_hello, ClientServerHello *server_hello){
+    
     uint8_t *master_secret;
+    master_secret=NULL;
     
     master_secret = BaseFunction(3, pre_master_secret, pre_master_len, client_hello, server_hello);
     
@@ -1890,6 +1894,8 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
     key_block = NULL;
     final_client_write_key = NULL;
     final_server_write_key = NULL;
+    client_write_iv=NULL;
+    server_write_iv=NULL;
     key_block_size = 0;
     key_block_size_temp = 0;
     
@@ -1959,13 +1965,9 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         free(final_client_write_key);
         free(final_server_write_key);
         free(client_write_iv);
-        free(server_write_iv);
-        
-    }
-    
-    return key_block;
-    
-    
+        free(server_write_iv);  
+    }   
+    return key_block;    
 }
 
 /**
@@ -1974,6 +1976,11 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
  */
 
 DH *get_dh2048(){
+    
+    DH *dh;
+    
+    dh=NULL;
+    
     static unsigned char dh2048_p[]={
         0xC5,0x36,0x72,0xCF,0x5A,0xA4,0x02,0xDA,0x0B,0xD2,0x49,0xE9,
         0x86,0x33,0xDF,0x51,0x06,0xE1,0x93,0x9E,0xDD,0x95,0xEA,0x5E,
@@ -2001,7 +2008,7 @@ DH *get_dh2048(){
     static unsigned char dh2048_g[]={
         0x02,
     };
-    DH *dh;
+    
 
     if ((dh=DH_new()) == NULL){
         return(NULL);
