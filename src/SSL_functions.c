@@ -343,7 +343,6 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     printf("private key:%d\n", EVP_PKEY_size(private_key));
     server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key, &slen);
     server_key_exchange->len_signature = slen;
-    server_key_exchange->signature = (uint8_t*)calloc(server_key_exchange->len_signature, sizeof(uint8_t));
     
     return server_key_exchange;
 }
@@ -2336,7 +2335,6 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     
     //hash
     data = (uint8_t*)calloc(62 + len_params, sizeof(uint8_t));
-    signature = (uint8_t*)calloc(EVP_PKEY_size(pKey), sizeof(uint8_t));
     
     int_To_Bytes(client_hello->random->gmt_unix_time, temp);
     data[0] = temp[1];
@@ -2383,7 +2381,8 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
             break;
                
     }
-    
+    EVP_SignFinal(mdctx, NULL, slen, pKey);
+    signature = (uint8_t*)calloc(*slen, sizeof(uint8_t));
     EVP_SignFinal(mdctx, signature, slen, pKey);
     printf("slen%d\n", *slen);
     free(data);
