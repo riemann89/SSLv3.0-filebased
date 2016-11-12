@@ -6,3 +6,4 @@ COSE DA SISTEMARE:
 
 // da fare alla fine
 - trovare un modo per far testare al professore le varie ciphersuite.
+- HandshakeToServerKeyExchange TODO: estrarre la lunghezza dei parametri dal certificate.

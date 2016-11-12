@@ -112,7 +112,7 @@ int main(int argc, const char *argv[]){
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
     
-    ciphersuite_choosen = CodeToCipherSuite(0x11); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);

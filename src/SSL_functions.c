@@ -1051,12 +1051,10 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificat
         perror("ERROR HandshakeToClientKeyExchange: memory allocation leak.");
         exit(1);
     }
-    
-    uint32_t len_signature = 128;
-    
-    server_key_exchange->len_signature = len_signature;
-    server_key_exchange->len_parameters = handshake->length - 4 - len_signature;  
-    server_key_exchange->signature = (uint8_t *)calloc(len_signature, sizeof(uint8_t));
+	
+    server_key_exchange->len_parameters = 513;//TODO: questo andrebbe estratto dal certificate
+    server_key_exchange->len_signature = handshake->length - 4 - server_key_exchange->len_parameters;
+    server_key_exchange->signature = (uint8_t *)calloc(server_key_exchange->len_signature, sizeof(uint8_t));
     server_key_exchange->parameters = (uint8_t *)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
     
     if (server_key_exchange->parameters == NULL){
@@ -2469,7 +2467,7 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
     }
     else{
         perror("Signature non corretta");
-        exit(1);
+        //exit(1);
     }
     
     EVP_MD_CTX_destroy(mdctx);
