@@ -298,52 +298,54 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     
     ServerKeyExchange *server_key_exchange;
     FILE *key_file;
+    unsigned int slen;
     
-    key_file=NULL;
+    key_file = NULL;
+    slen = 0;
     
     
-       if((server_key_exchange = (ServerKeyExchange*)calloc(1, sizeof(ServerKeyExchange))) == 0){
+    if((server_key_exchange = (ServerKeyExchange*)calloc(1, sizeof(ServerKeyExchange))) == 0){
         perror("ClientKeyExchange_init error: memory allocation leak.\n");
         exit(1);
-    }
-        //dh = DH_new();//TODO: remember to free
-        *dh = get_dh2048();
+    	}
+    //dh = DH_new();//TODO: remember to free
+    *dh = get_dh2048();
     
-        if(DH_generate_key(*dh) == 0){
-            perror("DH keys generarion error.");
-            exit(1);
-        }
+    if(DH_generate_key(*dh) == 0){
+        perror("DH keys generarion error.");
+        exit(1);
+    	}
     
-        server_key_exchange->len_parameters = BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g) + BN_num_bytes((*dh)->pub_key);
+    server_key_exchange->len_parameters = BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g) + BN_num_bytes((*dh)->pub_key);
      
-        //TODO: questi mi sa che non vanno allocati
-        server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
-          
-        BN_bn2bin((*dh)->p, server_key_exchange->parameters);
-        BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
-        BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
+    //TODO: questi mi sa che non vanno allocati
+    server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
+    printf("parameters:%d\n", server_key_exchange->len_parameters);
+    BN_bn2bin((*dh)->p, server_key_exchange->parameters);
+    BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
+    BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
     
     	//TODO rivedere l'inizializzazione delle variabili
-        private_key = EVP_PKEY_new();    
-        switch (ciphersuite->signature_algorithm) {
-            case RSA_s:
-                key_file = fopen("private_keys/RSA_server.key","rb");
-                break;
-            case DSA_s:
-                key_file = fopen("private_keys/DSA_server.key","rb");
-                break;
-            default:
-                perror("Error private key.");
-                exit(1);
-                break;
+    private_key = EVP_PKEY_new();
+    switch (ciphersuite->signature_algorithm) {
+        case RSA_s:
+            key_file = fopen("private_keys/RSA_server.key","rb");
+            break;
+        case DSA_s:
+            key_file = fopen("private_keys/DSA_server.key","rb");
+            break;
+        default:
+            perror("Error private key.");
+            exit(1);
+            break;
         }	
-        private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
-        printf("%d\n", EVP_PKEY_size(private_key));
-        server_key_exchange->len_signature = EVP_PKEY_size(private_key);
-        server_key_exchange->signature = (uint8_t*)calloc(server_key_exchange->len_signature,sizeof(uint8_t));
-        server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key);
-        
-        return server_key_exchange;
+    private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
+    printf("private key:%d\n", EVP_PKEY_size(private_key));
+    server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key, &slen);
+    server_key_exchange->len_signature = slen;
+    server_key_exchange->signature = (uint8_t*)calloc(server_key_exchange->len_signature, sizeof(uint8_t));
+    
+    return server_key_exchange;
 }
 
 Certificate *Certificate_init(CipherSuite *ciphersuite){
@@ -2319,13 +2321,12 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
  * @param EVP_PKEY *pKey
  * @return uint8_t *signature
  */
-uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey){
+uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerHello *server_hello, uint8_t* params, int len_params, EVP_PKEY *pKey, unsigned int *slen){
     
     EVP_MD_CTX *mdctx;
     uint8_t *signature;
     uint8_t *data;
     uint8_t temp[4];
-    unsigned int slen;
     
     signature = NULL;
     data = NULL;
@@ -2351,13 +2352,13 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     data[32] = temp[2];
     data[33] = temp[3];
     
-    for (int i = 0; i<28; i++) {
+    for (int i = 0; i<28; i++){
         data[i+34] = server_hello->random->random_bytes[i];
-    }
+    	}
     
-    for (int i = 0; i<len_params; i++) {
+    for (int i = 0; i<len_params; i++){
         data[62 + i] = params[i];
-    }
+    	}
     
 
     switch (cipher->signature_algorithm){
@@ -2371,8 +2372,8 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
             break;
         
         case DSA_s:
-            EVP_DigestSignInit(mdctx, NULL, EVP_sha1(), NULL, pKey);
-            EVP_DigestSignUpdate(mdctx, data, 62 + len_params);
+            EVP_SignInit_ex(mdctx, EVP_sha1(), NULL);
+            EVP_SignUpdate(mdctx, data, 62 + len_params);
             
             break;
         
@@ -2383,8 +2384,8 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
                
     }
     
-    EVP_SignFinal(mdctx, signature, &slen, pKey);
-    
+    EVP_SignFinal(mdctx, signature, slen, pKey);
+    printf("slen%d\n", *slen);
     free(data);
     EVP_MD_CTX_destroy(mdctx);
     
