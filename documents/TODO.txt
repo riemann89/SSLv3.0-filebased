@@ -1,5 +1,5 @@
 COSE DA SISTEMARE:
-
+- la signature con dsa mette tutti 0.
 - rivedere le funzioni delle FREE e il loro uso nel codice.(ermes)
 - provare tutte le ciphersuite
 
