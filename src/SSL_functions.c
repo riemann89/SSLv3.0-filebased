@@ -2008,8 +2008,7 @@ DH *get_dh2048(){
     static unsigned char dh2048_g[]={
         0x02,
     };
-    
-
+   
     if ((dh=DH_new()) == NULL){
         return(NULL);
     }
@@ -2039,6 +2038,8 @@ uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t 
     uint8_t *ciphertext;
     //TODO: add controllo
     
+    ctx=NULL;
+    ciphertext=NULL;
     
     ctx = EVP_PKEY_CTX_new(public_key, NULL);
     
@@ -2097,7 +2098,7 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
     
     ctx = EVP_PKEY_CTX_new(private_key, NULL);
     if (!ctx){
-    
+        exit(1);
     }
 
     if (EVP_PKEY_decrypt_init(ctx) <= 0){
@@ -2115,7 +2116,6 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
         exit(1);
     }
                     
-    //plaintext = OPENSSL_malloc(outlen);
     plaintext = (uint8_t*)calloc(*outlen, sizeof(uint8_t));
     
     if (!plaintext){
@@ -2128,10 +2128,8 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
         exit(1);
     }
 	
-    EVP_PKEY_CTX_free(ctx);
-    
+    EVP_PKEY_CTX_free(ctx);   
     return plaintext;
-
 }
 
 /**
@@ -2240,9 +2238,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     *out_packet_len += tmp_len;
     
     EVP_CIPHER_CTX_cleanup(&ctx);
-    
-    return out_packet;
-    
+    return out_packet;  
 }
 
 /**
@@ -2257,9 +2253,11 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
     
     MD5_CTX md5, md52;
     SHA_CTX sha, sha2;
-    uint64_t seq_num = 1;
-    uint32_t len = hand->length - 4;
+    uint64_t seq_num;
+    uint32_t len;
     
+    seq_num=1;
+    len= hand->length - 4;
     
     if(cipher->hash_algorithm == SHA1_){
         
@@ -2282,8 +2280,7 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
         
         SHA1_Final(sha_fin,&sha2);
             
-        return sha_fin;
-        
+        return sha_fin;      
     }
     else if(cipher->hash_algorithm == MD5_1){
         
@@ -2396,7 +2393,6 @@ uint8_t* Signature_(CipherSuite *cipher, ClientServerHello *client_hello, Client
     EVP_MD_CTX_destroy(mdctx);
     
     return signature;
-    
 }
 
 /**
@@ -2419,8 +2415,10 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
     EVP_PKEY *pubKey;
     
     data = NULL;
-    mdctx = EVP_MD_CTX_create();
+    mdctx=NULL;
+    pubKey=NULL;
     
+    mdctx = EVP_MD_CTX_create();
     pubKey = readCertificateParam(certificate);
     
     //hash
@@ -2447,8 +2445,7 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
     for (int i = 0; i<len_params; i++) {
         data[62 + i] = params[i];
     }
-    
-    
+        
     switch (cipher->signature_algorithm){
             
         case RSA_s:
