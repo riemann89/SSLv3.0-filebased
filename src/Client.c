@@ -38,7 +38,6 @@ int main(int argc, const char *argv[]){
     certificate = NULL;
     ciphersuite_choosen = NULL;
     pre_master_secret_size = 0;
-    phase = 0;
     key_block_size = 0;
     enc_message_len = 0;
     dec_message_len = 0;

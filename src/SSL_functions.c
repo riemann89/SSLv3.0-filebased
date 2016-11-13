@@ -76,7 +76,7 @@ Certificate* loadCertificate(char * cert_name){
     certificate_file = NULL;
     int len = 0;
     
-    certificate = calloc(1,sizeof(certificate));
+    certificate = (Certificate*)calloc(1, sizeof(Certificate));
     
     certificate_file = fopen(cert_name, "r");
     
@@ -143,7 +143,6 @@ RecordLayer  *readchannel(){
     
     buffer = NULL;
     SSLchannel = NULL;
-    packet_size = 0;
     returning_record = NULL;
     
     SSLchannel = fopen("SSLchannelbyte.txt", "rb");
@@ -244,7 +243,6 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
     pubkey = NULL;
     dh = NULL;
     pub_key_server = NULL;
-    p_size = 0;
     out_size = 0;
     
     pubkey = readCertificateParam(certificate);
@@ -498,7 +496,7 @@ Handshake *HelloRequestToHandshake(){
     
     //MEMORY ALLOCATION//
     Bytes = NULL;
-    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    handshake=(Handshake*)calloc(1, sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
         exit(1);
@@ -531,7 +529,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
         exit(1);
     }
     
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    handshake=(Handshake*)calloc(1,sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -580,7 +578,7 @@ Handshake *CertificateToHandshake(Certificate *certificate){
         exit(1);
     }
     
-    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    handshake=(Handshake*)calloc(1, sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -613,7 +611,7 @@ Handshake *ClientKeyExchangeToHandshake(ClientKeyExchange *client_key_exchange){
         exit(1);
     }
     
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    handshake=(Handshake*)calloc(1,sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientKeyToHandshake operation");
         exit(1);
@@ -649,7 +647,7 @@ Handshake *ServerKeyExchangeToHandshake(ServerKeyExchange *server_key_exchange){
         exit(1);
     }
     
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    handshake=(Handshake*)calloc(1,sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientKeyToHandshake operation");
         exit(1);
@@ -687,7 +685,7 @@ Handshake *CertificateRequestToHandshake(CertificateRequest *certificate_request
         perror("Failed to create Bytes pointer - ClientServerHelloToHandshake operation");
         exit(1);
     }
-    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    handshake=(Handshake*)calloc(1, sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ClientServerHelloToHandshake operation");
         exit(1);
@@ -716,7 +714,7 @@ Handshake *ServerDoneToHandshake(){
     handshake = NULL;
     Bytes = NULL;
     
-    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    handshake=(Handshake*)calloc(1, sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - ServerDoneToHandshake operation");
         exit(1);
@@ -752,6 +750,7 @@ Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
             break;
         default:
             perror("CertificateVerifyToHandshake error: algorithm type not recognized.");
+            exit(1);
             break;
     }
     
@@ -760,7 +759,7 @@ Handshake *CertificateVerifyToHandshake(CertificateVerify *certificate_verify){
         perror("Failed to create Bytes pointer - FinishedToHandshake operation");
         exit(1);
     }
-    handshake=(Handshake*)calloc(1,sizeof(handshake));
+    handshake=(Handshake*)calloc(1,sizeof(Handshake));
     if (handshake == NULL) {
         perror("Failed to create handshake pointer - FinishedToHandshake operation");
         exit(1);
@@ -796,7 +795,7 @@ Handshake *FinishedToHandshake(Finished *finished){
         exit(1);
     }
     
-    handshake=(Handshake*)calloc(1, sizeof(handshake));
+    handshake=(Handshake*)calloc(1, sizeof(Handshake));
     if (handshake == NULL) {
         perror("ERROR FinishedToHandshake: Failed to create Handshake pointer");
         exit(1);
@@ -2085,6 +2084,9 @@ uint8_t* AsymDec(int private_key_type, uint8_t *ciphertext, size_t inlen, size_t
 
     uint8_t *plaintext;
     EVP_PKEY_CTX *ctx;
+    
+    plaintext = NULL;
+    ctx = NULL;
     
     ctx = EVP_PKEY_CTX_new(private_key, NULL);
     if (!ctx){
