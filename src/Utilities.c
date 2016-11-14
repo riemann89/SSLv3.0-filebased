@@ -6,14 +6,15 @@
  * @param int length
  */
 void reverse(uint8_t originale[],int length){ 					 		
-	uint8_t reversed[length];			                                                
-	int i;
-	for(i=0; i<length;  i++){
-		reversed[i]=originale[i];														
-	}
- for(i=0; i<length;   i++){ 
-		originale[i]=reversed[length-i-1];										
-	}
+    
+    uint8_t reversed[length];			                                               
+        
+    for(int i=0; i<length;  i++){
+        reversed[i]=originale[i];														
+    }
+    for(i=0; i<length;   i++){ 
+	originale[i]=reversed[length-i-1];										
+    }
 }
 
 /**
@@ -22,12 +23,13 @@ void reverse(uint8_t originale[],int length){
  * @param uint8_t *t_Bytes
  */
 void  int_To_Bytes(uint32_t t, uint8_t *t_Bytes){ 						 			
-    int i;
-	uint8_t *p=(uint8_t*) &t;                                                               
-	for(i=0;i<4;i++){
-		t_Bytes[i]= *(p+i);                                                                        
-	}
-	reverse(t_Bytes,4);                                                                         
+	
+    uint8_t *p=(uint8_t*) &t;
+        
+    for(int i=0;i<4;i++){
+        t_Bytes[i]= *(p+i);                                                                        
+    }
+    reverse(t_Bytes,4);                                                                         
 }
 
 /**
@@ -37,18 +39,21 @@ void  int_To_Bytes(uint32_t t, uint8_t *t_Bytes){
  * @return int res
  */
 uint32_t Bytes_To_Int(int len, uint8_t  *t_Bytes){								
-	if(len > 4)
+    
+    int res = 0;	
+    
+    if(len > 4)
 	{
 		printf("error max length conversion = 4");
 		return 1;
 	}
 	
-	int res = 0;
-	for (int i =0; i < len; i++)
+
+    for (int i =0; i < len; i++)
 	{
-		res =  res*256 + t_Bytes[i];
+            res =  res*256 + t_Bytes[i];
 	}
-	return res;
+    return res;
 }
 
 

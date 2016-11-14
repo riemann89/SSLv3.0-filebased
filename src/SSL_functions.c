@@ -2473,7 +2473,7 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
     }
     else{
         perror("Signature non corretta");
-        //exit(1);
+        exit(1);
     }
     
     EVP_MD_CTX_destroy(mdctx);
