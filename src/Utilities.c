@@ -12,7 +12,7 @@ void reverse(uint8_t originale[],int length){
     for(int i=0; i<length;  i++){
         reversed[i]=originale[i];														
     }
-    for(i=0; i<length;   i++){ 
+    for(int i=0; i<length;   i++){ 
 	originale[i]=reversed[length-i-1];										
     }
 }
