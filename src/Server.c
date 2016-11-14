@@ -77,6 +77,7 @@ int main(int argc, const char *argv[]){
     dhp = &dh;
     pub_key_client = NULL;
     private_key = NULL;
+    certificate_verify=NULL;
 
 
     

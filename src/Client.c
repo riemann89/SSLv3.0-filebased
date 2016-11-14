@@ -43,6 +43,7 @@ int main(int argc, const char *argv[]){
     dec_message_len = 0;
     pre_master_secret = NULL;
     len_hello = 0;
+    phase=0;
     supported_ciphers = NULL;
     enc_message = NULL;
     dec_message = NULL;
