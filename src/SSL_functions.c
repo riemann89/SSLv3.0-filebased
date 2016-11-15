@@ -92,6 +92,7 @@ Certificate* loadCertificate(char * cert_name){
     certificate->len = len;
     
     fclose(certificate_file);
+    X509_free(certificate_x509);
     
     return certificate;
 }
@@ -1498,7 +1499,7 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
             
         case 0x04:
             cipher_suite->key_exchange_algorithm = RSA_;
-        	cipher_suite->cipher_type = STREAM;
+            cipher_suite->cipher_type = STREAM;
             cipher_suite->cipher_algorithm = RC4;
             cipher_suite->iv_size = 0;
             cipher_suite->key_material = 16;

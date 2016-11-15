@@ -403,6 +403,7 @@ int main(int argc, const char *argv[]){
     free(sha_1);
     free(md5_fin);
     free(sha_fin);
+    free(master_secret);
     
     /* MAC and ENCRYPTION*/
     handshake = FinishedToHandshake(&finished);
@@ -413,7 +414,7 @@ int main(int argc, const char *argv[]){
     
     mac = MAC(ciphersuite_choosen, handshake, key_block + ciphersuite_choosen->hash_size);
     printHandshake(handshake);
-    //FreeHandshake(handshake);
+    FreeHandshake(handshake);
     
     //append MAC and free
     uint8_t* message_with_mac = (uint8_t*)calloc(temp->length + ciphersuite_choosen->hash_size, sizeof(uint8_t));
@@ -421,8 +422,9 @@ int main(int argc, const char *argv[]){
     memcpy(message_with_mac + temp->length - 5, mac, ciphersuite_choosen->hash_size);
     free(mac);
 
-    // update length
+    // update temp
     temp->length = temp->length + ciphersuite_choosen->hash_size;
+    free(temp->message);
     temp->message = message_with_mac;
     
     int_To_Bytes(temp->length, length_bytes);
@@ -439,6 +441,7 @@ int main(int argc, const char *argv[]){
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     
+    free(temp->message);
     temp->message = enc_message;
     temp->length = enc_message_len + 5;
     
