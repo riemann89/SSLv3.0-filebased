@@ -73,7 +73,7 @@ int main(int argc, const char *argv[]){
     //Wrapping
     handshake = ClientServerHelloToHandshake(client_hello);
     record = HandshakeToRecordLayer(handshake);
-    
+    free(supported_ciphers);
     //Sending client hello
     sendPacketByte(record);
     printRecordLayer(record);
@@ -191,6 +191,9 @@ int main(int argc, const char *argv[]){
         printf("\n");
         
         master_secret = MasterSecretGen(*pre_master_secret, pre_master_secret_size, client_hello, server_hello);
+        
+        free(*pre_master_secret);
+        free(pre_master_secret);
         //free(&pre_master_secret);//TODO:rivedere
         
         //TODO: rimuovere questi print
@@ -276,6 +279,7 @@ int main(int argc, const char *argv[]){
     
     handshake = FinishedToHandshake(&finished);   
     temp = HandshakeToRecordLayer(handshake);
+    free(finished.hash);
     
     //compute MAC
     client_write_MAC_secret = NULL;
@@ -289,9 +293,11 @@ int main(int argc, const char *argv[]){
     message_with_mac = (uint8_t*)calloc(temp->length + ciphersuite_choosen->hash_size - 5, sizeof(uint8_t));
     memcpy(message_with_mac, temp->message, temp->length);
     memcpy(message_with_mac +temp->length - 5 , mac, ciphersuite_choosen->hash_size);
+    free(mac);
     
     // update length
     temp->length= temp->length + ciphersuite_choosen->hash_size;
+    free(temp->message);
     temp->message = message_with_mac;
     
     uint8_t length_bytes[4];
@@ -309,6 +315,7 @@ int main(int argc, const char *argv[]){
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, client, 1);
     
+    free(message_with_mac);
     FreeRecordLayer(temp);
     FreeHandshake(handshake);
     
@@ -347,7 +354,9 @@ int main(int argc, const char *argv[]){
     
     OpenCommunication(server);
     while(CheckCommunication() == server){};
+    FreeRecordLayer(server_message);
     
+    //FINISHED 
     server_message = readchannel();
     
     int_To_Bytes(server_message->length, length_bytes);
@@ -377,7 +386,8 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     
-    //MAC verification                                   
+    //MAC verification
+    free(server_message->message);
     server_message->message = dec_message;
     
     handshake = RecordToHandshake(server_message);

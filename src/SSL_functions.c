@@ -217,7 +217,6 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     client_server_hello->ciphersuite_code = cipher;
     client_server_hello->length = 38 + ciphersuite_code_len;
     
-    free(ciphersuite_code);
     return client_server_hello;
 };
 
@@ -287,7 +286,10 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             BN_bn2bin(dh->pub_key, client_key_exchange->parameters);
             *premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
             *premaster_secret_size = DH_compute_key(*premaster_secret, pub_key_server, dh);
+            BN_free(pub_key_server);
             DH_free(dh);
+ 
+         
             break;
         default:
             break;
@@ -806,7 +808,7 @@ Handshake *FinishedToHandshake(Finished *finished){
     
     //copying data into bytes
     
-    memcpy(Bytes, finished->hash, 36); //size(MD5) + size(SHA1)
+    memcpy(Bytes, finished->hash, 36); //size(MD5) + size(SHA1) == 36
     
     //hanshake construction
     handshake->msg_type = FINISHED;
@@ -1164,8 +1166,9 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     len=0;
     
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(handshake->length +10,sizeof(uint8_t)); 			    								//bytes data vector allocation
-    if (Bytes == NULL) { 																													//contain the lenght of corresponding vector
+    Bytes =(uint8_t*)calloc(handshake->length+5,sizeof(uint8_t)); //bytes data vector allocation
+  
+    if (Bytes == NULL) {      //contain the lenght of corresponding vector
         perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
         exit(1);
     }
@@ -1174,6 +1177,9 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
         perror("Failed to create recordlayer pointer - HandshakeToRecordLayer operation");
         exit(1);
     }
+      recordlayer->message=(uint8_t*)calloc(handshake->length+5,sizeof(uint8_t));
+    
+    
     //CONTENT BYTES DATA VECTOR CONSTRUCTION//
     int_To_Bytes(handshake->length ,length24); 			  				  												
     len=handshake->length;							
@@ -1184,7 +1190,10 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     recordlayer->type=HANDSHAKE;
     recordlayer->version=std_version;
     recordlayer->length=handshake->length+5;
-    recordlayer->message=Bytes;
+    memcpy(recordlayer->message,Bytes,handshake->length);
+    
+    //recordlayer->message=Bytes;
+    free(Bytes);
     
     return recordlayer;
 }
