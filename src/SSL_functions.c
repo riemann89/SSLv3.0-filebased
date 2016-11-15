@@ -288,12 +288,13 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             *premaster_secret_size = DH_compute_key(*premaster_secret, pub_key_server, dh);
             BN_free(pub_key_server);
             DH_free(dh);
- 
-         
+           
+            
             break;
         default:
             break;
     }
+    EVP_PKEY_free(pubkey);
     return client_key_exchange;
 }
 
@@ -327,7 +328,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     BN_bn2bin((*dh)->p, server_key_exchange->parameters);
     BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
     BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
-    
+   
     	//TODO rivedere l'inizializzazione delle variabili
     private_key = EVP_PKEY_new();
     switch (ciphersuite->signature_algorithm) {
@@ -346,6 +347,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     printf("private key:%d\n", EVP_PKEY_size(private_key));
     server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key, &slen);
     server_key_exchange->len_signature = slen;
+    EVP_PKEY_free(private_key);
     
     return server_key_exchange;
 }
@@ -2493,6 +2495,7 @@ void Verify_(CipherSuite *cipher, ClientServerHello *client_hello, ClientServerH
         exit(1);
     }
     
+    EVP_PKEY_free(pubKey);
     EVP_MD_CTX_destroy(mdctx);
     free(data);
 }

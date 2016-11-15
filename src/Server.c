@@ -151,6 +151,8 @@ int main(int argc, const char *argv[]){
         
         server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello,dhp);
         handshake = ServerKeyExchangeToHandshake(server_key_exchange);
+        //DH_free(*dhp);
+        //free(dhp);
         record = HandshakeToRecordLayer(handshake);
         
         SHA1_Update(&sha,record->message,sizeof(uint8_t)*(record->length-5));
@@ -217,6 +219,7 @@ int main(int argc, const char *argv[]){
                             
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
+                            DH_free(dh);                           
                             break;
                     	default:
                             perror("Client Key Exchange not supported");
@@ -231,6 +234,7 @@ int main(int argc, const char *argv[]){
                 printf("\n");
                                 
                 master_secret = MasterSecretGen(pre_master_secret, pre_master_secret_size, client_hello, server_hello);
+                free(pre_master_secret);
                 
                 SHA1_Update(&sha,client_message->message, sizeof(uint8_t)*(client_message->length-5));
                 MD5_Update(&md5,client_message->message, sizeof(uint8_t)*(client_message->length-5));

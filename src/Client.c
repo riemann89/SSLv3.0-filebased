@@ -194,6 +194,7 @@ int main(int argc, const char *argv[]){
         
         free(*pre_master_secret);
         free(pre_master_secret);
+        
         //free(&pre_master_secret);//TODO:rivedere
         
         //TODO: rimuovere questi print
@@ -315,7 +316,7 @@ int main(int argc, const char *argv[]){
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, client, 1);
     
-    free(message_with_mac);
+   
     FreeRecordLayer(temp);
     FreeHandshake(handshake);
     
@@ -338,9 +339,8 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    ////////////////////
-    //TODO:posso eliminare record2
-	////////////////////
+    free(record2.message);
+ 
     
     //FreeRecordLayer(record);
     //FreeHandshake(handshake);
