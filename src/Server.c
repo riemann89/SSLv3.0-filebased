@@ -219,7 +219,8 @@ int main(int argc, const char *argv[]){
                             
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
-                            DH_free(dh);                           
+                            DH_free(dh); 
+                            BN_free(pub_key_client);
                             break;
                     	default:
                             perror("Client Key Exchange not supported");
@@ -246,7 +247,9 @@ int main(int argc, const char *argv[]){
                 printf("\n");
                     
                 //KEYBLOCK GENERATION
-                key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, server_hello);
+                key_block = KeyBlockGen(master_secret, ciphersuite_choosen, &key_block_size, client_hello, server_hello);    
+                FreeClientServerHello(client_hello);
+                FreeClientServerHello(server_hello);
                     
                 printf("\nKEY BLOCK\n");
                 for (int i=0; i< key_block_size; i++){
@@ -304,6 +307,7 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     dec_message = DecEncryptPacket(client_message->message, client_message->length - 5, &dec_message_len, ciphersuite_choosen, key_block, client, 0);
+    free(client_message->message);
     
     int_To_Bytes(dec_message_len + 5, length_bytes);
     printf("DECRYPTED FINISHED:\n");
@@ -317,10 +321,10 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
 
-    //MAC verification                                   
+    //MAC verification  
+
     client_message->message = dec_message;
     handshake = RecordToHandshake(client_message);
-    //FreeRecordLayer(client_message);
     handshake->length = dec_message_len;        
     
     mac_test = NULL;
@@ -343,7 +347,9 @@ int main(int argc, const char *argv[]){
         exit(1);
     	}
 
+    free(mac_test);
     FreeHandshake(handshake);
+    FreeRecordLayer(client_message);
      
     //CHANGE CIPHER SPEC send
     record = ChangeCipherSpecRecord();
@@ -393,8 +399,14 @@ int main(int argc, const char *argv[]){
     memcpy(finished.hash, md5_fin, 16*sizeof(uint8_t));
     memcpy(finished.hash + 16, sha_fin, 20*sizeof(uint8_t));
     
+    free(md5_1);
+    free(sha_1);
+    free(md5_fin);
+    free(sha_fin);
+    
     /* MAC and ENCRYPTION*/
     handshake = FinishedToHandshake(&finished);
+    free(finished.hash);
     temp = HandshakeToRecordLayer(handshake);
     
     //compute MAC
@@ -403,10 +415,11 @@ int main(int argc, const char *argv[]){
     printHandshake(handshake);
     //FreeHandshake(handshake);
     
-    //append MAC
+    //append MAC and free
     uint8_t* message_with_mac = (uint8_t*)calloc(temp->length + ciphersuite_choosen->hash_size, sizeof(uint8_t));
     memcpy(message_with_mac, temp->message, temp->length - 5);
     memcpy(message_with_mac + temp->length - 5, mac, ciphersuite_choosen->hash_size);
+    free(mac);
 
     // update length
     temp->length = temp->length + ciphersuite_choosen->hash_size;
@@ -443,9 +456,8 @@ int main(int argc, const char *argv[]){
     }
     printf("\n\n");
     
-    //FreeRecordLayer(record);
-    //FreeClientServerHello(client_hello);
-    //FreeClientServerHello(server_hello);
+    free(ciphersuite_choosen);
+    FreeRecordLayer(temp);
     
     OpenCommunication(client);
     
