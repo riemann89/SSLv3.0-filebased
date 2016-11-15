@@ -113,7 +113,7 @@ int main(int argc, const char *argv[]){
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
     
-    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(0x0A); //TODO: riga su...
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
@@ -212,7 +212,8 @@ int main(int argc, const char *argv[]){
                             key_file = fopen("private_keys/RSA_server.key","rb");
                             private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
                             pre_master_secret = AsymDec(EVP_PKEY_RSA, client_key_exchange->parameters, len_parameters, (size_t*)&pre_master_secret_size, private_key);
-                        	break;
+                            EVP_PKEY_free(private_key);
+                            break;
                         case DH_:
                             pub_key_client = BN_new();
                             pub_key_client = BN_bin2bn(client_key_exchange->parameters, DH_size(dh), NULL);
