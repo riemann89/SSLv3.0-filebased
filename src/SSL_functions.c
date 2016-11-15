@@ -217,6 +217,7 @@ ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId
     client_server_hello->ciphersuite_code = cipher;
     client_server_hello->length = 38 + ciphersuite_code_len;
     
+    free(ciphersuite_code);
     return client_server_hello;
 };
 
@@ -2260,17 +2261,20 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
     SHA_CTX sha, sha2;
     uint64_t seq_num;
     uint32_t len;
+    uint8_t *sha_fin,*md5_fin;
     
+    sha_fin=NULL;
+    md5_fin=NULL;
     seq_num=1;
     len= hand->length - 4;
     
     if(cipher->hash_algorithm == SHA1_){
         
-        uint8_t *sha_fin;
-        sha_fin = calloc(20, sizeof(uint8_t));
-        
         SHA1_Init(&sha);
         SHA1_Init(&sha2);
+        
+        sha_fin = calloc(20, sizeof(uint8_t));
+        
         SHA1_Update(&sha, macWriteSecret, 16*sizeof(uint8_t));
         SHA1_Update(&sha,pad_1, sizeof(pad_1));
         SHA1_Update(&sha, &seq_num, sizeof(uint64_t));
@@ -2291,10 +2295,9 @@ uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TO
         
         MD5_Init(&md5);
         MD5_Init(&md5);
-        uint8_t *md5_fin;
+    
         md5_fin = calloc(16, sizeof(uint8_t));
-        
-        
+               
         MD5_Init(&md5);
         MD5_Init(&md52);
         MD5_Update(&md5, macWriteSecret, 16*sizeof(uint8_t));

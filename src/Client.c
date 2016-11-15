@@ -406,6 +406,7 @@ int main(int argc, const char *argv[]){
     FreeHandshake(handshake);
     free(master_secret);
     free(key_block);
+    free(mac_test);
 
     return 0;
     
