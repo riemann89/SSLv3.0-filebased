@@ -64,6 +64,7 @@ int main(int argc, const char *argv[]){
 
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
+    
     OpenCommunication(client);
 	
     supported_ciphers = loadCipher("ClientConfig/Priority3", &len_hello);
@@ -400,6 +401,7 @@ int main(int argc, const char *argv[]){
     }
     
     
+    free(ciphersuite_choosen);
     FreeRecordLayer(server_message);
     FreeHandshake(handshake);
     free(master_secret);

@@ -36,8 +36,8 @@ void OpenCommunication(Talker talker){
  * @return Talker authorized_talker
  */
 Talker CheckCommunication(){
-    FILE* token;
-    Talker authorized_talker;
+    FILE* token = NULL;
+    Talker authorized_talker = 0;
     
     token = fopen("token.txt", "r");
     if(token == NULL) {
@@ -45,7 +45,7 @@ Talker CheckCommunication(){
         exit(1);
     }
     
-	// seek which is authorized to talk on the channel
+    // seek which is authorized to talk on the channel
     fscanf(token,"%u",&(authorized_talker));
     fclose(token);
     
@@ -272,6 +272,7 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             
             dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
             dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
+         
             
             if(DH_generate_key(dh) == 0){
                 perror("DH keys generation error.");
@@ -285,6 +286,7 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             BN_bn2bin(dh->pub_key, client_key_exchange->parameters);
             *premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
             *premaster_secret_size = DH_compute_key(*premaster_secret, pub_key_server, dh);
+            DH_free(dh);
             break;
         default:
             break;
@@ -1152,7 +1154,7 @@ CertificateRequest *HandshakeToCertificateRequest(Handshake *handshake){
 RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     //VARIABLE DECLARATION//
     uint8_t *Bytes;
-    uint8_t length24[4];
+    uint8_t length24[4] = {0};
     RecordLayer *recordlayer;  																										//returning variable
     int len;
     
@@ -1161,7 +1163,7 @@ RecordLayer *HandshakeToRecordLayer(Handshake *handshake){
     len=0;
     
     //MEMORY ALLOCATION//
-    Bytes =(uint8_t*)calloc(handshake->length,sizeof(uint8_t)); 			    								//bytes data vector allocation
+    Bytes =(uint8_t*)calloc(handshake->length +10,sizeof(uint8_t)); 			    								//bytes data vector allocation
     if (Bytes == NULL) { 																													//contain the lenght of corresponding vector
         perror("Failed to create Bytes pointer - HandshakeToRecordLayer operation");
         exit(1);
@@ -1395,8 +1397,8 @@ uint8_t *loadCipher(char* filename, uint8_t *len){
     }
     
     fread(len, sizeof(uint8_t), 1, CipherList);
-    buffer = (uint8_t *)malloc((len[0])*sizeof(uint8_t));
-    fread(buffer, len[0]*sizeof(uint8_t), 1, CipherList);
+    buffer = (uint8_t *)malloc((*len)*sizeof(uint8_t));
+    fread(buffer, *len*sizeof(uint8_t), 1, CipherList);
     fclose(CipherList);
     
     return buffer;    
@@ -1792,6 +1794,8 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
         
         memcpy(buffer + 16*i, md5_1, 16*sizeof(uint8_t));
     }
+    free(md5_1);
+    free(sha_1);
     return buffer;
     
 }
@@ -1850,6 +1854,7 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
         exit(1);
     }
     pubkey = X509_get_pubkey(cert_509);
+    X509_free(cert_509);
     
     return pubkey;
 }
