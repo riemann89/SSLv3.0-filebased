@@ -220,7 +220,7 @@ int main(int argc, const char *argv[]){
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
                             DH_free(dh); 
-                            BN_free(pub_key_client);
+                            BN_clear_free(pub_key_client);
                             break;
                     	default:
                             perror("Client Key Exchange not supported");
@@ -440,7 +440,9 @@ int main(int argc, const char *argv[]){
     printf("\n\n");
     
     enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
+    free(key_block);
     
+    // update temp
     free(temp->message);
     temp->message = enc_message;
     temp->length = enc_message_len + 5;

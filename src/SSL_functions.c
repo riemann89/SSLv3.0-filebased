@@ -317,7 +317,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     *dh = get_dh2048();
     
     if(DH_generate_key(*dh) == 0){
-        perror("DH keys generarion error.");
+        perror("DH keys generation error.");
         exit(1);
     	}
     
