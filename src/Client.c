@@ -67,10 +67,16 @@ int main(int argc, const char *argv[]){
     
     OpenCommunication(client);
 	
-    supported_ciphers = loadCipher("ClientConfig/Priority3", &len_hello);
-    printf("%u", len_hello);
-    client_hello = ClientServerHello_init(CLIENT_HELLO, 0, supported_ciphers, len_hello);
-    printf("\n\n %u", client_hello->length);
+    //supported_ciphers = loadCipher("ClientConfig/Priority3", &len_hello);
+    printf("\n\n insert your favorite cipher:");
+    int cast;
+    uint8_t choice;
+    scanf("%d",&cast);
+    printf("\n\n");
+    choice=(uint8_t) cast;
+    supported_ciphers=&cast;
+    client_hello = ClientServerHello_init(CLIENT_HELLO, 0, supported_ciphers,1);
+
     
     
     //Wrapping
@@ -102,12 +108,12 @@ int main(int argc, const char *argv[]){
     FreeRecordLayer(server_message);
     FreeHandshake(server_handshake);
     
-    /*
-    cipher_suite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);
-    certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
-	*/
     
-    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(server_hello->ciphersuite_code[0]);
+    //certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
+    
+    
+    //ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     
     OpenCommunication(server);
     phase = 2;
