@@ -97,9 +97,23 @@ int main(int argc, const char *argv[]){
     FreeRecordLayer(client_message);
     FreeHandshake(client_handshake);
     
+    //optional create file of all supported ciphers by server, run just once then comment
+    /* 
+    uint8_t prioritylen = 16;
+    uint8_t priority[16];
+      for (int i = 0; i < 10; i++) {
+        priority[i]=i;
+    }
+    for(int i=10;i<16;i++){
+        priority[i]=i+7;
+    }
+   
+    setPriorities(&prioritylen, priority, "ServerConfig/All");
+    */
+    
     //Construction Server Hello
     RAND_bytes(session_Id, 4);
-	ciphersuite_code = chooseChipher(client_hello, "ServerConfig/Priority1");
+    ciphersuite_code = chooseChipher(client_hello, "ServerConfig/All");
     server_hello = ClientServerHello_init(SERVER_HELLO, Bytes_To_Int(4, session_Id), &ciphersuite_code, 1);
     
 				
@@ -110,9 +124,9 @@ int main(int argc, const char *argv[]){
     SHA1_Update(&sha,record->message, sizeof(uint8_t)*(record->length-5));
     MD5_Update(&md5,record->message, sizeof(uint8_t)*(record->length-5));
     
-    //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
+    ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); //TODO: eliminare la riga dopo usata per i test
     
-    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
+    //ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);

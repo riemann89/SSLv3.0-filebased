@@ -1372,10 +1372,13 @@ uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
     PriorityList = fopen(filename, "rb");  
     buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
     fread(buffer, 32, 1, PriorityList);
-    
+    printf("\n choose cipher\n");
+    printf("\n client %02X ",client_supported_list->ciphersuite_code[0]);
+    printf("\n\n");
     for(int i=1; i< (buffer[0] +1); i++){
-        for(int j=0;j<client_supported_list->length -38 ;j++){
-            if(buffer[i] == client_supported_list->ciphersuite_code[j]){
+        for(int j=0;j<client_supported_list->length -37 ;j++){
+            printf("\n %02X %02X ",buffer[i] ,client_supported_list->ciphersuite_code[0]);
+            if(buffer[i] == (uint8_t)client_supported_list->ciphersuite_code[j]){
                 choosen = buffer[i];
                 fclose(PriorityList);
                 free(buffer);

@@ -75,3 +75,17 @@ uint8_t ByteCompare(uint8_t *first, uint8_t *second, uint8_t length){
     }   
     return 0;
 }
+
+
+void setPriorities(uint8_t *number, uint8_t *priority, char *filename){
+    
+    FILE* PriorityList;
+    
+    PriorityList = fopen(filename , "wb");
+    fwrite(number,sizeof(uint8_t),1,PriorityList);
+    
+    for(int i = 0; i<*number; i++){
+        fwrite(priority +i,sizeof(uint8_t),1,PriorityList);
+    }
+    fclose(PriorityList);
+}
