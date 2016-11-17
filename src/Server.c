@@ -79,7 +79,6 @@ int main(int argc, const char *argv[]){
     private_key = NULL;
     certificate_verify=NULL;
 
-
     
     
     ///////////////////////////////////////////////////////////////PHASE 1//////////////////////////////////////////////////////////
@@ -113,7 +112,7 @@ int main(int argc, const char *argv[]){
     
     //ciphersuite_choosen = CodeToCipherSuite(ciphersuite_code); TODO: eliminare la riga dopo usata per i test
     
-    ciphersuite_choosen = CodeToCipherSuite(0x0A); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     
     //Sending server hello and open the communication to the client.
     sendPacketByte(record);
@@ -151,7 +150,6 @@ int main(int argc, const char *argv[]){
         
         server_key_exchange = ServerKeyExchange_init(ciphersuite_choosen, private_key, client_hello, server_hello,dhp);
         handshake = ServerKeyExchangeToHandshake(server_key_exchange);
-        //DH_free(*dhp);
         //free(dhp);
         record = HandshakeToRecordLayer(handshake);
         
@@ -215,9 +213,8 @@ int main(int argc, const char *argv[]){
                             EVP_PKEY_free(private_key);
                             break;
                         case DH_:
-                            pub_key_client = BN_new();
-                            pub_key_client = BN_bin2bn(client_key_exchange->parameters, DH_size(dh), NULL);
                             
+                            pub_key_client = BN_bin2bn(client_key_exchange->parameters, DH_size(dh), NULL);
                             pre_master_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
                             pre_master_secret_size = DH_compute_key(pre_master_secret, pub_key_client, dh);
                             DH_free(dh); 

@@ -104,7 +104,7 @@ int main(int argc, const char *argv[]){
     certificate_type = CodeToCertificateType(server_hello->ciphersuite_code[0]);
 	*/
     
-    ciphersuite_choosen = CodeToCipherSuite(0x0A); //TODO: riga su...
+    ciphersuite_choosen = CodeToCipherSuite(0x14); //TODO: riga su...
     
     OpenCommunication(server);
     phase = 2;
@@ -417,7 +417,7 @@ int main(int argc, const char *argv[]){
     free(master_secret);
     free(key_block);
     free(mac_test);
-
+   
     return 0;
     
 }

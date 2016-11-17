@@ -268,13 +268,15 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
         case DH_:
             p_size = (server_key_exchange->len_parameters - 1)/2;
             
-            pub_key_server = BN_new();
+           
             dh = DH_new();
             
             dh-> p = BN_bin2bn(server_key_exchange->parameters, p_size, NULL);
             dh-> g = BN_bin2bn(server_key_exchange->parameters + p_size, 1, NULL);
-         
             
+            
+      
+           
             if(DH_generate_key(dh) == 0){
                 perror("DH keys generation error.");
                 exit(1);
@@ -285,6 +287,7 @@ ClientKeyExchange *ClientKeyExchange_init(CipherSuite *ciphersuite, Certificate 
             client_key_exchange->len_parameters = DH_size(dh);
             client_key_exchange->parameters = calloc(client_key_exchange->len_parameters, sizeof(uint8_t));
             BN_bn2bin(dh->pub_key, client_key_exchange->parameters);
+            free(*premaster_secret);
             *premaster_secret = (uint8_t*)calloc(DH_size(dh), sizeof(uint8_t));
             *premaster_secret_size = DH_compute_key(*premaster_secret, pub_key_server, dh);
             BN_free(pub_key_server);
@@ -329,6 +332,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     BN_bn2bin((*dh)->p, server_key_exchange->parameters);
     BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
     BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
+    
    
     	//TODO rivedere l'inizializzazione delle variabili
     private_key = EVP_PKEY_new();
@@ -1919,7 +1923,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
     
     if (cipher_suite->exportable == false) {
         key_block_size = 2*(cipher_suite->hash_size + cipher_suite->key_material + cipher_suite->iv_size);
-        key_block_size = key_block_size + (16 - key_block_size % 16); //made a multiple of 16
+        key_block_size = key_block_size + (16 - (key_block_size % 16)); //made a multiple of 16
         key_block = BaseFunction(key_block_size/16, master_secret, 48, client_hello, server_hello);
         *size = key_block_size;
     }
@@ -1974,7 +1978,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         
         //construct final keyblock
         *size = 2*cipher_suite->hash_size + 64;
-        key_block =(uint8_t*)realloc(key_block, (*size)*sizeof(uint8_t));
+        key_block =(uint8_t*)realloc(key_block, (*size)*sizeof(uint8_t));  //TODO likely the source of our leak
         memcpy(key_block + 2*(cipher_suite->hash_size), final_client_write_key, 16);
         memcpy(key_block + 2*(cipher_suite->hash_size) + 16, final_server_write_key, 16);
         memcpy(key_block + 2*(cipher_suite->hash_size) + 32, client_write_iv, 16);
@@ -2239,7 +2243,6 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
         
         case DES3: //TODO da sistemare
             EVP_CipherInit_ex(&ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
-
             break;
         
         default:
@@ -2254,7 +2257,6 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     EVP_CipherUpdate(&ctx, out_packet, out_packet_len, in_packet, in_packet_len);
     EVP_CipherFinal_ex(&ctx, out_packet + *out_packet_len, &tmp_len);
     *out_packet_len += tmp_len;
-    
     EVP_CIPHER_CTX_cleanup(&ctx);
     return out_packet;  
 }
