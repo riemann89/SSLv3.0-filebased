@@ -68,7 +68,10 @@ int main(int argc, const char *argv[]){
     OpenCommunication(client);
 	
     supported_ciphers = loadCipher("ClientConfig/Priority3", &len_hello);
+    printf("%u", len_hello);
     client_hello = ClientServerHello_init(CLIENT_HELLO, 0, supported_ciphers, len_hello);
+    printf("\n\n %u", client_hello->length);
+    
     
     //Wrapping
     handshake = ClientServerHelloToHandshake(client_hello);

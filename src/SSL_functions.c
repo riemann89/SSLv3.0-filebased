@@ -565,7 +565,7 @@ Handshake *ClientServerHelloToHandshake(ClientServerHello *client_server_hello){
     
     //HANDSHAKE CONSTRUCTION//
     handshake->msg_type = client_server_hello->type;
-    handshake->length = client_server_hello->length + 4;
+    handshake->length = client_server_hello->length + 3;
     handshake->content = Bytes;
     
     return handshake;
@@ -1415,7 +1415,7 @@ uint8_t *loadCipher(char* filename, uint8_t *len){
     
     fread(len, sizeof(uint8_t), 1, CipherList);
     buffer = (uint8_t *)malloc((*len)*sizeof(uint8_t));
-    fread(buffer, *len*sizeof(uint8_t), 1, CipherList);
+    fread(buffer, (*len)*sizeof(uint8_t), 1, CipherList);
     fclose(CipherList);
     
     return buffer;    
