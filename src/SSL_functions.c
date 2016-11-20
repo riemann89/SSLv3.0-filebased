@@ -1359,30 +1359,37 @@ void printHandshake(Handshake *handshake){
  * @param char *filename
  * @return uint8_t chosenChipher
  */
-uint8_t chooseChipher(ClientServerHello *client_supported_list, char *filename){
-    
+uint8_t chooseChipher(ClientServerHello *client_hello, char *filename){
+
     FILE* PriorityList;
     uint8_t choosen;   	 																		
     uint8_t *buffer;
+    uint8_t number_of_ciphersuites;
     
     PriorityList=NULL;
     buffer=NULL;
     choosen =0;
     
-    PriorityList = fopen(filename, "rb");  
-    buffer = (uint8_t *)malloc((32)*sizeof(uint8_t));
-    fread(buffer, 32, 1, PriorityList);
+    //reading ciphersuites
+    PriorityList = fopen(filename, "rb");
+    fread(&number_of_ciphersuites, sizeof(uint8_t), sizeof(uint8_t), PriorityList);
+    buffer = (uint8_t *)malloc((number_of_ciphersuites)*sizeof(uint8_t));
+    fread(buffer, number_of_ciphersuites, sizeof(uint8_t), PriorityList);
+    
     printf("\n choose cipher\n");
-    printf("\n client %02X ",client_supported_list->ciphersuite_code[0]);
+    printf("\n client %02X ",client_hello->ciphersuite_code[0]);
     printf("\n\n");
-    for(int i=1; i< (buffer[0] +1); i++){
-        for(int j=0;j<client_supported_list->length -37 ;j++){
-            printf("\n %02X %02X ",buffer[i] ,client_supported_list->ciphersuite_code[0]);
-            if(buffer[i] == (uint8_t)client_supported_list->ciphersuite_code[j]){
+    
+    for(int i = 0; i< number_of_ciphersuites; i++){
+        for(int j = 0; j<client_hello->length -37; j++){
+            printf("\n %02X %02X ", buffer[i], client_hello->ciphersuite_code[0]);
+            if(buffer[i] == client_hello->ciphersuite_code[j]){
+                printf("\n\n");
                 choosen = buffer[i];
                 fclose(PriorityList);
                 free(buffer);
-                return choosen; 																									
+                
+                return choosen;
             }
             
         }
@@ -1879,6 +1886,19 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     return pubkey;
 }
 
+int verifyCertificate(Certificate *certificate){
+    X509_STORE_CTX *certificate_store;
+    X509 *CA_certificate;
+    
+    certificate_store = X509_STORE_CTX_new();
+    
+    //X509_STORE_CTX_set_cert(certificate_store, X509 *x);
+    //X509_STORE_CTX_trusted_stack(*CA_certificate);
+    //X509_STORE_CTX_set_chain(certificate_store, );
+    
+    return 0;
+};
+
 /*************************************** KEYS GENERATION ******************************************************/
 /**
  * derives the master_secret from pre_master_secret, client hello and server hello
@@ -1933,7 +1953,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
     else{
         //KeyBlock temp
         key_block_size_temp = 2*(cipher_suite->hash_size + cipher_suite->key_material);
-        key_block_size_temp = key_block_size_temp + (16 -key_block_size_temp % 16); //made a multiple of 16
+        key_block_size_temp = key_block_size_temp + (16 - (key_block_size_temp % 16)); //made a multiple of 16
         key_block = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);
         
         //final write key
@@ -2183,7 +2203,6 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     out_packet = NULL;
     
     EVP_CIPHER_CTX_init(&ctx);
-    
     if (cipher_suite->exportable) {
         if (key_talker == server) {
             shift1 = 16;
@@ -2199,7 +2218,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
             shift2 = cipher_suite->iv_size;
         }
         key = key_block + (2*cipher_suite->hash_size + shift1);
-        iv = key + (2*cipher_suite->key_material + shift2);
+        iv = key_block + (2*cipher_suite->hash_size + 2*cipher_suite->key_material + shift2);
     }
 
     switch (cipher_suite->cipher_algorithm) {
@@ -2244,7 +2263,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
             EVP_CipherInit_ex(&ctx, EVP_des_cbc(), NULL, key, iv, state);
             break;
         
-        case DES3: //TODO da sistemare
+        case DES3:
             EVP_CipherInit_ex(&ctx, EVP_des_ede3_cbc(), NULL, key, iv, state);
             break;
         
@@ -2255,7 +2274,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     }
     int tmp_len;
     
-    out_packet = calloc(1024, sizeof(uint8_t)); //TODO: ALLOCARE IL MAX
+    out_packet = calloc(64, sizeof(uint8_t));
     
     EVP_CipherUpdate(&ctx, out_packet, out_packet_len, in_packet, in_packet_len);
     EVP_CipherFinal_ex(&ctx, out_packet + *out_packet_len, &tmp_len);

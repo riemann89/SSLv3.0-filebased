@@ -85,7 +85,6 @@ int main(int argc, const char *argv[]){
     while(CheckCommunication() == client){}
     client_message = readchannel();
     
-    
     printRecordLayer(client_message);
     
     SHA1_Update(&sha, client_message->message, sizeof(uint8_t)*(client_message->length-5));
@@ -96,20 +95,6 @@ int main(int argc, const char *argv[]){
    
     FreeRecordLayer(client_message);
     FreeHandshake(client_handshake);
-    
-    //optional create file of all supported ciphers by server, run just once then comment
-    /* 
-    uint8_t prioritylen = 16;
-    uint8_t priority[16];
-      for (int i = 0; i < 10; i++) {
-        priority[i]=i;
-    }
-    for(int i=10;i<16;i++){
-        priority[i]=i+7;
-    }
-   
-    setPriorities(&prioritylen, priority, "ServerConfig/All");
-    */
     
     //Construction Server Hello
     RAND_bytes(session_Id, 4);
@@ -423,9 +408,30 @@ int main(int argc, const char *argv[]){
     temp = HandshakeToRecordLayer(handshake);
     
     //compute MAC
+    printf("INPUT: \n");
+    printf("CIPHER: %d\n", ciphersuite_choosen->hash_algorithm);
+    printf("HANDSHAKE:\n");
+    printf("len: %d\n", handshake->length);
+    printf("msg type: %d\n", handshake->msg_type);
+    for (int i = 0; i<handshake->length - 4; i++) {
+        printf("%02X ", handshake->content[i]);
+    }
+    printf("\n");
+    
+    printf("SERVER KEY:\n");
+    for (int i = 0; i<ciphersuite_choosen->hash_size; i++) {
+        printf("%02X ", (key_block + (ciphersuite_choosen->hash_size))[i]);
+    }
+    printf("\n");
     
     mac = MAC(ciphersuite_choosen, handshake, key_block + ciphersuite_choosen->hash_size);
-    printHandshake(handshake);
+    
+    printf("MAC:\n");
+    for(int i = 0; i<ciphersuite_choosen->hash_size; i++){
+        printf("%02X ",mac[i]);
+    }
+    printf("\n");
+    
     FreeHandshake(handshake);
     
     //append MAC and free
