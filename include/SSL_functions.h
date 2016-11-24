@@ -79,7 +79,6 @@ void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange);
 Certificate* loadCertificate(char * cert_name);
 void writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
-int verifyCertificate(Certificate *certificate);
 DH *get_dh2048();
 
 /* KEY BLOCK*/

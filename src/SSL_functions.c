@@ -316,7 +316,7 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
         perror("ClientKeyExchange_init error: memory allocation leak.\n");
         exit(1);
     	}
-    //dh = DH_new();//TODO: remember to free
+
     *dh = get_dh2048();
     
     if(DH_generate_key(*dh) == 0){
@@ -325,16 +325,15 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     	}
     
     server_key_exchange->len_parameters = BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g) + BN_num_bytes((*dh)->pub_key);
-     
-    //TODO: questi mi sa che non vanno allocati
     server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
+    //TODO
     printf("parameters:%d\n", server_key_exchange->len_parameters);
+    
     BN_bn2bin((*dh)->p, server_key_exchange->parameters);
     BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
     BN_bn2bin((*dh)->pub_key, server_key_exchange->parameters + BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g));
     
    
-    	//TODO rivedere l'inizializzazione delle variabili
     private_key = EVP_PKEY_new();
     switch (ciphersuite->signature_algorithm) {
         case RSA_s:
@@ -347,11 +346,15 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
             perror("Error private key.");
             exit(1);
             break;
-        }	
+        }
+    
     private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
+    
     printf("private key:%d\n", EVP_PKEY_size(private_key));
+    
     server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key, &slen);
     server_key_exchange->len_signature = slen;
+    
     EVP_PKEY_free(private_key);
     
     return server_key_exchange;
@@ -1007,12 +1010,8 @@ CertificateVerify *HandshakeToCertificateVerify(Handshake *handshake){
 }//TOCHECK
 
 /**
- *  Parse handshake into server_key_exchange
+ *  Parse handshake into client_key_exchange
  * @param Handshake *handshake
- * @param KeyExchangeAlgorithm algorithm_type
- * @param HashAlgorithm signature_type
- * @param uint32_t len_parameters
- * @param uint32_t len_signature
  * @return ServerKeyExchange *server_key_exchange
  */
 
@@ -1046,6 +1045,12 @@ ClientKeyExchange *HandshakeToClientKeyExchange(Handshake *handshake){
     return client_server_key_exchange;
 }
 
+/**
+ *  Parse handshake into server_key_exchange
+ * @param Handshake *handshake
+ * @param Certificate *certificate
+ * @return ServerKeyExchange
+ */
 ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificate *certificate){
     
     ServerKeyExchange *server_key_exchange;
@@ -1063,8 +1068,10 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificat
         exit(1);
     }
 	
-    server_key_exchange->len_parameters = 513;//TODO: questo andrebbe estratto dal certificate
+    server_key_exchange->len_parameters = 513;
     server_key_exchange->len_signature = handshake->length - 4 - server_key_exchange->len_parameters;
+    //TODO:
+    printf("len_parameters: %d\n",server_key_exchange->len_parameters);
     server_key_exchange->signature = (uint8_t *)calloc(server_key_exchange->len_signature, sizeof(uint8_t));
     server_key_exchange->parameters = (uint8_t *)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
     
@@ -1755,7 +1762,7 @@ CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
 }
 
 /**
- * BaseFunction that computes number_of_MD5 MD5 hash of the principal argument concatenated with random of Client and Server Hello //TODO
+ * BaseFunction that computes number_of_MD5 MD5 hash of the principal argument concatenated with random of Client and Server Hello
  * @param int numer_of_MD5
  * @param uint8_t *principal_argument
  * @param int principal_argument_size
@@ -1870,7 +1877,6 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     cert_509 = NULL;
     pubkey=NULL;
     len=0;
-    //TODO: controllo su p?
     
     p = certificate->X509_der;
     len = certificate->len;
@@ -1885,20 +1891,6 @@ EVP_PKEY* readCertificateParam (Certificate *certificate){
     
     return pubkey;
 }
-
-int verifyCertificate(Certificate *certificate){
-    X509_STORE_CTX *certificate_store;
-    X509 *CA_certificate;
-    
-    certificate_store = X509_STORE_CTX_new();
-    
-    //X509_STORE_CTX_set_cert(certificate_store, X509 *x);
-    //X509_STORE_CTX_trusted_stack(*CA_certificate);
-    //X509_STORE_CTX_set_chain(certificate_store, );
-    
-    return 0;
-};
-
 /*************************************** KEYS GENERATION ******************************************************/
 /**
  * derives the master_secret from pre_master_secret, client hello and server hello
@@ -1932,11 +1924,12 @@ uint8_t *MasterSecretGen(uint8_t *pre_master_secret, int pre_master_len, ClientS
  */
 uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *size, ClientServerHello *client_hello, ClientServerHello *server_hello){
     
-    uint8_t *key_block, *final_client_write_key, *final_server_write_key, *client_write_iv, *server_write_iv;
+    uint8_t *key_block, *key_block_temp, *final_client_write_key, *final_server_write_key, *client_write_iv, *server_write_iv;
     MD5_CTX md5;
     int key_block_size, key_block_size_temp;
     
     key_block = NULL;
+    key_block_temp = NULL;
     final_client_write_key = NULL;
     final_server_write_key = NULL;
     client_write_iv=NULL;
@@ -1954,14 +1947,14 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         //KeyBlock temp
         key_block_size_temp = 2*(cipher_suite->hash_size + cipher_suite->key_material);
         key_block_size_temp = key_block_size_temp + (16 - (key_block_size_temp % 16)); //made a multiple of 16
-        key_block = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);
+        key_block_temp = BaseFunction(key_block_size_temp/16, master_secret, 48, client_hello, server_hello);
         
         //final write key
         //client
         final_client_write_key = calloc(16, sizeof(uint8_t));
         
     	MD5_Init(&md5);
-        MD5_Update(&md5, key_block + 2*(cipher_suite->hash_size), cipher_suite->key_material);
+        MD5_Update(&md5, key_block_temp + 2*(cipher_suite->hash_size), cipher_suite->key_material);
         MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
         MD5_Update(&md5, client_hello->random->random_bytes, 28*sizeof(uint8_t));
         MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -1972,7 +1965,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         final_server_write_key = calloc(16, sizeof(uint8_t));
         
         MD5_Init(&md5);
-        MD5_Update(&md5, key_block + 2*(cipher_suite->hash_size) + cipher_suite->key_material, cipher_suite->key_material);
+        MD5_Update(&md5, key_block_temp + 2*(cipher_suite->hash_size) + cipher_suite->key_material, cipher_suite->key_material);
         MD5_Update(&md5, &server_hello->random->gmt_unix_time, sizeof(uint32_t));
         MD5_Update(&md5, server_hello->random->random_bytes, 28*sizeof(uint8_t));
         MD5_Update(&md5, &client_hello->random->gmt_unix_time, sizeof(uint32_t));
@@ -2001,7 +1994,7 @@ uint8_t *KeyBlockGen(uint8_t *master_secret, CipherSuite *cipher_suite, int *siz
         
         //construct final keyblock
         *size = 2*cipher_suite->hash_size + 64;
-        key_block =(uint8_t*)realloc(key_block, (*size)*sizeof(uint8_t));  //TODO likely the source of our leak
+        key_block =(uint8_t*)realloc(key_block_temp, (*size)*sizeof(uint8_t));
         memcpy(key_block + 2*(cipher_suite->hash_size), final_client_write_key, 16);
         memcpy(key_block + 2*(cipher_suite->hash_size) + 16, final_server_write_key, 16);
         memcpy(key_block + 2*(cipher_suite->hash_size) + 32, client_write_iv, 16);
@@ -2081,10 +2074,9 @@ uint8_t* AsymEnc(EVP_PKEY *public_key, uint8_t* plaintext, size_t inlen, size_t 
    
     EVP_PKEY_CTX *ctx;
     uint8_t *ciphertext;
-    //TODO: add controllo
     
-    ctx=NULL;
-    ciphertext=NULL;
+    ctx = NULL;
+    ciphertext = NULL;
     
     ctx = EVP_PKEY_CTX_new(public_key, NULL);
     
@@ -2222,10 +2214,6 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
     }
 
     switch (cipher_suite->cipher_algorithm) {
-        case CNULL:
-            //TODO da gestire
-            break;
-            
         case RC4:
             switch (cipher_suite->key_material) {
                 case 5:
@@ -2291,8 +2279,7 @@ uint8_t* DecEncryptPacket(uint8_t *in_packet, int in_packet_len, int *out_packet
  * @param uint8_t *macWriteSecret
  * @return uint8_t *sha_fin or *md5_fin
  */
-uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){//TODO: passare il keyblock
-    
+uint8_t* MAC(CipherSuite *cipher, Handshake *hand, uint8_t *macWriteSecret){
     MD5_CTX md5, md52;
     SHA_CTX sha, sha2;
     uint64_t seq_num;
