@@ -24,3 +24,5 @@ build/
 *.o
 *.dSYM
 Makefile
+
+src/codice sempre utile.c
