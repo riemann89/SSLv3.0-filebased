@@ -23,7 +23,7 @@ int main(int argc, const char *argv[]){
     //Declaration
     ClientServerHello *server_hello, *client_hello;
     Handshake *handshake, *client_handshake;
-    RecordLayer *record, *client_message, *temp;
+    RecordLayer *record, *client_message, *temp_record;
     ClientKeyExchange *client_key_exchange;
     ServerKeyExchange *server_key_exchange;
     Certificate *certificate;
@@ -47,7 +47,7 @@ int main(int argc, const char *argv[]){
     client_handshake = NULL;
     record = NULL;
     client_message = NULL;
-    temp = NULL;
+    temp_record = NULL;
     client_key_exchange = NULL;
     server_key_exchange = NULL;
     certificate = NULL;
@@ -405,86 +405,61 @@ int main(int argc, const char *argv[]){
     /* MAC and ENCRYPTION*/
     handshake = FinishedToHandshake(&finished);
     free(finished.hash);
-    temp = HandshakeToRecordLayer(handshake);
+    temp_record = HandshakeToRecordLayer(handshake);
     
     //compute MAC
-    printf("INPUT: \n");
-    printf("CIPHER: %d\n", ciphersuite_choosen->hash_algorithm);
-    printf("HANDSHAKE:\n");
-    printf("len: %d\n", handshake->length);
-    printf("msg type: %d\n", handshake->msg_type);
-    for (int i = 0; i<handshake->length - 4; i++) {
-        printf("%02X ", handshake->content[i]);
-    }
-    printf("\n");
-    
-    printf("SERVER KEY:\n");
-    for (int i = 0; i<ciphersuite_choosen->hash_size; i++) {
-        printf("%02X ", (key_block + (ciphersuite_choosen->hash_size))[i]);
-    }
-    printf("\n");
-    
     mac = MAC(ciphersuite_choosen, handshake, key_block + ciphersuite_choosen->hash_size);
-    
-    printf("MAC:\n");
-    for(int i = 0; i<ciphersuite_choosen->hash_size; i++){
-        printf("%02X ",mac[i]);
-    }
-    printf("\n");
-    
     FreeHandshake(handshake);
     
     //append MAC and free
-    uint8_t* message_with_mac = (uint8_t*)calloc(temp->length + ciphersuite_choosen->hash_size, sizeof(uint8_t));
-    memcpy(message_with_mac, temp->message, temp->length - 5);
-    memcpy(message_with_mac + temp->length - 5, mac, ciphersuite_choosen->hash_size);
+    uint8_t* message_with_mac = (uint8_t*)calloc(temp_record->length + ciphersuite_choosen->hash_size, sizeof(uint8_t));
+    memcpy(message_with_mac, temp_record->message, temp_record->length - 5);
+    memcpy(message_with_mac + temp_record->length - 5, mac, ciphersuite_choosen->hash_size);
     free(mac);
 
-    // update temp
-    temp->length = temp->length + ciphersuite_choosen->hash_size;
-    free(temp->message);
-    temp->message = message_with_mac;
+    // update temp_record
+    temp_record->length = temp_record->length + ciphersuite_choosen->hash_size;
+    free(temp_record->message);
+    temp_record->message = message_with_mac;
     
-    int_To_Bytes(temp->length, length_bytes);
+    int_To_Bytes(temp_record->length, length_bytes);
     printf("FINISHED:to sent\n");
-    printf("%02X ", temp->type);
-    printf("%02X ", temp->version.major);
-    printf("%02X ", temp->version.minor);
+    printf("%02X ", temp_record->type);
+    printf("%02X ", temp_record->version.major);
+    printf("%02X ", temp_record->version.minor);
     printf("%02X ", length_bytes[2]);
     printf("%02X ", length_bytes[3]);
-    for(int i=0; i<temp->length - 5; i++){
-        printf("%02X ", temp->message[i]);
+    for(int i=0; i<temp_record->length - 5; i++){
+        printf("%02X ", temp_record->message[i]);
     }
     printf("\n\n");
     
-    enc_message = DecEncryptPacket(temp->message, temp->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
+    enc_message = DecEncryptPacket(temp_record->message, temp_record->length - 5, &enc_message_len, ciphersuite_choosen, key_block, server, 1);
     free(key_block);
     
-    // update temp
-    free(temp->message);
-    temp->message = enc_message;
-    temp->length = enc_message_len + 5;
+    // update temp_record
+    free(temp_record->message);
+    temp_record->message = enc_message;
+    temp_record->length = enc_message_len + 5;
     
-    sendPacketByte(temp);
+    sendPacketByte(temp_record);
     
-    int_To_Bytes(temp->length, length_bytes);
+    int_To_Bytes(temp_record->length, length_bytes);
     printf("ENCRYPED FINISHED: sent\n");
-    printf("%02X ", temp->type);
-    printf("%02X ", temp->version.major);
-    printf("%02X ", temp->version.minor);
+    printf("%02X ", temp_record->type);
+    printf("%02X ", temp_record->version.major);
+    printf("%02X ", temp_record->version.minor);
     printf("%02X ", length_bytes[2]);
     printf("%02X ", length_bytes[3]);
-    for(int i=0; i<temp->length - 5; i++){
-        printf("%02X ", temp->message[i]);
+    for(int i=0; i<temp_record->length - 5; i++){
+        printf("%02X ", temp_record->message[i]);
     }
     printf("\n\n");
     
     free(ciphersuite_choosen);
-    FreeRecordLayer(temp);
+    FreeRecordLayer(temp_record);
     
     OpenCommunication(client);
-    
-    //FreeRecordLayer(temp);
    	
 	return 0;
 }

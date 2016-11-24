@@ -51,12 +51,10 @@ RecordLayer *ChangeCipherSpecRecord();
 
 //print package
 void printRecordLayer(RecordLayer *record_layer);
-void printHandshake(Handshake *handshake);
 
 /* CIPHERSUITE */
 uint8_t *loadCipher(char* filename , uint8_t *len);
 CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code);
-CertificateType CodeToCertificateType(uint8_t ciphersuite_code);
 uint8_t chooseChipher(ClientServerHello *client_hello, char *filename);
 /* INIT FUNCTIONS*/
 ClientServerHello *ClientServerHello_init(HandshakeType type, uint32_t sessionId, uint8_t *ciphersuite_code, uint8_t ciphersuite_code_len);
@@ -77,7 +75,6 @@ void FreeServerKeyExchange(ServerKeyExchange *server_key_exchange);
 
 /* CERTIFICATE */
 Certificate* loadCertificate(char * cert_name);
-void writeCertificate(X509* certificate);
 EVP_PKEY* readCertificateParam (Certificate *certificate);
 DH *get_dh2048();
 

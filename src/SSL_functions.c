@@ -1330,28 +1330,6 @@ void printRecordLayer(RecordLayer *record_layer){
     printf("\n\n");
 }
 
-/**
- * print in console the handshake pointed
- * @param Handshake handshake
- */
-void printHandshake(Handshake *handshake){
-    uint8_t length_bytes[4];
-    
-    int_To_Bytes(handshake->length, length_bytes);
-    
-    printf("\n HANDSHAKE \n");
-    printf("%02X ", handshake->msg_type);
-    printf("%02X ", length_bytes[0]);
-    printf("%02X ", length_bytes[1]);
-    printf("%02X ", length_bytes[2]);
-    printf("%02X ", length_bytes[3]);
-    
-    for(int i=0; i<handshake->length - 4; i++){
-        printf("%02X ", handshake->content[i]);
-    }
-    printf("\n\n");
-}
-
 
 /**
  * compare the client_supported_list of ciphersuite containded in ClientHello with the ones contained in the *filename,
@@ -1431,23 +1409,6 @@ uint8_t *loadCipher(char* filename, uint8_t *len){
     fclose(CipherList);
     
     return buffer;    
-} 
-
-/**
- * From the code of a ciphersuite decide if it match with RSA_, DIFFIE_HELLMAN or FORTEZZA.
- * @param uint8_t cipher_code
- * @return KeyExchangeAlgorithm 
- */
-KeyExchangeAlgorithm getAlgorithm(uint8_t cipher_code){
-    
-    if(cipher_code> 0 && cipher_code < 11)
-        return RSA_;
-    if(cipher_code > 10 && cipher_code< 28)
-        return DH_;
-    if(cipher_code > 27 && cipher_code < 31)
-        return KFORTEZZA;
-    perror("Cipher null or not a valid \n");
-    exit(1);
 }
 
 /*************************************** OTHERS ******************************************************/
@@ -1724,39 +1685,6 @@ CipherSuite *CodeToCipherSuite(uint8_t ciphersuite_code){
 }
 
 /**
- * Given a ciphersuite code returns the type of the correspondant certificate
- * @param uint8_t ciphersuite_code
- * @return CertificateType a type
- */
-CertificateType CodeToCertificateType(uint8_t ciphersuite_code){
-    
-    if (ciphersuite_code<= 0x0A && ciphersuite_code>=0x01){
-        return RSA_SIGN;
-    }
-    else if (ciphersuite_code<= 0x0D && ciphersuite_code>=0x0B){
-        return DSS_FIXED_DH;
-    }
-    else if (ciphersuite_code<= 0x10 && ciphersuite_code>=0x1E){
-        return RSA_FIXED_DH;
-    }
-    else if (ciphersuite_code<= 0x13 && ciphersuite_code>=0x11){
-        return DSS_EPHEMERAL_DH;
-    }
-    else if (ciphersuite_code<= 0x16 && ciphersuite_code>=0x14){
-        return RSA_EPHEMERAL_DH;
-    }
-    else if (ciphersuite_code<= 0x1B && ciphersuite_code>=0x17){
-        return DH_ANON;
-    }
-    else if (ciphersuite_code<= 0x1E && ciphersuite_code>=0x1C){
-        return FORTEZZA_MISSI;
-    }
-    
-    perror("CodeToCertificateType Error: ciphersuite_code not correct.");
-    exit(1);
-}
-
-/**
  * BaseFunction that computes number_of_MD5 MD5 hash of the principal argument concatenated with random of Client and Server Hello
  * @param int numer_of_MD5
  * @param uint8_t *principal_argument
@@ -1830,32 +1758,6 @@ uint8_t *BaseFunction(int numer_of_MD5, uint8_t* principal_argument, int princip
 }
 
 /*************************************** CERTIFICATES ******************************************************/
-
-/**
- * write certificate over a file named "cert_out.crt"
- * @param X509 *certificate
- * @return int exit_value  
- */
-void writeCertificate(X509* certificate){
-    /* Per leggere il der
-    X509 *res= NULL;
-    d2i_X509(&res, &buf, *len);
-     */
-    
-    FILE* file_cert;
-    file_cert=NULL;
-    
-    file_cert = fopen("cert_out.crt", "w+");
-    
-    if (file_cert == NULL){
-        perror("writeCertificate error");
-        exit(1);
-    }
-    
-    PEM_write_X509(file_cert, certificate);
-    
-    fclose(file_cert);
-}
 
 /**
  * extract the public key read from the certificate
