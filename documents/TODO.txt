@@ -1,9 +1,0 @@
-COSE DA SISTEMARE:
-- la signature con dsa non funziona.
-- rivedere le funzioni delle FREE e il loro uso nel codice.(ermes)
-- provare tutte le ciphersuite
-
-
-// da fare alla fine
-- trovare un modo per far testare al professore le varie ciphersuite.
-- HandshakeToServerKeyExchange TODO: estrarre la lunghezza dei parametri dal certificate.
