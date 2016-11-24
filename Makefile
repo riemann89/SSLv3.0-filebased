@@ -1,7 +1,7 @@
 CC := gcc
 CFLAGS := -std=gnu99 -Wall -Iinclude -g
 LFLAGS := -lssl -lcrypto -ldl
-OPENSSL := -I/usr/local/ssl/include -L/home/ermes/Downloads/openssl-1.0.2
+OPENSSL := -I/usr/local/ssl/include -L/usr/local/ssl/lib 
 
 all: server client
 	
