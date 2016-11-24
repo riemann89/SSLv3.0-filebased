@@ -24,8 +24,7 @@ int main(int argc, const char *argv[]){
     uint8_t **pre_master_secret;
     MD5_CTX md5;
     SHA_CTX sha;
-    uint8_t len_hello;
-    uint8_t *enc_message, *dec_message, *mac, *mac2, *key_block, *client_write_MAC_secret, *server_write_MAC_secret, *master_secret, *sha_1, *md5_1, *sha_fin, *md5_fin, *mac_test;
+    uint8_t *enc_message, *dec_message, *mac, *key_block, *client_write_MAC_secret, *server_write_MAC_secret, *master_secret, *sha_1, *md5_1, *sha_fin, *md5_fin, *mac_test;
     
     client_hello = NULL;
     server_hello = NULL;
@@ -43,12 +42,10 @@ int main(int argc, const char *argv[]){
     enc_message_len = 0;
     dec_message_len = 0;
     pre_master_secret = NULL;
-    len_hello = 0;
     phase=0;
     enc_message = NULL;
     dec_message = NULL;
     mac = NULL;
-    mac2 = NULL;
     key_block = NULL;
     client_write_MAC_secret = NULL;
     server_write_MAC_secret = NULL;

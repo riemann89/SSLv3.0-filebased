@@ -13,9 +13,9 @@ client: SSL_utilities
 
 SSL_utilities:
 	mkdir -p build
-	$(CC) $(CFLAGS)  $(OPENSSL) -c src/structures.c -o build/structures.o $(LFLAGS)
-	$(CC) $(CFLAGS)  $(OPENSSL) -c src/SSL_functions.c -o build/SSL_functions.o $(LFLAGS)
-	$(CC) $(CFLAGS)  $(OPENSSL) -c src/Utilities.c -o build/Utilities.o $(LFLAGS)
+	$(CC) $(CFLAGS)  -I/usr/local/ssl/include -c src/structures.c -o build/structures.o 
+	$(CC) $(CFLAGS)  -I/usr/local/ssl/include -c src/SSL_functions.c -o build/SSL_functions.o 
+	$(CC) $(CFLAGS)  -I/usr/local/ssl/include -c src/Utilities.c -o build/Utilities.o
 
 clean:
 	rm -r build

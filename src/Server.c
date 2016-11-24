@@ -27,13 +27,13 @@ int main(int argc, const char *argv[]){
     ClientKeyExchange *client_key_exchange;
     ServerKeyExchange *server_key_exchange;
     Certificate *certificate;
-    CertificateVerify *certificate_verify;
     Finished finished;
     CipherSuite *ciphersuite_choosen;
     Talker sender;
     int phase, key_block_size, len_parameters,dec_message_len, enc_message_len, pre_master_secret_size;
     uint8_t ciphersuite_code;
-    uint8_t *key_block,*dec_message,*enc_message, *mac, *mac_test, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, session_Id[4];
+    uint8_t *key_block,*dec_message,*enc_message, *mac, *mac_test, *pre_master_secret, *master_secret,*sha_1, *md5_1, *sha_fin, *md5_fin, *client_write_MAC_secret, session_Id[4];
+    
     MD5_CTX md5;
     SHA_CTX sha;
     DH *dh, **dhp;
@@ -77,7 +77,6 @@ int main(int argc, const char *argv[]){
     dhp = &dh;
     pub_key_client = NULL;
     private_key = NULL;
-    certificate_verify=NULL;
 
     
     
@@ -255,16 +254,7 @@ int main(int argc, const char *argv[]){
                 printf("\n\n");
                 
                 OpenCommunication(client);
-                phase = 4;//TODO: se usa il verify non funziona
-                    break;
-                case CERTIFICATE_VERIFY:
-                    certificate_verify = HandshakeToCertificateVerify(client_handshake);
-                    
-                    SHA1_Update(&sha,client_message->message,sizeof(uint8_t)*(client_message->length-5));
-                    MD5_Update(&md5,client_message->message,sizeof(uint8_t)*(client_message->length-5));
-                    OpenCommunication(client);
-                    printf("cert verify");
-                    CheckCommunication();
+                phase = 4;
                     break;
             	default:
                     perror("ERROR: Unattended message in phase 3.\n");
@@ -327,9 +317,7 @@ int main(int argc, const char *argv[]){
     mac_test = NULL;
     handshake->length = handshake->length - ciphersuite_choosen->hash_size;
     
-    uint8_t *client_write_MAC_secret, *server_write_MAC_secret;
     client_write_MAC_secret = NULL;
-    server_write_MAC_secret = NULL;
     
     client_write_MAC_secret = key_block;
 	
