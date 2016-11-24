@@ -326,8 +326,6 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     
     server_key_exchange->len_parameters = BN_num_bytes((*dh)->p) + BN_num_bytes((*dh)->g) + BN_num_bytes((*dh)->pub_key);
     server_key_exchange->parameters = (uint8_t*)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
-    //TODO
-    printf("parameters:%d\n", server_key_exchange->len_parameters);
     
     BN_bn2bin((*dh)->p, server_key_exchange->parameters);
     BN_bn2bin((*dh)->g, server_key_exchange->parameters + BN_num_bytes((*dh)->p));
@@ -350,8 +348,6 @@ ServerKeyExchange *ServerKeyExchange_init(CipherSuite *ciphersuite, EVP_PKEY *pr
     
     private_key = PEM_read_PrivateKey(key_file, &private_key, NULL, NULL);
     
-    printf("private key:%d\n", EVP_PKEY_size(private_key));
-    
     server_key_exchange->signature = Signature_(ciphersuite, client_hello, server_hello, server_key_exchange->parameters, server_key_exchange->len_parameters, private_key, &slen);
     server_key_exchange->len_signature = slen;
     
@@ -368,7 +364,6 @@ Certificate *Certificate_init(CipherSuite *ciphersuite){
     
     switch (ciphersuite->key_exchange_algorithm){
         case RSA_:
-            //strcpy((char*)&certificate_string, "certificates/RSA_server.crt");
             certificate = loadCertificate("certificates/RSA_server.crt");
             break;
         case DH_:
@@ -1070,8 +1065,8 @@ ServerKeyExchange *HandshakeToServerKeyExchange(Handshake *handshake, Certificat
 	
     server_key_exchange->len_parameters = 513;
     server_key_exchange->len_signature = handshake->length - 4 - server_key_exchange->len_parameters;
-    //TODO:
-    printf("len_parameters: %d\n",server_key_exchange->len_parameters);
+
+    
     server_key_exchange->signature = (uint8_t *)calloc(server_key_exchange->len_signature, sizeof(uint8_t));
     server_key_exchange->parameters = (uint8_t *)calloc(server_key_exchange->len_parameters, sizeof(uint8_t));
     
