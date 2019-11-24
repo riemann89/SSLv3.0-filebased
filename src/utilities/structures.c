@@ -44,11 +44,7 @@ uint8_t lista[31]={
 
 ProtocolVersion std_version={3, 0};
 
-
-//PROVVISORIO SPERIMENTALE    lista 2 seve per fare esperimenti del tipo caricare il clienthello con  alcune cipher e vedere se funziona la scelta fatta poi dal server con queste cipher a disposizione
-
-
-
+// For testing
 uint8_t lista2[8]={
     0x10,//"SSL_DH_RSA_WITH_3DES_EDE_CBC_SHA",
     0x11,//"SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA",
@@ -61,7 +57,7 @@ uint8_t lista2[8]={
 };
 
 
-// useful constant
+// useful constant TODO: add info about these constants
 uint8_t pad_1[48] = {54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54,54};
 uint8_t pad_2[48] =  {92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92,92};
 
