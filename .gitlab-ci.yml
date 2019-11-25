@@ -1,9 +1,0 @@
-image: gcc
-
-build:
-  stage: build
-  script: make
-  artifacts:
-    paths:
-      - build
-
