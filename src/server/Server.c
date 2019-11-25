@@ -17,7 +17,9 @@
 #include <openssl/dh.h>
 #include <openssl/bn.h>
 #include "SSL_functions.h"
-#include "Utilities.h"
+#include "networking.h"
+#include "crypto_binding.h"
+#include "utilities.h"
 
 int main(int argc, const char *argv[]){
     //Declaration
